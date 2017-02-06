@@ -20,7 +20,7 @@ project(binexport C CXX)
 set(RELEASE 9)
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR})
-set(CMAKE_FIND_ROOT_PATH ${PROJECT_SOURCE_DIR}/third_party)
+list(APPEND CMAKE_FIND_ROOT_PATH ${PROJECT_SOURCE_DIR}/third_party)
 
 # Use a copy of a subset of Boost that we ship
 set(Boost_NO_SYSTEM_PATHS, ON)
@@ -29,6 +29,8 @@ find_package(Boost 1.55 REQUIRED)
 
 find_package(Git)
 find_package(IdaSdk REQUIRED)
+
+set(OPENSSL_USE_STATIC_LIBS ON)
 find_package(OpenSSL 1.0.1 REQUIRED)
 
 set(PostgreSQL_TYPE_INCLUDE_DIR "none")  # We're not using the server-side API
@@ -47,7 +49,6 @@ else()
   set(PROTOBUF_LIBRARY
       ${PROTOBUF_ROOT_FOLDER}/build_msvc/Release/libprotobuf.lib)
 endif()
-set(PROTOBUF_LIBRARY_DEBUG ${PROTOBUF_LIBRARY})
 find_package(Protobuf 3.0 REQUIRED)
 
 include_directories(${PROJECT_SOURCE_DIR}
@@ -59,27 +60,13 @@ include_directories(${PROJECT_SOURCE_DIR}
                     ${PROTOBUF_INCLUDE_DIRS}
                     ${PROTOBUF_SRC_ROOT_FOLDER})
 
-# Find the Git revision number, if applicable
-set(REVISION unknown)
-if(GIT_FOUND)
-  execute_process(COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
-                  OUTPUT_VARIABLE REVISION
-                  ERROR_QUIET)
-  if(NOT ${REVISION} STREQUAL "")
-    string(STRIP ${REVISION} REVISION)
-  else()
-    set(REVISION internal)
-  endif()
-endif()
-
-configure_file(version.h.in version.h ESCAPE_QUOTES @ONLY)
-
-if(NOT {CMAKE_BUILD_TYPE} STREQUAL "Debug")
-  add_definitions(-DNDEBUG)
-endif()
-
 if(UNIX)
   add_compile_options(--std=c++11 -Wno-deprecated)
+  set(CMAKE_SKIP_BUILD_RPATH TRUE)
+  if(NOT COMPILE_64BIT)
+    add_compile_options(-m32)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -m32")
+  endif()
 elseif(WIN32)
   # TODO(cblichmann): Configure compiler warnings for Windows
   if(MSVC)
@@ -99,73 +86,108 @@ elseif(WIN32)
   endif()
 endif()
 
-PROTOBUF_GENERATE_CPP(PROTO_SRCS PROTO_HDRS
-                      binexport2.proto)
+if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
+  add_definitions(-DNDEBUG)
+endif()
+
+# Find the Git revision number, if applicable
+set(REVISION unknown)
+if(GIT_FOUND)
+  execute_process(COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
+                  OUTPUT_VARIABLE REVISION
+                  ERROR_QUIET)
+  if(NOT ${REVISION} STREQUAL "")
+    string(STRIP ${REVISION} REVISION)
+  else()
+    set(REVISION internal)
+  endif()
+endif()
+
+configure_file(version.h.in version.h ESCAPE_QUOTES @ONLY)
+
+set(BinExport_Proto_SRCS binexport2.proto)
+if(EXISTS "binexport.proto")
+  list(APPEND BinExport_Proto_SRCS binexport.proto)
+endif()
+PROTOBUF_GENERATE_CPP(PROTO_SRCS PROTO_HDRS ${BinExport_Proto_SRCS})
+if(EXISTS "binexport_header.cc")
+  set(BinExport_Header_SRCS binexport_header.cc)
+endif()
+add_library(binexport_proto STATIC ${PROTO_SRCS} ${BinExport_Header_SRCS})
+
+add_library(binexport_shared STATIC filesystem_util.cc)
+
+add_library(binexport_plugin_shared STATIC hash.cc
+                                           hex_codec.cc
+                                           ida/digest.cc
+                                           ida/log.cc)
+target_compile_definitions(binexport_plugin_shared PUBLIC
+                           ${IdaSdk_PLATFORM}
+                           __IDP__
+                           USE_DANGEROUS_FUNCTIONS
+                           USE_STANDARD_FILE_FUNCTIONS)
 
 add_subdirectory(tools)
 
-add_ida_plugin(zynamics_binexport_9 EA64
-               address_references.cc
-               base_types.cc
-               basic_block.cc
-               binexport2_writer.cc
-               call_graph.cc
-               chain_writer.cc
-               comment.cc
-               database_writer.cc
-               dump_writer.cc
-               edge.cc
-               entry_point.cc
-               expression.cc
-               filesystem_util.cc
-               flow_analyzer.cc
-               flow_graph.cc
-               function.cc
-               hash.cc
-               hex_codec.cc
-               ida/arm.cc
-               ida/dalvik.cc
-               ida/digest.cc
-               ida/generic.cc
-               ida/log.cc
-               ida/main_plugin.cc
-               ida/metapc.cc
-               ida/mips.cc
-               ida/names.cc
-               ida/ppc.cc
-               ida/types_container.cc
-               instruction.cc
-               library_manager.cc
-               operand.cc
-               postgresql.cc
-               query_builder.cc
-               statistics_writer.cc
-               type_system.cc
-               version.h
-               virtual_memory.cc
-               x86_nop.cc
-               ${PROTO_SRCS} ${PROTO_HDRS})
+if(NOT COMPILE_64BIT)
+  add_ida_plugin(zynamics_binexport_9 EA64
+                 address_references.cc
+                 base_types.cc
+                 basic_block.cc
+                 binexport2_writer.cc
+                 call_graph.cc
+                 chain_writer.cc
+                 comment.cc
+                 database_writer.cc
+                 dump_writer.cc
+                 edge.cc
+                 entry_point.cc
+                 expression.cc
+                 flow_analyzer.cc
+                 flow_graph.cc
+                 function.cc
+                 ida/arm.cc
+                 ida/dalvik.cc
+                 ida/generic.cc
+                 ida/main_plugin.cc
+                 ida/metapc.cc
+                 ida/mips.cc
+                 ida/names.cc
+                 ida/ppc.cc
+                 ida/types_container.cc
+                 instruction.cc
+                 library_manager.cc
+                 operand.cc
+                 postgresql.cc
+                 query_builder.cc
+                 statistics_writer.cc
+                 type_system.cc
+                 version.h
+                 virtual_memory.cc
+                 x86_nop.cc)
 
-set(BinExport_LIBRARIES ${IdaSdk_LIBRARIES}
-                        ${PROTOBUF_LIBRARIES})
-if(APPLE)
-  list(APPEND BinExport_LIBRARIES ${PostgreSQL_LIBRARY}
-                                  krb5
-                                  ldap
-                                  ${OPENSSL_LIBRARIES})
-  target_link_libraries(zynamics_binexport_9.pmc ${BinExport_LIBRARIES})
-  target_link_libraries(zynamics_binexport_9.pmc64 ${BinExport_LIBRARIES})
-elseif(UNIX)
-  list(APPEND BinExport_LIBRARIES ${PostgreSQL_LIBRARY}
-                                  ${OPENSSL_LIBRARIES})
-  target_link_libraries(zynamics_binexport_9.plx ${BinExport_LIBRARIES})
-  target_link_libraries(zynamics_binexport_9.plx64 ${BinExport_LIBRARIES})
-elseif(WIN32)
-  list(APPEND BinExport_LIBRARIES shlwapi.lib
-                                  ${OPENSSL_LIBRARIES}
-                                  # Work around bug in FindPostgreSQL.cmake
-                                  ${PostgreSQL_LIBRARY_DIR}/libpq.lib
-                                  ${PostgreSQL_LIBRARY_DIR}/intl.lib)
-  target_link_libraries(zynamics_binexport_9.plw ${BinExport_LIBRARIES})
-  target_link_libraries(zynamics_binexport_9.p64 ${BinExport_LIBRARIES})
+  set(BinExport_LIBRARIES ${IdaSdk_LIBRARIES}
+                          binexport_proto
+                          binexport_shared
+                          binexport_plugin_shared
+                          ${OPENSSL_LIBRARIES}
+                          ${PROTOBUF_LIBRARIES})
+  if(APPLE)
+    list(APPEND BinExport_LIBRARIES ${PostgreSQL_LIBRARY}
+                                    krb5
+                                    ldap
+                                    ${OPENSSL_LIBRARIES})
+  elseif(UNIX)
+    list(APPEND BinExport_LIBRARIES ${PostgreSQL_LIBRARY_DIR}/libpq.a)
+  elseif(WIN32)
+    list(APPEND BinExport_LIBRARIES crypt32.lib
+                                    secur32.lib
+                                    shlwapi.lib
+                                    ws2_32.lib
+                                    wldap32.lib
+                                    ${PostgreSQL_LIBRARY}
+                                    ${PostgreSQL_LIBRARY_DIR}/libpgport.lib)
+  endif()
+  target_link_libraries(zynamics_binexport_9${_plx} ${BinExport_LIBRARIES})
+  target_link_libraries(zynamics_binexport_9${_plx64} ${BinExport_LIBRARIES})
 endif()

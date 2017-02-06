@@ -475,6 +475,7 @@ void WriteCallGraph(const CallGraph& call_graph, const FlowGraph& flow_graph,
 
   // Used for verifying that functions are sorted by address.
   uint64 previous_entry_point_address = 0;
+  map<string, int32> module_index;
   for (const auto& function_it : flow_graph.GetFunctions()) {
     const Function& function(*function_it.second);
     QCHECK_GE(function.GetEntryPoint(), previous_entry_point_address);
@@ -504,6 +505,24 @@ void WriteCallGraph(const CallGraph& call_graph, const FlowGraph& flow_graph,
       // array of all known libraries).
       proto_function->set_library_index(use_index[library_index]);
     }
+    const string& module = function.GetModuleName();
+    if (!module.empty()) {
+      auto it = module_index.emplace(module, module_index.size());
+      proto_function->set_module_index(it.first->second);
+    }
+  }
+
+  if (module_index.size() > 0) {
+    proto->mutable_module()->Reserve(module_index.size());
+    // We are O(N^2) here by number of classes, shouldn't be a big deal.
+    for (int i = 0; i < module_index.size(); ++i) {
+      auto* module = proto->add_module();
+      module->set_name(std::find_if(
+          module_index.begin(), module_index.end(),
+          [i] (const std::pair<string, int32>& kv) -> bool {
+            return kv.second == i;
+          })->first);
+    }
   }
 
   proto_call_graph->mutable_edge()->Reserve(call_graph.GetEdges().size());
@@ -530,9 +549,10 @@ void WriteStrings(const AddressReferences& address_references,
                   const vector<pair<Address, int32>>& instruction_indices,
                   BinExport2* proto) {
   std::map<Address, const AddressReference*> string_address_to_reference;
-  std::map<StringPiece, int> string_to_string_index;
+  std::map<string, int> string_to_string_index;
   for (const auto& reference : address_references) {
-    if (reference.kind_ != TYPE_DATA_STRING) {
+    if (reference.kind_ != TYPE_DATA_STRING &&
+        reference.kind_ != TYPE_DATA_WIDE_STRING) {
       continue;
     }
     // String length must be > 0.
@@ -548,11 +568,18 @@ void WriteStrings(const AddressReferences& address_references,
         instruction->first != reference.source_) {
       continue;
     }
-    auto referenced_string = StringPiece(
-        reinterpret_cast<const char*>(&address_space[reference.target_]),
-        reference.size_);
-    auto it = string_to_string_index.emplace(referenced_string,
-                                             proto->string_table_size());
+
+    string content;
+    // TODO(timkornau): Add support for UTF16 strings.
+    if (reference.kind_ != TYPE_DATA_STRING) {
+      continue;
+    }
+    content =
+        string(reinterpret_cast<const char*>(&address_space[reference.target_]),
+               reference.size_);
+
+    auto it =
+        string_to_string_index.emplace(content, proto->string_table_size());
     // Deduplicate strings.
     if (it.second != false) {
       proto->add_string_table(it.first->first);
@@ -664,14 +691,10 @@ util::Status BinExport2Writer::WriteToProto(
   meta_information->set_executable_name(executable_filename_);
   meta_information->set_executable_id(executable_hash_);
   meta_information->set_architecture_name(architecture_);
-#ifdef GOOGLE
-  const auto timestamp = ToUnixSeconds(base::Now());
-#else
   const auto timestamp =
       std::chrono::duration_cast<std::chrono::seconds>(
           std::chrono::system_clock::now().time_since_epoch())
           .count();
-#endif
   meta_information->set_timestamp(timestamp);
 
   WriteExpressions(proto);
