@@ -536,3 +536,16 @@ With all prerequisites in place, configure and build BinExport:
 If all went well, the `build_msvc` directory should contain two IDA plugin
 binaries `zynamics_binexport_9.plw` and `zynamics_binexport_9.p64` for use with
 `idaq.exe` and `idaq64.exe`, respectively.
+
+Note that in order to use the plugins, you need to copy the following files to
+the IDA Pro installation directory (`%ProgramFiles(x86)%\IDA 6.9` by default):
+
+* libeay32.dll
+* libintl.dll
+* libpq.dll
+* ssleay32.dll
+
+The alternative would be to build a static PostgreSQL client library from
+source.
+
+If you are running binexport under Wine, libpq.dll requires that you install libldap (32-bit) in your distro (e.g. [lib32-libldap](https://www.archlinux.org/packages/multilib/x86_64/lib32-libldap/)).
