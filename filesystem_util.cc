@@ -132,6 +132,44 @@ std::string GetTempDirectory(StringPiece product_name, bool create) {
   return path;
 }
 
+#ifndef WIN32
+/***********************************************************************
+ * if idb/i64 file comes from windows system, exporting on linux/mac
+ * will produce file as /tmp/zynamics/.../c:\users\xxx\desktop\file.exe
+ * To fix this issue, we need to check also for '\\' in file path to be
+ * sure we get proper basename.
+ *******************************************************/
+char    *basename_alternate(char *path){
+        static  char    *bname = NULL;
+        char    *ptr;
+        
+        if (bname == NULL){
+                bname = (char *)malloc(0x400);
+                memset(bname, 0, 0x400);
+        }
+        
+        //use strrchr to find end...
+        if (path == NULL) return NULL;
+        
+        ptr = strrchr(path, '/');
+        if (ptr){
+                memset(bname, 0, 0x400);
+                strncpy(bname, ptr+1, 0x400-1);     
+                return bname;   
+        }               
+        
+        ptr = strrchr(path, '\\');
+        if (ptr){
+                memset(bname, 0, 0x400);
+                strncpy(bname, ptr+1, 0x400-1);
+                return bname;
+        }
+        
+        return basename(path);
+}
+
+#endif
+
 std::string Basename(StringPiece path) {
   std::string path_copy(path);
 #ifdef WIN32
@@ -145,7 +183,8 @@ std::string Basename(StringPiece path) {
   }
   return StrCat(filename, extension);
 #else
-  return std::string(basename(&path_copy[0]));
+  //return std::string(basename(&path_copy[0]));
+  return std::string(basename_alternate(&path_copy[0]));
 #endif
 }
 
