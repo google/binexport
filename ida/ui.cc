@@ -33,7 +33,7 @@ WaitBox::WaitBox(StringPiece message, WaitBox::Cancellable cancel_state)
 
 WaitBox::~WaitBox() { hide_wait_box(); }
 
-bool WaitBox::IsCancelled() { return wasBreak(); }
+bool WaitBox::IsCancelled() { return user_cancelled(); }
 
 void WaitBox::ReplaceText(StringPiece message) const {
   replace_wait_box("%s", FormatMessage(message, cancellable_).c_str());

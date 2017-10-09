@@ -12,13 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 if(UNIX)
   add_compile_options(-Wno-deprecated)
   list(APPEND CMAKE_CXX_FLAGS --std=c++11)
   set(CMAKE_SKIP_BUILD_RPATH TRUE)
-  if(NOT COMPILE_64BIT)
+  set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+  if(COMPILE_32BIT)
     add_compile_options(-m32)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -m32")
+  endif()
+  if(KYTHE_EXTRACTOR)
+    set(CMAKE_C_COMPILER /opt/kythe/extractors/cxx_extractor)
+    set(CMAKE_CXX_COMPILER /opt/kythe/extractors/cxx_extractor)
   endif()
 elseif(WIN32)
   if(MSVC)

@@ -54,9 +54,9 @@ plugins directory. These are the default paths:
 
 OS      | Plugin path
 ------- | -------------------------------------------
-Linux   | `/opt/ida-6.95/plugins`
-macOS   | `/Applications/IDA Pro 6.95/idabin/plugins`
-Windows | `%ProgramFiles(x86)%\IDA 6.95\plugins`
+Linux   | `/opt/ida-7.0/plugins`
+macOS   | `/Applications/IDA Pro 7.0/idabin/plugins`
+Windows | `%ProgramFiles%\IDA 7.0\plugins`
 
 ## Usage
 
@@ -73,7 +73,8 @@ formats:
 
 1.  In IDA, select `Help`|`About programm...`
 2.  Click `Addons...`
-3.  If installed correctly, the following dialog box appears:
+3.  If installed correctly, the following dialog box appears (version 10,
+    screenshot not updated):
 
     ![IDA addons dialog](/doc/binexport9-ida-addons-dialog.png)
 
@@ -82,8 +83,8 @@ formats:
 #### Via the UI
 
 1.  Open an IDB
-2.  Select `Edit`|`Plugins`|`BinExport 9`
-3.  The following dialog box appears:
+2.  Select `Edit`|`Plugins`|`BinExport 10`
+3.  The following dialog box appears (version 10, screenshot not updated):
 
     ![BinExport plugin dialog](/doc/binexport9-plugin-dialog.png)
 
@@ -97,13 +98,13 @@ The BinExport plugin registers the IDC functions below. The function names are
 versioned in order to support side-by-side installation of different versions
 (i.e. BinDiff's BinExport 8).
 
-| IDC Function name     | Exports to           | Arguments                     |
-| --------------------- | -------------------- | ----------------------------- |
-| BinExport2Sql9        | PostgreSQL database  | host, port, database, schema, |
-:                       :                      : user, password                :
-| BinExport2Diff9       | Protocol Buffer      | filename                      |
-| BinExport2Text9       | Text file dump       | filename                      |
-| BinExport2Statistics9 | Statistics text file | filename                      |
+| IDC Function name      | Exports to           | Arguments                     |
+| ---------------------- | -------------------- | ----------------------------- |
+| BinExport2Sql10        | PostgreSQL database  | host, port, database, schema, |
+:                        :                      : user, password                :
+| BinExport2Diff10       | Protocol Buffer      | filename                      |
+| BinExport2Text10       | Text file dump       | filename                      |
+| BinExport2Statistics10 | Statistics text file | filename                      |
 
 BinExport also supports exporting to a database via the `RunPlugin()` IDC
 function:
@@ -111,7 +112,7 @@ function:
     static main() {
       Batch(0);
       Wait();
-      RunPlugin("zynamics_binexport_9", 1);
+      RunPlugin("binexport10", 1);
       Exit(0);
     }
 
@@ -159,9 +160,9 @@ based format, there are quite a few dependencies to satisfy:
     `third_party/boost_parts`)
 *   [CMake](https://cmake.org/download/) 2.8.11 or higher
 *   GCC 4.8 or a recent version of Clang on Linux/macOS. On Windows, use the
-    Visual Studio 2015 compiler and the Windows SDK for Windows 8.1/10.
+    Visual Studio 2017 compiler and the Windows SDK for Windows 10.
 *   Git 1.8 or higher
-*   IDA SDK 6.9 (unpack into `third_party/idasdk`)
+*   IDA SDK 7.0 (unpack into `third_party/idasdk`)
 *   OpenSSL 1.0.1 or higher
 *   Perl 5.6 or higher (needed for OpenSSL and PostgreSQL)
 *   PostgreSQL client libraries 9.3 or higher
@@ -171,16 +172,15 @@ based format, there are quite a few dependencies to satisfy:
 
 #### Prerequisites
 
+Note: This instructions are slightly out of date.
+
 The preferred build environment is Ubuntu 14.04 LTS (64-bit Intel).
 
 This should install all the necessary packages:
 
-    sudo dpkg --add-architecture i386
-    sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
     sudo apt-get update -qq
     sudo apt-get install -qq --no-install-recommends \
-        build-essential cmake g++-4.8-multilib lib32stdc++-4.8-dev \
-        linux-libc-dev:i386
+        build-essential cmake
     export CXX="g++-4.8" CC="gcc-4.8"
 
 The following sections assume that your current working directory is at the root
@@ -189,11 +189,11 @@ of the cloned repository.
 #### IDA SDK
 
 Unzip the contents of the IDA SDK into `third_party/idasdk`. Shown commands are
-for IDA 6.9:
+for IDA 7.0:
 
-    unzip PATH/TO/idasdk69.zip -d third_party/idasdk
-    mv third_party/idasdk/idasdk69/* third_party/idasdk
-    rmdir third_party/idasdk/idasdk69
+    unzip PATH/TO/idasdk700x64.zip -d third_party/idasdk
+    mv third_party/idasdk/idasdk700x64/* third_party/idasdk
+    rmdir third_party/idasdk/idasdk700x64
 
 #### Build BinExport
 
@@ -205,15 +205,15 @@ With all prerequisites in place, configure and build BinExport:
 
 This will download and build OpenSSL, Protocol Buffers and the PostgreSQL client
 libraries. If all went well, the `build_linux` directory should contain two IDA
-plugin binaries `zynamics_binexport_9.plx` and `zynamics_binexport_9.plx64` for
-use with `idaq` and `idaq64`, respectively.
+plugin binaries `binexport10.so` and `binexport1064.so` for use with `ida` and
+`ida64`, respectively.
 
 ### macOS
 
 #### Prerequisites
 
-The preferred build environment is Mac OS X 10.11.3 "El Capitan" (64-bit Intel)
-using Xcode 7.2.1. Using macOS 10.12 "Sierra" should also work.
+The preferred build environment is Mac OS X 10.12 "Sierra" (64-bit Intel)
+using Xcode 8.1. Using macOS 10.13 "High Sierra" should also work.
 
 After installing the Developer Tools, make sure to install the command-line
 tools:
@@ -258,11 +258,11 @@ The last command makes CMake available in the system path.
 #### IDA SDK
 
 Unzip the contents of the IDA SDK into `third_party/idasdk`. Shown commands are
-for IDA 6.9:
+for IDA 7.0:
 
-    unzip PATH/TO/idasdk69.zip -d third_party/idasdk
-    mv third_party/idasdk/idasdk69/* third_party/idasdk
-    rmdir third_party/idasdk/idasdk69
+    unzip PATH/TO/idasdk700x64.zip -d third_party/idasdk
+    mv third_party/idasdk/idasdk700x64/* third_party/idasdk
+    rmdir third_party/idasdk/idasdk700x64
 
 #### Build BinExport
 
@@ -274,15 +274,15 @@ With all prerequisites in place, configure and build BinExport:
 
 This will download and build OpenSSL, Protocol Buffers and the PostgreSQL client
 libraries. If all went well, the `build_mac` directory should contain two IDA
-plugin binaries `zynamics_binexport_9.pmc` and `zynamics_binexport_9.pmc64` for
-use with `idaq` and `idaq64`, respectively.
+plugin binaries `binexport10.dylib` and `binexport1064.dylib` for use with `ida`
+and `ida64`, respectively.
 
 ### Windows
 
 The preferred build environment is Windows 10 (64-bit Intel) using the Visual
-Studio 2015 compiler and the [Windows SDK for Windows
+Studio 2017 compiler and the [Windows SDK for Windows
 10](https://dev.windows.com/en-us/downloads/windows-10-sdk). The previous Visual
-Studio 2013 and earlier versions of Windows also work.
+Studio 2015 and earlier versions of Windows also work.
 
 #### CMake
 
@@ -313,18 +313,19 @@ directory located at the root of the cloned BinExport repository:
     git clone https://github.com/google/binexport.git
     cd binexport
 
-Make the Visual Studio compiler and build tools available (Use `VS120COMNTOOLS`
-for Visual Studio 2013):
+Make the Visual Studio compiler and build tools available (Use `VS140COMNTOOLS`
+for Visual Studio 2015):
 
-    call "%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat" x86
+    call "%VS150COMNTOOLS%\..\..\VC\vcvarsall.bat" amd64
 
 #### IDA SDK
 
 Unzip the contents of the IDA SDK into `third_party/idasdk`. Shown commands are
-for IDA 6.9, assuming that Git was installed into the default directory first:
+for IDA 7.0, assuming that Git was installed into the default directory
+first:
 
-    "%ProgramFiles%\Git\usr\bin\unzip" PATH\TO\idasdk69.zip -d third_party
-    rename third_party\idasdk69 idasdk
+    "%ProgramFiles%\Git\usr\bin\unzip" PATH\TO\idasdk700x64.zip -d third_party
+    rename third_party\idasdk700x64 idasdk
 
 #### Build BinExport
 
@@ -337,5 +338,5 @@ With all prerequisites in place, configure and build BinExport:
 
 This will download and build OpenSSL, Protocol Buffers and the PostgreSQL client
 libraries. If all went well, the `build_msvc` directory should contain two IDA
-plugin binaries `zynamics_binexport_9.plw` and `zynamics_binexport_9.p64` for
-use with `idaq.exe` and `idaq64.exe`, respectively.
+plugin binaries `binexport10.dll` and `binexport1064.dll` for use with `ida.exe`
+and `ida64.exe`, respectively.

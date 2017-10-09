@@ -64,7 +64,7 @@ else()
     COMMAND copy Release\\libpgport\\libpgport.lib "${_pg_inst}\\lib"
     COMMAND copy Release\\libpq\\libpq.lib "${_pg_inst}\\lib")
   elseif(UNIX)
-    if(NOT COMPILE_64BIT)
+    if(COMPILE_32BIT)
       if(APPLE)
         set(_pg_flags --build=i386-apple-darwin
           "CFLAGS=-arch=i386 -m32" "LDFLAGS=-arch=i386 -m32")

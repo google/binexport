@@ -64,7 +64,7 @@ enum Architecture {
 
 bool IsCode(Address address) {
   const uchar segment = segtype(address);
-  return isCode(getFlags(address)) &&
+  return is_code(get_full_flags(address)) &&
          (segment == SEG_CODE || segment == SEG_NORM ||
           // Some processor modules label code segments with SEG_DATA.
           ((ph.id == PLFM_DALVIK || ph.id == PLFM_M32R) &&
@@ -83,7 +83,7 @@ Address GetImageBase() {
 }
 
 Architecture GetArchitecture() {
-  std::string architecture(inf.procName);
+  std::string architecture(inf.procname);
   if (architecture == "metapc") {
     return kX86;
   }
@@ -150,20 +150,21 @@ std::string GetModuleName() {
 // iff we have exactly one reference (either code or data (for imported
 // functions)) in particular, note that there may not be a flow reference to
 // the next instruction
-bool IsUnconditionalJump(ea_t address) {
-  if (is_indirect_jump_insn(address) && GetArchitecture() == kX86) {
+bool IsUnconditionalJump(const insn_t& instruction) {
+  if (is_indirect_jump_insn(instruction) && GetArchitecture() == kX86) {
     return true;
   }
   if (GetArchitecture() == kMips &&
-      (cmd.itype == MIPS_b || cmd.itype == MIPS_bal || cmd.itype == MIPS_jalr ||
-       cmd.itype == MIPS_j || cmd.itype == MIPS_jr || cmd.itype == MIPS_jal ||
-       cmd.itype == MIPS_jalx)) {
+      (instruction.itype == MIPS_b || instruction.itype == MIPS_bal ||
+       instruction.itype == MIPS_jalr || instruction.itype == MIPS_j ||
+       instruction.itype == MIPS_jr || instruction.itype == MIPS_jal ||
+       instruction.itype == MIPS_jalx)) {
     return true;
   }
 
   size_t count = 0;
   xrefblk_t referencesOut;
-  for (bool ok = referencesOut.first_from(address, XREF_ALL); ok;
+  for (bool ok = referencesOut.first_from(instruction.ea, XREF_ALL); ok;
        ok = referencesOut.next_from(), ++count) {
     if (referencesOut.iscode && referencesOut.type != fl_JF &&
         referencesOut.type != fl_JN) {
@@ -174,46 +175,31 @@ bool IsUnconditionalJump(ea_t address) {
   return count == 1;
 }
 
-// create a map "function address" -> "module name"
+// Create a map "function address" -> "module name"
 ModuleMap InitModuleMap() {
   ModuleMap modules;
-  // IDA crashes if you access import_node after loading an IDB and closing it
-  // again. So we should cop out early if no IDB is currently loaded. I have
-  // contacted hex rays for information on how to detect this state.
-  if (!netnode::inited()) {
-    return modules;
-  }
 
-  // TODO(user) We should probably rewrite this code using
-  // get_import_module_qty and get_import_module_name and enum_import_names.
-  const netnode& imported_modules = import_node;
-  for (uval_t module_num = imported_modules.alt1st(); module_num != BADNODE;
-       module_num = imported_modules.altnxt(module_num)) {
-    enum { BUFFER_SIZE = MAXSTR };
-    char buffer[BUFFER_SIZE];
-    memset(buffer, 0, BUFFER_SIZE);
-    std::string module_name("unnamed module");
-    if (imported_modules.supstr(module_num, buffer, BUFFER_SIZE) > 0) {
-      module_name = buffer;
-    } else {
-      continue;  // do not enter non-imported modules into the list
+  struct ImportData {
+    std::string module_name;
+    ModuleMap* modules;
+  };
+  for (int i = 0; i < get_import_module_qty(); ++i) {
+    qstring ida_module_name;
+    if (!get_import_module_name(&ida_module_name, i)) {
+      continue;
     }
-
-    // get the module node (in fact, netnode is just a 32-bit number)
-    const netnode module_node = imported_modules.altval(module_num);
-
-    // for all imported by ORDINAL functions
-    for (uval_t ordinal = module_node.alt1st(); ordinal != BADNODE;
-         ordinal = module_node.altnxt(ordinal)) {
-      const ea_t address = module_node.altval(ordinal);
-      modules[address] = module_name;
-    }
-
-    // for all imported by NAME functions
-    for (ea_t address = module_node.sup1st(); address != BADADDR;
-         address = module_node.supnxt(address)) {
-      modules[address] = module_name;
-    }
+    ImportData import_data = {
+        std::string(ida_module_name.c_str(), ida_module_name.length()),
+        &modules};
+    enum_import_names(
+        i, static_cast<import_enum_cb_t*>([](ea_t ea, const char* /* name */,
+                                             uval_t /* ord */,
+                                             void* param) -> int {
+          auto& import_data = *static_cast<ImportData*>(param);
+          (*import_data.modules)[ea] = import_data.module_name;
+          return 1;  // Continue enumeration
+        }),
+        static_cast<void*>(&import_data));
   }
   return modules;
 }
@@ -226,20 +212,19 @@ std::string GetModuleName(Address address, const ModuleMap& modules) {
   return "";
 }
 
-int GetOriginalIdaLine(const Address address, char* buffer,
-                       size_t buffer_size) {
-  generate_disasm_line((ea_t)address, buffer, buffer_size, 0);
-  return tag_remove(buffer, buffer, buffer_size);
+int GetOriginalIdaLine(const Address address, std::string* line) {
+  qstring ida_line;
+  generate_disasm_line(&ida_line, address, 0);
+  int result = tag_remove(&ida_line);
+  *line = std::string(ida_line.c_str(), ida_line.length());
+  return result;
 }
 
 std::string GetMnemonic(const Address address) {
-  enum { kBufferSize = 32 };
-  char buffer[kBufferSize] = {0};
-  ua_mnem(address, buffer, kBufferSize);
-  return buffer;
+  qstring ida_mnemonic;
+  print_insn_mnem(&ida_mnemonic, address);
+  return std::string(ida_mnemonic.c_str(), ida_mnemonic.length());
 }
-
-bool IsCall(ea_t address) { return is_call_insn(address); }
 
 // Utility function to render hex values as shown in IDA.
 std::string IdaHexify(int value) {
@@ -255,8 +240,8 @@ std::string GetSizePrefix(const size_t size_in_bytes) {
   return "b" + std::to_string(size_in_bytes);
 }
 
-size_t GetOperandByteSize(const op_t& operand) {
-  switch (operand.dtyp) {
+size_t GetOperandByteSize(const insn_t& instruction, const op_t& operand) {
+  switch (operand.dtype) {
     case dt_byte:
       return 1;  // 8 bit
     case dt_code:
@@ -281,8 +266,8 @@ size_t GetOperandByteSize(const op_t& operand) {
     default: {
       std::stringstream stream;
       stream << __FUNCTION__ << ": Invalid operand type ("
-             << static_cast<int>(operand.dtyp) << ") at address " << std::hex
-             << cmd.ea << ".";
+             << static_cast<int>(operand.dtype) << ") at address " << std::hex
+             << instruction.ea << ".";
       throw std::runtime_error(stream.str());
     }
   }
@@ -291,7 +276,7 @@ size_t GetOperandByteSize(const op_t& operand) {
 // in bytes
 size_t GetSegmentSize(const Address address) {
   const segment_t* segment = getseg(address);
-  // fucking IDA: 0 = 16, 1 = 32, 2 = 64
+  // IDA constants: 0 = 16, 1 = 32, 2 = 64
   return (16 << segment->bitness) >> 3;
 }
 
@@ -302,18 +287,18 @@ bool IsCodeSegment(const Address address) {
   return false;
 }
 
-// @bug: this only returns the first string ref - there may be several
 std::string GetStringReference(ea_t address) {
+  // This only returns the first string ref - there may be several.
   xrefblk_t xrefs;
   if (xrefs.first_from(address, XREF_DATA) == 0) {
     return "";
   }
 
   while (!xrefs.iscode) {
-    if ((xrefs.type == dr_O) && (isASCII(getFlags(xrefs.to)))) {
-      size_t length = get_max_ascii_length(xrefs.to, ASCSTR_C);
+    if ((xrefs.type == dr_O) && (is_strlit(get_flags(xrefs.to)))) {
+      size_t length = get_max_strlit_length(xrefs.to, STRTYPE_C);
       if (length == 2) {
-        length = get_max_ascii_length(xrefs.to, ASCSTR_UNICODE);
+        length = get_max_strlit_length(xrefs.to, STRTYPE_C_16);
       }
 
       std::string value(length, ' ');
@@ -331,25 +316,26 @@ std::string GetStringReference(ea_t address) {
 }
 
 bool IsStackVariable(Address address, uint8_t operand_num) {
-  flags_t flags = get_flags_novalue(static_cast<ea_t>(address));
-  return isStkvar(flags, operand_num);
+  flags_t flags = get_flags(static_cast<ea_t>(address));
+  return is_stkvar(flags, operand_num);
 }
 
 bool IsStructVariable(Address address, uint8_t operand_num) {
-  flags_t flags = get_flags_novalue(static_cast<ea_t>(address));
-  return (operand_num == 0 && isStroff0(flags)) ||
-         (operand_num == 1 && isStroff1(flags));
+  flags_t flags = get_flags(static_cast<ea_t>(address));
+  return (operand_num == 0 && is_stroff0(flags)) ||
+         (operand_num == 1 && is_stroff1(flags));
 }
 
 // Returns the variable name of either a stack variable or a
 // structure variable at the given position.
-std::string GetVariableName(Address address, uint8_t operand_num) {
-  if (!IsStackVariable(address, operand_num)) {
+std::string GetVariableName(const insn_t& instruction, uint8_t operand_num) {
+  if (!IsStackVariable(instruction.ea, operand_num)) {
     return "";
   }
 
   const member_t* stack_variable =
-      get_stkvar(cmd.Operands[operand_num], cmd.Operands[operand_num].addr, 0);
+      get_stkvar(0, instruction, instruction.ops[operand_num],
+                 instruction.ops[operand_num].addr);
   if (!stack_variable) {
     return "";
   }
@@ -361,13 +347,13 @@ std::string GetVariableName(Address address, uint8_t operand_num) {
   // something like that.
   name = name.substr(name.find('.', 4) + 1);
   if (name[0] != ' ') {
-    func_t* function = get_func(address);
+    func_t* function = get_func(instruction.ea);
     if (!function) {
       return name;
     }
 
     const ea_t offset =
-        calc_stkvar_struc_offset(function, address, operand_num);
+        calc_stkvar_struc_offset(function, instruction, operand_num);
     if (offset == BADADDR) {
       return name;
     }
@@ -381,9 +367,9 @@ std::string GetVariableName(Address address, uint8_t operand_num) {
     tid_t id = 0;
     adiff_t disp = 0;
     adiff_t delta = 0;
-    if (get_struct_operand(address, operand_num, &id, &disp, &delta) &&
-        cmd.Operands[operand_num].reg == 4) {
-      int delta = get_spd(function, address);
+    if (get_struct_operand(&disp, &delta, &id, instruction.ea, operand_num) &&
+        instruction.ops[operand_num].reg == 4) {
+      int delta = get_spd(function, instruction.ea);
       delta = -delta - function->frregs;
       if (delta) {
         stream << IdaHexify(delta) << "+";
@@ -392,7 +378,7 @@ std::string GetVariableName(Address address, uint8_t operand_num) {
       // TODO(user): This must be recursive for nested structs.
       if (const struc_t* structure = get_struc(id)) {
         if (const member_t* member = get_member(structure, disp)) {
-          qstring ida_name(get_member_name2(member->id));
+          qstring ida_name(get_member_name(member->id));
           std::string member_name(ida_name.c_str(), ida_name.length());
           stream << name << "." << member_name << disp;
           if (delta) {
@@ -422,7 +408,7 @@ std::string GetGlobalStructureName(Address address, Address instance_address,
   adiff_t disp = 0;
   adiff_t delta = 0;
 
-  int num_structs = get_struct_operand(address, operand_num, id, &disp, &delta);
+  int num_structs = get_struct_operand(&disp, &delta, id, address, operand_num);
   if (num_structs > 0) {
     // Special case for the first index - this may be an instance name instead
     // of a type name.
@@ -431,7 +417,7 @@ std::string GetGlobalStructureName(Address address, Address instance_address,
       // First try to get a global variable instance name.
       // Second, fall back to just the structure type name.
       qstring ida_name;
-      if (get_true_name(&ida_name, instance_address - disp) ||
+      if (get_name(&ida_name, instance_address - disp) ||
           get_struc_name(&ida_name, id[0])) {
         instance_name.assign(ida_name.c_str(), ida_name.length());
       }
@@ -442,7 +428,7 @@ std::string GetGlobalStructureName(Address address, Address instance_address,
     for (const member_t* member = get_member(structure, disp);
          member != nullptr;
          member = get_member(structure, disp -= member->soff)) {
-      qstring ida_name(get_member_name2(member->id));
+      qstring ida_name(get_member_name(member->id));
       instance_name += "." + std::string(ida_name.c_str(), ida_name.length());
       structure = get_sptr(member);
     }
@@ -451,15 +437,16 @@ std::string GetGlobalStructureName(Address address, Address instance_address,
 }
 
 std::string GetName(Address address, bool user_names_only) {
-  if (!user_names_only || has_user_name(getFlags(static_cast<ea_t>(address)))) {
-    qstring ida_name(get_true_name(static_cast<ea_t>(address)));
+  if (!user_names_only ||
+      has_user_name(get_flags(static_cast<ea_t>(address)))) {
+    qstring ida_name(get_name(static_cast<ea_t>(address)));
     return std::string(ida_name.c_str(), ida_name.length());
   }
   return "";
 }
 
 std::string GetDemangledName(Address address) {
-  if (has_user_name(getFlags(static_cast<ea_t>(address)))) {
+  if (has_user_name(get_flags(static_cast<ea_t>(address)))) {
     qstring ida_name(get_short_name(static_cast<ea_t>(address)));
     return std::string(ida_name.c_str(), ida_name.length());
   }
@@ -470,8 +457,10 @@ std::string GetRegisterName(size_t index, size_t segment_size) {
   enum { kBufferSize = MAXSTR };
   char buffer[kBufferSize];
   memset(buffer, 0, kBufferSize);
-  if (get_reg_name(index, segment_size, buffer, kBufferSize) != -1) {
-    return buffer;
+
+  qstring ida_reg_name;
+  if (get_reg_name(&ida_reg_name, index, segment_size) != -1) {
+    return std::string(ida_reg_name.c_str(), ida_reg_name.length());
   }
   // Do not return empty string due to assertion fail in database_writer.cc
   return "<bad register>";
@@ -503,15 +492,15 @@ Name GetName(Address /* address */, Address immediate,
   return Name(name, type);
 }
 
-void AnalyzeFlow(const Address address, Instruction* instruction,
+void AnalyzeFlow(const insn_t& ida_instruction, Instruction* instruction,
                  FlowGraph* flow_graph, CallGraph* call_graph,
                  AddressReferences* address_references,
                  EntryPointAdder* entry_point_adder, const ModuleMap& modules) {
-  const bool unconditional_jump = IsUnconditionalJump(address);
+  const bool unconditional_jump = IsUnconditionalJump(ida_instruction);
   int num_out_edges = 0;
   xrefblk_t xref;
-  for (bool ok = xref.first_from(address, XREF_ALL); ok && xref.iscode;
-       ok = xref.next_from()) {
+  for (bool ok = xref.first_from(ida_instruction.ea, XREF_ALL);
+       ok && xref.iscode; ok = xref.next_from()) {
     if (xref.type == fl_JN || xref.type == fl_JF) {
       ++num_out_edges;
     } else if (unconditional_jump && xref.type == fl_F) {
@@ -528,24 +517,24 @@ void AnalyzeFlow(const Address address, Instruction* instruction,
   bool handled = false;
   if (num_out_edges > 1) {  // switch jump table
     ea_t table_address = std::numeric_limits<ea_t>::max();
-    for (bool ok = xref.first_from(address, XREF_ALL); ok && xref.iscode;
-         ok = xref.next_from()) {
-      flow_graph->AddEdge(
-          FlowGraphEdge(address, xref.to, FlowGraphEdge::TYPE_SWITCH));
+    for (bool ok = xref.first_from(ida_instruction.ea, XREF_ALL);
+         ok && xref.iscode; ok = xref.next_from()) {
+      flow_graph->AddEdge(FlowGraphEdge(ida_instruction.ea, xref.to,
+                                        FlowGraphEdge::TYPE_SWITCH));
       address_references->emplace_back(
-          address, GetSourceExpressionId(*instruction, xref.to), xref.to,
-          TYPE_SWITCH);
+          ida_instruction.ea, GetSourceExpressionId(*instruction, xref.to),
+          xref.to, TYPE_SWITCH);
       entry_point_adder->Add(xref.to, EntryPoint::Source::JUMP_TABLE);
       table_address = std::min(table_address, xref.to);
       handled = true;
     }
     // add a data reference to first address in switch table
     address_references->emplace_back(
-        address, GetSourceExpressionId(*instruction, table_address),
+        ida_instruction.ea, GetSourceExpressionId(*instruction, table_address),
         table_address, TYPE_DATA);
   } else {  // normal xref
-    for (bool ok = xref.first_from(address, XREF_ALL); ok && xref.iscode;
-         ok = xref.next_from()) {
+    for (bool ok = xref.first_from(ida_instruction.ea, XREF_ALL);
+         ok && xref.iscode; ok = xref.next_from()) {
       // regular code flow
       if (xref.type == fl_F || instruction->GetNextInstruction() == xref.to) {
         // We need the || above because IDA gives me xref type unknown for old
@@ -562,40 +551,41 @@ void AnalyzeFlow(const Address address, Instruction* instruction,
         // call targets
         if (IsPossibleFunction(xref.to, modules)) {
           call_graph->AddFunction(xref.to);
-          call_graph->AddEdge(address, xref.to);
+          call_graph->AddEdge(ida_instruction.ea, xref.to);
           entry_point_adder->Add(xref.to, EntryPoint::Source::CALL_TARGET);
         }
         instruction->SetFlag(FLAG_CALL, true);
         address_references->emplace_back(
-            address, GetSourceExpressionId(*instruction, xref.to), xref.to,
-            TYPE_CALL_DIRECT);
+            ida_instruction.ea, GetSourceExpressionId(*instruction, xref.to),
+            xref.to, TYPE_CALL_DIRECT);
         handled = true;
       } else if (xref.type == fl_JN || xref.type == fl_JF) {
         // jump targets
         if (IsPossibleFunction(xref.to, modules) && xref.type == fl_JF) {
-          call_graph->AddEdge(address, xref.to);
+          call_graph->AddEdge(ida_instruction.ea, xref.to);
         }
         // MIPS adds an extra instruction _after_ the jump that'll
         // always be executed. Thus we need to branch from that for flow
         // graph reconstruction to work...
         const Address source_address = GetArchitecture() == kMips
                                            ? instruction->GetNextInstruction()
-                                           : address;
+                                           : ida_instruction.ea;
         if (unconditional_jump) {
           flow_graph->AddEdge(FlowGraphEdge(source_address, xref.to,
                                             FlowGraphEdge::TYPE_UNCONDITIONAL));
           address_references->emplace_back(
-              address, GetSourceExpressionId(*instruction, xref.to), xref.to,
-              TYPE_UNCONDITIONAL);
+              ida_instruction.ea, GetSourceExpressionId(*instruction, xref.to),
+              xref.to, TYPE_UNCONDITIONAL);
           handled = true;
         } else {
           Address next_address = instruction->GetNextInstruction();
           if (GetArchitecture() == kMips) {
-            // look ahead one instruction
-            decode_insn(static_cast<ea_t>(next_address));
-            next_address += cmd.size;
-            // reset global cmd structure to original instruction
-            decode_insn(static_cast<ea_t>(address));
+            // TODO(cblichman): Since this is MIPS, replace below with a
+            //                  constant.
+            // Look ahead one instruction.
+            insn_t next_instruction;
+            decode_insn(&next_instruction, next_address);
+            next_address += next_instruction.size;
           }
 
           flow_graph->AddEdge(FlowGraphEdge(source_address, next_address,
@@ -603,45 +593,47 @@ void AnalyzeFlow(const Address address, Instruction* instruction,
           flow_graph->AddEdge(
               FlowGraphEdge(source_address, xref.to, FlowGraphEdge::TYPE_TRUE));
           address_references->emplace_back(
-              address, GetSourceExpressionId(*instruction, next_address),
-              next_address, TYPE_FALSE);
+              ida_instruction.ea,
+              GetSourceExpressionId(*instruction, next_address), next_address,
+              TYPE_FALSE);
           address_references->emplace_back(
-              address, GetSourceExpressionId(*instruction, xref.to), xref.to,
-              TYPE_TRUE);
+              ida_instruction.ea, GetSourceExpressionId(*instruction, xref.to),
+              xref.to, TYPE_TRUE);
           handled = true;
         }
         entry_point_adder->Add(xref.to, EntryPoint::Source::JUMP_DIRECT);
       } else {
-        LOG(INFO) << StringPrintf("unknown xref %08llx", address);
+        LOG(INFO) << StringPrintf("unknown xref %08llx", ida_instruction.ea);
       }
     }
   }
 
   if (!handled) {
-    if (IsCall(address)) {  // call to imported function or call [offset+eax*4]
-      for (bool ok = xref.first_from(address, XREF_DATA); ok;
+    if (is_call_insn(ida_instruction)) {  // Call to imported function or call
+                                          // [offset+eax*4]
+      for (bool ok = xref.first_from(ida_instruction.ea, XREF_DATA); ok;
            ok = xref.next_from()) {
         if (IsPossibleFunction(xref.to, modules)) {
           call_graph->AddFunction(xref.to);
-          call_graph->AddEdge(address, xref.to);
+          call_graph->AddEdge(ida_instruction.ea, xref.to);
           entry_point_adder->Add(xref.to, EntryPoint::Source::CALL_TARGET);
         }
         instruction->SetFlag(FLAG_CALL, true);
         address_references->emplace_back(
-            address, GetSourceExpressionId(*instruction, xref.to), xref.to,
-            TYPE_CALL_INDIRECT);
+            ida_instruction.ea, GetSourceExpressionId(*instruction, xref.to),
+            xref.to, TYPE_CALL_INDIRECT);
       }
-    } else {  // assume data reference as in "push aValue"
-      for (bool ok = xref.first_from(address, XREF_DATA); ok;
+    } else {  // Assume data reference as in "push aValue"
+      for (bool ok = xref.first_from(ida_instruction.ea, XREF_DATA); ok;
            ok = xref.next_from()) {
-        if (!GetStringReference(address).empty()) {
+        if (!GetStringReference(ida_instruction.ea).empty()) {
           address_references->emplace_back(
-              address, GetSourceExpressionId(*instruction, xref.to), xref.to,
-              TYPE_DATA_STRING);
+              ida_instruction.ea, GetSourceExpressionId(*instruction, xref.to),
+              xref.to, TYPE_DATA_STRING);
         } else {
           address_references->emplace_back(
-              address, GetSourceExpressionId(*instruction, xref.to), xref.to,
-              TYPE_DATA);
+              ida_instruction.ea, GetSourceExpressionId(*instruction, xref.to),
+              xref.to, TYPE_DATA);
         }
       }
     }
@@ -650,27 +642,26 @@ void AnalyzeFlow(const Address address, Instruction* instruction,
 
 std::string GetBytes(const Instruction& instruction) {
   std::string bytes(instruction.GetSize(), '\0');
-  get_many_bytes(static_cast<ea_t>(instruction.GetAddress()), &(bytes[0]),
-                 instruction.GetSize());
+  get_bytes(&(bytes[0]), instruction.GetSize(), static_cast<ea_t>(instruction.GetAddress()));
   return bytes;
 }
 
 bool idaapi HasNoValue(flags_t flags, void* /* ud */) {
-  return !hasValue(flags);
+  return !has_value(flags);
 }
 
 // Returns the raw bytes that are contained within a segment.
 std::vector<Byte> GetSectionBytes(ea_t segment_start_address) {
   std::vector<Byte> bytes;
   const segment_t* ida_segment = getseg(segment_start_address);
-  if (ida_segment && isLoaded(ida_segment->startEA)) {
+  if (ida_segment && is_loaded(ida_segment->start_ea)) {
     const ea_t undefined_bytes =
-        nextthat(ida_segment->startEA, ida_segment->endEA, HasNoValue,
+        next_that(ida_segment->start_ea, ida_segment->end_ea, HasNoValue,
                  nullptr /* user data */);
     bytes.resize(
-        (undefined_bytes == BADADDR ? ida_segment->endEA : undefined_bytes) -
-        ida_segment->startEA);
-    get_many_bytes(ida_segment->startEA, &bytes[0], bytes.size());
+        (undefined_bytes == BADADDR ? ida_segment->end_ea : undefined_bytes) -
+        ida_segment->start_ea);
+    get_bytes(&bytes[0], bytes.size(), ida_segment->start_ea);
   }
   return bytes;
 }
@@ -702,12 +693,12 @@ void AnalyzeFlowIda(EntryPoints* entry_points, const ModuleMap* modules,
   AddressSpace flags;
   for (int i = 0; i < get_segm_qty(); ++i) {
     const segment_t* segment = getnseg(i);
-    address_space.AddMemoryBlock(segment->startEA,
-                                 GetSectionBytes(segment->startEA),
+    address_space.AddMemoryBlock(segment->start_ea,
+                                 GetSectionBytes(segment->start_ea),
                                  GetPermissions(segment));
     flags.AddMemoryBlock(
-        segment->startEA,
-        AddressSpace::MemoryBlock(size_t(segment->endEA - segment->startEA)),
+        segment->start_ea,
+        AddressSpace::MemoryBlock(size_t(segment->end_ea - segment->start_ea)),
         GetPermissions(segment));
   }
 
@@ -719,7 +710,7 @@ void AnalyzeFlowIda(EntryPoints* entry_points, const ModuleMap* modules,
   Instruction::SetBitness(GetArchitectureBitness());
   Instruction::SetGetBytesCallback(&GetBytes);
   Instruction::SetMemoryFlags(&flags);
-  std::function<Instruction(Address, CallGraph*, FlowGraph*, TypeSystem*)>
+  std::function<Instruction(const insn_t&, CallGraph*, FlowGraph*, TypeSystem*)>
       parse_instruction = nullptr;
   bool mark_x86_nops = false;
   switch (GetArchitecture()) {
@@ -756,15 +747,19 @@ void AnalyzeFlowIda(EntryPoints* entry_points, const ModuleMap* modules,
     }
     flags[address] |= FLAG_VISITED;
 
-    Instruction new_instruction =
-        parse_instruction(address, call_graph, flow_graph, &type_system);
+    insn_t ida_instruction;
+    if (decode_insn(&ida_instruction, address) <= 0) {
+      continue;
+    }
+    Instruction new_instruction = parse_instruction(ida_instruction, call_graph,
+                                                    flow_graph, &type_system);
     if (new_instruction.HasFlag(FLAG_INVALID)) {
       continue;
     }
-    AnalyzeFlow(address, &new_instruction, flow_graph, call_graph,
+    AnalyzeFlow(ida_instruction, &new_instruction, flow_graph, call_graph,
                 &address_references, &entry_point_adder, *modules);
     call_graph->AddStringReference(address, GetStringReference(address));
-    GetComments(address, &call_graph->GetComments());
+    GetComments(ida_instruction, &call_graph->GetComments());
 
     if (mark_x86_nops) {
       // FLAG_NOP is only important when reconstructing functions, thus we can
@@ -854,17 +849,18 @@ void AnalyzeFlowIda(EntryPoints* entry_points, const ModuleMap* modules,
 }
 
 void GetRegularComments(Address address, Comments* comments) {
-  enum { kBufferSize = 4096 };
-  char buffer[kBufferSize] = {0};
-  if (get_cmt(address, false, buffer, kBufferSize) > 0) {
+  qstring ida_comment;
+  if (get_cmt(&ida_comment, address, /* rptble = */ false) > 0) {
     comments->emplace_back(address, UA_MAXOP + 1,
-                           CallGraph::CacheString(buffer), Comment::REGULAR,
-                           false);
+                           CallGraph::CacheString(std::string(
+                               ida_comment.c_str(), ida_comment.length())),
+                           Comment::REGULAR, false);
   }
-  if (get_cmt(address, true, buffer, kBufferSize) > 0) {
+  if (get_cmt(&ida_comment, address, /* rptble = */ true) > 0) {
     comments->emplace_back(address, UA_MAXOP + 2,
-                           CallGraph::CacheString(buffer), Comment::REGULAR,
-                           true);
+                           CallGraph::CacheString(std::string(
+                               ida_comment.c_str(), ida_comment.length())),
+                           Comment::REGULAR, true);
   }
 }
 
@@ -872,8 +868,8 @@ void GetEnumComments(Address address,
                      Comments* comments) {  // @bug: there is an get_enum_cmt
                                             // function in IDA as well!
   unsigned char serial;
-  if (isEnum0(getFlags(address))) {
-    if (int id = get_enum_id(address, 0, &serial) != BADNODE) {
+  if (is_enum0(get_flags(address))) {
+    if (int id = get_enum_id(&serial, address, 0) != BADNODE) {
       qstring ida_name(get_enum_name(id));
       comments->emplace_back(address, 0,
                              CallGraph::CacheString(std::string(
@@ -881,8 +877,8 @@ void GetEnumComments(Address address,
                              Comment::ENUM, false);
     }
   }
-  if (isEnum1(getFlags(address))) {
-    if (int id = get_enum_id(address, 1, &serial) != BADNODE) {
+  if (is_enum1(get_flags(address))) {
+    if (int id = get_enum_id(&serial, address, 1) != BADNODE) {
       qstring ida_name(get_enum_name(id));
       comments->emplace_back(address, 1,
                              CallGraph::CacheString(std::string(
@@ -925,32 +921,31 @@ void GetLineComments(Address address, Comments* comments) {
 
 void GetFunctionComments(Address address, Comments* comments) {
   if (func_t* function = get_func(address)) {
-    if (function->startEA == address) {
-      char* comment = get_func_cmt(function, false);
-      if (comment) {
+    if (function->start_ea == address) {
+      qstring ida_comment;
+      if (get_func_cmt(&ida_comment, function, /* repeatable = */ false) > 0) {
         comments->emplace_back(address, UA_MAXOP + 5,
-                               CallGraph::CacheString(comment),
+                               CallGraph::CacheString(std::string(
+                                   ida_comment.c_str(), ida_comment.length())),
                                Comment::FUNCTION, false);
       }
-      qfree(reinterpret_cast<void*>(comment));
-      comment = get_func_cmt(function, true);
-      if (comment) {
+      if (get_func_cmt(&ida_comment, function, /* repeatable = */ true) > 0) {
         comments->emplace_back(address, UA_MAXOP + 6,
-                               CallGraph::CacheString(comment),
+                               CallGraph::CacheString(std::string(
+                                   ida_comment.c_str(), ida_comment.length())),
                                Comment::FUNCTION, true);
       }
-      qfree(reinterpret_cast<void*>(comment));
     }
   }
 }
 
 void GetLocationNames(Address address, Comments* comments) {
   func_t* function = get_func(address);
-  if (function && function->startEA == address &&
-      has_user_name(getFlags(address))) {
+  if (function && function->start_ea == address &&
+      has_user_name(get_flags(address))) {
     // TODO(cblichmann): get_short_name -> use demangled names for display,
     //                   but port mangled names.
-    qstring ida_name(get_true_name(address));
+    qstring ida_name(get_name(address));
     comments->emplace_back(address, UA_MAXOP + 7,
                            CallGraph::CacheString(std::string(
                                ida_name.c_str(), ida_name.length())),
@@ -963,8 +958,8 @@ void GetGlobalReferences(Address address, Comments* comments) {
   xrefblk_t xb;
   for (bool ok = xb.first_from(address, XREF_DATA); ok; ok = xb.next_from(),
             ++count) {  // xb.to - contains the referenced address
-    qstring ida_name(get_true_name(xb.to));
-    if (ida_name.empty() || has_dummy_name(getFlags(address))) {
+    qstring ida_name(get_name(xb.to));
+    if (ida_name.empty() || has_dummy_name(get_flags(address))) {
       continue;
     }
 
@@ -1002,7 +997,7 @@ class FunctionCache {
       }
 
       const ea_t offset = member->soff;
-      qstring ida_name(get_member_name2(member->id));
+      qstring ida_name(get_member_name(member->id));
       if (!ida_name.empty()) {
         i += std::max(static_cast<asize_t>(1), get_member_size(member));
         lastSuccess = i;
@@ -1019,10 +1014,10 @@ class FunctionCache {
   std::map<ea_t, std::string> local_vars;
 };
 
-void GetLocalReferences(ea_t address, Comments* comments) {
+void GetLocalReferences(const insn_t& instruction, Comments* comments) {
   static FunctionCache cache(nullptr);
 
-  func_t* function = get_func(address);
+  func_t* function = get_func(instruction.ea);
   if (!function) {
     return;
   }
@@ -1033,26 +1028,26 @@ void GetLocalReferences(ea_t address, Comments* comments) {
 
   for (size_t operand_num = 0; operand_num < UA_MAXOP; ++operand_num) {
     const ea_t offset =
-        calc_stkvar_struc_offset(function, address, operand_num);
+        calc_stkvar_struc_offset(function, instruction, operand_num);
     if (offset == BADADDR) {
       continue;
     }
 
     // one of the operands references a local variable
     if (cache.local_vars.find(offset) != cache.local_vars.end()) {
-      comments->emplace_back(address, UA_MAXOP + 2048 + operand_num,
+      comments->emplace_back(instruction.ea, UA_MAXOP + 2048 + operand_num,
                              CallGraph::CacheString(cache.local_vars[offset]),
                              Comment::LOCALREFERENCE, false);
     }
   }
 }
 
-void GetComments(Address address, Comments* comments) {
-  GetRegularComments(address, comments);
-  GetEnumComments(address, comments);
-  GetLineComments(address, comments);
-  GetFunctionComments(address, comments);
-  GetLocationNames(address, comments);
-  GetGlobalReferences(address, comments);
-  GetLocalReferences(address, comments);
+void GetComments(const insn_t& instruction, Comments* comments) {
+  GetRegularComments(instruction.ea, comments);
+  GetEnumComments(instruction.ea, comments);
+  GetLineComments(instruction.ea, comments);
+  GetFunctionComments(instruction.ea, comments);
+  GetLocationNames(instruction.ea, comments);
+  GetGlobalReferences(instruction.ea, comments);
+  GetLocalReferences(instruction, comments);
 }

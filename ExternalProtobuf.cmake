@@ -28,10 +28,10 @@ else()
   set(PROTOBUF_URL
     https://github.com/google/protobuf/archive/v3.2.0rc2.tar.gz)
   set(PROTOBUF_URL_HASH
-    SHA256=82b124816eb8e9e99e8312b6c751c68ec690e2b1eaef7fa2c20743152367ec80)
+    SHA256=21c8db3d001e2e71c4c43d1e967a91c0cb965e0393b5dda8c6b45d2149c1535e)
   set(PROTOBUF_ROOT_DIR ${CMAKE_CURRENT_BINARY_DIR}/protobuf)
 
-  if(UNIX AND NOT COMPILE_64BIT)
+  if(UNIX AND COMPILE_32BIT)
     set(_pb_flags -DCMAKE_C_FLAGS=-m32
                   -DCMAKE_CXX_FLAGS=-m32)
   endif()
@@ -51,6 +51,7 @@ else()
       "-DCMAKE_INSTALL_PREFIX=${PROTOBUF_ROOT_DIR}"
       -DCMAKE_INSTALL_LIBDIR=lib
       -DCMAKE_RULE_MESSAGES=OFF
+      -DCMAKE_POSITION_INDEPENDENT_CODE=ON
       ${_pb_flags}
       -Dprotobuf_BUILD_TESTS=OFF
       -Dprotobuf_BUILD_SHARED_LIBS=OFF

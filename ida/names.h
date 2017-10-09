@@ -27,6 +27,7 @@
 class CallGraph;
 class FlowGraph;
 class Writer;
+class insn_t;
 class op_t;
 
 struct Name {
@@ -48,7 +49,7 @@ void AnalyzeFlowIda(EntryPoints* entryPoints, const ModuleMap* modules,
                     FlowGraph* flowGraph, CallGraph* callGraph);
 
 std::string GetRegisterName(size_t index, size_t segment_size);
-std::string GetVariableName(Address address, uint8_t operand_num);
+std::string GetVariableName(const insn_t& instruction, uint8_t operand_num);
 std::string GetGlobalStructureName(Address address, Address instance_address,
                                    uint8_t operand_num);
 Name GetName(Address address, Address immediate, uint8_t operand_num,
@@ -59,10 +60,10 @@ std::string GetArchitectureName();
 int GetArchitectureBitness();
 
 std::string GetSizePrefix(const size_t size_in_bytes);
-size_t GetOperandByteSize(const op_t& operand);
+size_t GetOperandByteSize(const insn_t& instruction, const op_t& operand);
 
 size_t GetSegmentSize(const Address address);
-int GetOriginalIdaLine(const Address address, char* buffer, size_t buffer_size);
+int GetOriginalIdaLine(const Address address, std::string* line);
 std::string GetMnemonic(const Address address);
 ModuleMap InitModuleMap();
 Address GetImageBase();
@@ -70,6 +71,7 @@ bool IsCode(Address address);
 bool IsPossibleFunction(Address address);
 bool IsStructVariable(Address address, uint8_t operand_num);
 bool IsStackVariable(Address address, uint8_t operand_num);
-void GetComments(Address address, Comments* comments);  // Cached in callgraph!
+void GetComments(const insn_t& instruction,
+                 Comments* comments);  // Cached in callgraph!
 
 #endif  // THIRD_PARTY_ZYNAMICS_BINEXPORT_NAMES_H_
