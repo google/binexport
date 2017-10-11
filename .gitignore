@@ -22,4 +22,3 @@ third_party/zynamics/binexport
 *.pb.cc
 *.pb.h
 version.h
-/third_party/idasdk
