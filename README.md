@@ -191,9 +191,9 @@ of the cloned repository.
 Unzip the contents of the IDA SDK into `third_party/idasdk`. Shown commands are
 for IDA 7.0:
 
-    unzip PATH/TO/idasdk700x64.zip -d third_party/idasdk
-    mv third_party/idasdk/idasdk700x64/* third_party/idasdk
-    rmdir third_party/idasdk/idasdk700x64
+    unzip PATH/TO/idasdk70.zip -d third_party/idasdk
+    mv third_party/idasdk/idasdk70/* third_party/idasdk
+    rmdir third_party/idasdk/idasdk70
 
 #### Build BinExport
 
@@ -324,8 +324,8 @@ Unzip the contents of the IDA SDK into `third_party/idasdk`. Shown commands are
 for IDA 7.0, assuming that Git was installed into the default directory
 first:
 
-    "%ProgramFiles%\Git\usr\bin\unzip" PATH\TO\idasdk700x64.zip -d third_party
-    rename third_party\idasdk700x64 idasdk
+    "%ProgramFiles%\Git\usr\bin\unzip" PATH\TO\idasdk70.zip -d third_party
+    rename third_party\idasdk70 idasdk
 
 #### Build BinExport
 
