@@ -212,8 +212,8 @@ plugin binaries `binexport10.so` and `binexport1064.so` for use with `ida` and
 
 #### Prerequisites
 
-The preferred build environment is Mac OS X 10.12 "Sierra" (64-bit Intel)
-using Xcode 8.1. Using macOS 10.13 "High Sierra" should also work.
+The preferred build environment is macOS 10.13 "High Sierra" (64-bit Intel)
+using Xcode 8.1.
 
 After installing the Developer Tools, make sure to install the command-line
 tools:
