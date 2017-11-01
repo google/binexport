@@ -51,7 +51,7 @@ if(UNIX)
 elseif(WIN32)
   file(TO_NATIVE_PATH
     ${PROJECT_SOURCE_DIR}/third_party/zynamics/binexport _be_from)
-  file(TO_NATIVE_PATH ${PROJECT_BINARY_DIR} _be_to)
+  file(TO_NATIVE_PATH ${PROJECT_SOURCE_DIR} _be_to)
   execute_process(COMMAND $ENV{ComSpec} /c mklink /J ${_be_from} ${_be_to}
     ERROR_QUIET)
 endif()
