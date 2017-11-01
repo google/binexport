@@ -30,9 +30,9 @@ else()
   set(PostgreSQL_SOURCE_DIR
     ${CMAKE_CURRENT_BINARY_DIR}/src/external-postgresql)
   set(PostgreSQL_URL
-    https://ftp.postgresql.org/pub/source/v9.6.1/postgresql-9.6.1.tar.bz2)
+    https://ftp.postgresql.org/pub/source/v10.0/postgresql-10.0.tar.bz2)
   set(PostgreSQL_URL_HASH
-    SHA256=e5101e0a49141fc12a7018c6dad594694d3a3325f5ab71e93e0e51bd94e51fcd)
+    SHA256=712f5592e27b81c5b454df96b258c14d94b6b03836831e015c65d6deeae57fd1)
   set(PostgreSQL_ROOT_DIR ${CMAKE_CURRENT_BINARY_DIR}/postgresql)
 
   if(WIN32)
