@@ -27,9 +27,9 @@ else()
   set(OPENSSL_SOURCE_DIR
     ${CMAKE_CURRENT_BINARY_DIR}/src/external-openssl)
   set(OPENSSL_URL
-    https://www.openssl.org/source/openssl-1.0.2k.tar.gz)
+    https://www.openssl.org/source/openssl-1.0.2l.tar.gz)
   set(OPENSSL_URL_HASH
-    SHA256=6b3977c61f2aedf0f96367dcfb5c6e578cf37e7b8d913b4ecb6643c3cb88d8c0)
+    SHA256=ce07195b659e75f4e1db43552860070061f156a98bb37b672b101ba6e3ddf30c)
   set(OPENSSL_ROOT_DIR ${CMAKE_CURRENT_BINARY_DIR}/openssl)
 
   if(WIN32)

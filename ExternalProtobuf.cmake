@@ -26,9 +26,9 @@ else()
   set(PROTOBUF_SOURCE_DIR
     ${CMAKE_CURRENT_BINARY_DIR}/src/external-protobuf)
   set(PROTOBUF_URL
-    https://github.com/google/protobuf/archive/v3.2.0rc2.tar.gz)
+    https://github.com/google/protobuf/archive/v3.4.1.tar.gz)
   set(PROTOBUF_URL_HASH
-    SHA256=21c8db3d001e2e71c4c43d1e967a91c0cb965e0393b5dda8c6b45d2149c1535e)
+    SHA256=8e0236242106e680b4f9f576cc44b8cd711e948b20a9fc07769b0a20ceab9cc4)
   set(PROTOBUF_ROOT_DIR ${CMAKE_CURRENT_BINARY_DIR}/protobuf)
 
   if(UNIX AND COMPILE_32BIT)

@@ -282,7 +282,8 @@ and `ida64`, respectively.
 The preferred build environment is Windows 10 (64-bit Intel) using the Visual
 Studio 2017 compiler and the [Windows SDK for Windows
 10](https://dev.windows.com/en-us/downloads/windows-10-sdk). The previous Visual
-Studio 2015 and earlier versions of Windows also work.
+Studio 2015 and earlier versions of Windows also work, but CMake's generator
+will need changed to suite the version of Visual Studio used.
 
 #### CMake
 
@@ -333,7 +334,7 @@ With all prerequisites in place, configure and build BinExport:
 
     if not exist build_msvc mkdir build_msvc
     cd build_msvc
-    cmake ..
+    cmake .. -DCMAKE_BUILD_TYPE=Release -G "Visual Studio 15 2017 Win64"
     msbuild binexport.sln /p:Configuration=Release /m
 
 This will download and build OpenSSL, Protocol Buffers and the PostgreSQL client
