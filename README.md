@@ -309,8 +309,8 @@ for use with `ida` and `ida64`, respectively.
 ### Windows
 
 The preferred build environment is Windows 10 (64-bit Intel) using the Visual
-Studio 2017 compiler and the [Windows SDK for Windows
-10](https://dev.windows.com/en-us/downloads/windows-10-sdk). The previous Visual
+Studio 2017 compiler and the Windows SDK for Windows
+10 which are both included in the [Build Tools for Visual Studio 2017](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2017) package. The previous Visual
 Studio 2015 and earlier versions of Windows also work.
 
 #### CMake
@@ -334,6 +334,8 @@ Download and install ActiveState Perl from its [download
 page](http://www.activestate.com/activeperl/downloads). This should add Perl to
 the system path.
 
+Note you need version < 5.26 because build scripts are not compatible with changes made in 5.26.
+
 #### Prepare
 
 The following sections assume an open command prompt with the current working
@@ -347,11 +349,11 @@ cd binexport
 #### IDA SDK
 
 Unzip the contents of the IDA SDK into `third_party/idasdk`. Shown commands are
-for IDA 7.0, assuming that Git was installed into the default directory first:
+for IDA 7.2, assuming that Git was installed into the default directory first:
 
 ```bat
-"%ProgramFiles%\Git\usr\bin\unzip" PATH\TO\idasdk70.zip -d third_party
-rename third_party\idasdk70 idasdk
+"%ProgramFiles%\Git\usr\bin\unzip" PATH\TO\idasdk72.zip -d third_party
+rename third_party\idasdk72 idasdk
 ```
 
 #### Build BinExport
@@ -361,13 +363,13 @@ With all prerequisites in place, configure and build BinExport:
 ```bat
 if not exist build_msvc mkdir build_msvc
 cd build_msvc
-cmake ../cmake -DIdaSdk_ROOT_DIR=%cd%\..\third_party\idasdk ^
-    -G "Visual Studio 15 2017 Win64"
-cmake --build . --config Release --install -- /clp:NoSummary;ForceNoAlign /v:minimal
+"%ProgramFIles(x86)%\Microsoft Visual Studio\2017\BuildTools\VC\Auxiliary\Build\vcvarsall.bat" x64
+cmake ../cmake -DIdaSdk_ROOT_DIR=%cd%\..\third_party\idasdk -G "Visual Studio 15 2017 Win64"
+msbuild binexport-super.sln /p:Configuration=Release /m
 ```
 
 For Visual Studio 2015 replace the `-G` argument with `"Visual Studio 14 2015
-Win64"`.
+Win64"` and the corresponding path to the environment setup file.
 
 This will download and build OpenSSL, Protocol Buffers and the PostgreSQL client
 libraries. If all went well, the `build_msvc\binexport-prefix` directory should
