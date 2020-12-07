@@ -27,10 +27,12 @@ FetchContent_Declare(googletest
   GIT_REPOSITORY https://github.com/google/googletest.git
   GIT_TAG        b1fbd33c06cdb0024c67733c6fdec2009d17b384 # 2020-11-24
 )
-FetchContent_MakeAvailable(googletest)
-binexport_check_target(gtest)
-binexport_check_target(gtest_main)
-binexport_check_target(gmock)
+if(BUILD_TESTING OR BINEXPORT_ENABLE_TESTS)
+  FetchContent_MakeAvailable(googletest)
+  binexport_check_target(gtest)
+  binexport_check_target(gtest_main)
+  binexport_check_target(gmock)
+endif()
 
 # Abseil
 FetchContent_Declare(absl
