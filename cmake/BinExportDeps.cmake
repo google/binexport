@@ -22,20 +22,10 @@ endfunction()
 
 include(FetchContent)
 
-# Googletest
-FetchContent_Declare(googletest
-  GIT_REPOSITORY https://github.com/google/googletest.git
-  GIT_TAG        0320f517fd920866d918e564105d68fd4362040a # 2022-06-01
-)
-FetchContent_MakeAvailable(googletest)
-binexport_check_target(gtest)
-binexport_check_target(gtest_main)
-binexport_check_target(gmock)
-
 # Abseil
 FetchContent_Declare(absl
   GIT_REPOSITORY https://github.com/abseil/abseil-cpp
-  GIT_TAG        ab2e2c4f6062999afaf960759dfccb77f350c702 # 2022-09-15
+  GIT_TAG        7f3c0d781134d25b24e0b55346482a2d366bf59b # 2022-09-30
 )
 set(ABSL_CXX_STANDARD ${CMAKE_CXX_STANDARD} CACHE STRING "" FORCE)
 set(ABSL_PROPAGATE_CXX_STD ON CACHE BOOL "" FORCE)
@@ -43,10 +33,20 @@ set(ABSL_USE_EXTERNAL_GOOGLETEST ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(absl)
 binexport_check_target(absl::core_headers)
 
+# Googletest (need to come after Abseil due to C++ standard propagation)
+FetchContent_Declare(googletest
+  GIT_REPOSITORY https://github.com/google/googletest.git
+  GIT_TAG        93f08be653c36ddc6943e9513fc14c7292b4d007 # 2022-09-30
+)
+FetchContent_MakeAvailable(googletest)
+binexport_check_target(gtest)
+binexport_check_target(gtest_main)
+binexport_check_target(gmock)
+
 # Protocol Buffers
 FetchContent_Declare(protobuf
   GIT_REPOSITORY https://github.com/protocolbuffers/protobuf.git
-  GIT_TAG        66ed6dd75b0b5f0d62a9bf90509638f380cbcd7f # 2022-09-15
+  GIT_TAG        488b8b91f81e6f7d50bd5f879ba429d50b0ba901 # 2022-10-01
 )
 set(protobuf_ABSL_PROVIDER "package" CACHE STRING "" FORCE)
 set(protobuf_BUILD_TESTS OFF CACHE BOOL "" FORCE)
@@ -69,7 +69,7 @@ if(BINEXPORT_ENABLE_BINARYNINJA)
   else()
     set(_binexport_binaryninjacore_suffix "")
     set(_binexport_binaryninja_git_tag
-        "22c0d1f1f85d9438ece720761060c1011c24b388") # 2022-08-29
+        "727d2be6872c878b5ed49b8dd33c23a6543826f6") # 2022-09-30
   endif()
   FetchContent_Declare(binaryninjaapi
     GIT_REPOSITORY https://github.com/Vector35/binaryninja-api.git
