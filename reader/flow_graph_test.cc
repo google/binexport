@@ -14,10 +14,8 @@
 
 #include "third_party/zynamics/binexport/reader/flow_graph.h"
 
-#include "base/logging.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
-#include "third_party/absl/strings/str_cat.h"
 #include "third_party/zynamics/binexport/binexport.h"
 #include "third_party/zynamics/binexport/reader/graph_utility.h"
 #include "third_party/zynamics/binexport/reader/instruction.h"
@@ -79,7 +77,6 @@ TEST_F(FlowGraphTest, ReadValidData) {
 // the instructions from the specified protocol buffer, and the instructions
 // match the instructions specified the test is successful.
 TEST_F(FlowGraphTest, GetInstructions) {
-  // Reproduce test data with the following queries:
   FlowGraph::Vertex vertex = flow_graph_->GetVertex(0x322152);
   int counter = 0;
   for (Instructions::const_iterator it =
@@ -132,7 +129,6 @@ TEST_F(FlowGraphTest, GetCallTargetsMultiple) {
       proto_, proto_.flow_graph(2),
       GetAllInstructionAddresses(proto_)));
   const auto& vertex = flow_graph->GetVertex(0x00322310);
-  LOG(INFO) << vertex;
   std::vector<Address> call_targets;
   flow_graph->GetCallTargets(vertex, std::back_inserter(call_targets));
   EXPECT_THAT(call_targets.size(), Eq(6));
