@@ -85,12 +85,14 @@ target_link_libraries(binexport_base INTERFACE
   ${Protobuf_LIBRARIES}  # Same as protobuf::libprotobuf
 )
 
-# Interface library to be used by tests that don't need data files
-add_library(binexport_test_base INTERFACE)
-target_link_libraries(binexport_test_base INTERFACE
-  gtest_main
-  gmock
-)
+if(BUILD_TESTING AND BINEXPORT_BUILD_TESTING)
+  # Interface library to be used by tests that don't need data files
+  add_library(binexport_test_base INTERFACE)
+  target_link_libraries(binexport_test_base INTERFACE
+    gtest_main
+    gmock
+  )
+endif()
 
 # BinExport format version 2 proto library
 protobuf_generate_cpp(binexport2_proto binexport2_proto_h binexport2.proto)
@@ -157,15 +159,17 @@ if(BUILD_TESTING AND BINEXPORT_BUILD_TESTING)
   gtest_discover_tests(binexport_shared_test)
 endif()
 
-# Test helper library
-add_library(binexport_testing
-  testing.cc
-  testing.h
-)
-target_link_libraries(binexport_testing PUBLIC
-  binexport_test_base
-  binexport_shared
-)
+if(BUILD_TESTING AND BINEXPORT_BUILD_TESTING)
+  # Test helper library
+  add_library(binexport_testing
+    testing.cc
+    testing.h
+  )
+  target_link_libraries(binexport_testing PUBLIC
+    binexport_test_base
+    binexport_shared
+  )
+endif()
 
 # IDB export test
 if(BUILD_TESTING AND BINEXPORT_BUILD_TESTING)

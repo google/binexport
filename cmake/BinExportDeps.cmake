@@ -33,15 +33,17 @@ set(ABSL_USE_EXTERNAL_GOOGLETEST ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(absl)
 binexport_check_target(absl::core_headers)
 
-# Googletest (need to come after Abseil due to C++ standard propagation)
-FetchContent_Declare(googletest
-  GIT_REPOSITORY https://github.com/google/googletest.git
-  GIT_TAG        93f08be653c36ddc6943e9513fc14c7292b4d007 # 2022-09-30
-)
-FetchContent_MakeAvailable(googletest)
-binexport_check_target(gtest)
-binexport_check_target(gtest_main)
-binexport_check_target(gmock)
+if(BUILD_TESTING AND BINEXPORT_BUILD_TESTING)
+  # Googletest (needs to come after Abseil due to C++ standard propagation)
+  FetchContent_Declare(googletest
+    GIT_REPOSITORY https://github.com/google/googletest.git
+    GIT_TAG        93f08be653c36ddc6943e9513fc14c7292b4d007 # 2022-09-30
+  )
+  FetchContent_MakeAvailable(googletest)
+  binexport_check_target(gtest)
+  binexport_check_target(gtest_main)
+  binexport_check_target(gmock)
+endif()
 
 # Protocol Buffers
 FetchContent_Declare(protobuf
@@ -94,6 +96,11 @@ if(BINEXPORT_ENABLE_BINARYNINJA)
   set(HEADLESS TRUE)
   if(binaryninjaapi_POPULATED)
     add_subdirectory("${binaryninjaapi_SOURCE_DIR}" "${binaryninjaapi_BINARY_DIR}")
+    if(MSVC)
+      target_compile_options(binaryninjaapi PRIVATE
+        /wd4005  # macro redefinition (NOMINMAX, _CRT_SECURE_NO_WARNINGS)
+      )
+    endif()
   endif()
   binexport_check_target(binaryninjaapi)
   add_library(BinaryNinja::API ALIAS binaryninjaapi)
