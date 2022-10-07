@@ -54,4 +54,4 @@ jobs:
     - name: Test
       working-directory: ${{ runner.workspace }}/build
       shell: bash
-      run: ctest --build-config "${BUILD_TYPE}" --output-on-failure
+      run: ctest --build-config "${BUILD_TYPE}" --output-on-failure -R '^[A-Z]'
