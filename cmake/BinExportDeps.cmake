@@ -43,6 +43,20 @@ if(BUILD_TESTING AND BINEXPORT_BUILD_TESTING)
   binexport_check_target(gtest)
   binexport_check_target(gtest_main)
   binexport_check_target(gmock)
+
+  if(BINEXPORT_BUILD_BENCHMARK)
+    # Benchmark
+    FetchContent_Declare(benchmark
+      GIT_REPOSITORY https://github.com/google/benchmark.git
+      GIT_TAG        d2a8a4ee41b923876c034afb939c4fc03598e622 # 2022-10-04
+    )
+    set(BENCHMARK_CXX_STANDARD ${CMAKE_CXX_STANDARD} CACHE STRING "" FORCE)
+    set(BENCHMARK_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
+    set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
+    set(BENCHMARK_USE_BUNDLED_GTEST OFF CACHE BOOL "" FORCE)
+    FetchContent_MakeAvailable(benchmark)
+    binexport_check_target(benchmark::benchmark)
+  endif()
 endif()
 
 # Protocol Buffers
