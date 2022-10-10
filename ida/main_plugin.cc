@@ -336,6 +336,14 @@ Plugin::LoadStatus Plugin::Init() {
 
   LOG(INFO) << kBinExportName << " " << kBinExportDetailedVersion << ", "
             << kBinExportCopyright;
+#ifndef __EA64__
+  LOG(INFO) << "Note: IDA for 32-bit binaries is being sunsetted. Please "
+               "migrate to IDA for";
+  LOG(INFO) << "      64-bit binaries. BinDiff and BinExport will migrate to "
+               "64-bit only as";
+  LOG(INFO) << "      well. See https://hex-rays.com/products/ida/news/8_1/ "
+               "for details.";
+#endif
 
   addon_info_t addon_info;
   addon_info.id = "com.google.binexport";
