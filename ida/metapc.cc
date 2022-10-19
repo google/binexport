@@ -343,23 +343,15 @@ void HandleImmediate(const insn_t& instruction, const op_t& operand,
     name.name = GetGlobalStructureName(instruction.ea, immediate, operand_num);
     name.type = Expression::TYPE_GLOBALVARIABLE;
   }
-  // By default IDA will perform a sign/zero extension, returning a 32 bit
-  // operand size even when the encoding only contains an 8 bit value. This is
-  // consistent with what the CPU actually computes, but not with the intel
-  // opcode specification. BeaEngine follows the Intel convention, leading to
-  // lots of spurious diffs between the two disassemblers. This here is an
-  // attempt at undoing the sign extension.
-  size_t operand_size = GetOperandByteSize(instruction, operand);
-  if (operand.offb && instruction.size - operand.offb < operand_size) {
-    // Immediates are typically the last bytes of an instruction.
-    operand_size = instruction.size - operand.offb;
-    // Mask the last n bytes of the original immediate.
-    Address mask =
-        std::numeric_limits<Address>::max() >> (64 - 8 * operand_size);
-    immediate &= mask;
-  }
+  // By default IDA will perform a sign/zero extension, returning a 32-bit/
+  // 64-bit operand size even when the encoding only contains an 8 bit value.
+  // This is consistent with what the CPU actually computes. Other disassemblers
+  // also have adopted this behavior (Binary Ninja, Ghidra), so the code that
+  // used to attempt to undo this sign extension (by masking the last bytes of
+  // the original immediate) has been removed.
   Expression* expression = nullptr;
-  if (operand_size != 0) {
+  if (const size_t operand_size = GetOperandByteSize(instruction, operand);
+      operand_size != 0) {
     expression = Expression::Create(expression, GetSizePrefix(operand_size), 0,
                                     Expression::TYPE_SIZEPREFIX, 0);
     expressions->push_back(expression);
