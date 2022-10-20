@@ -20,7 +20,10 @@
 #include <ostream>
 
 #include "third_party/zynamics/binexport/flow_graph.h"
+#include "third_party/zynamics/binexport/util/format.h"
 #include "third_party/zynamics/binexport/util/hash.h"
+
+using security::binexport::FormatAddress;
 
 namespace {
 
@@ -59,8 +62,8 @@ void CallGraph::Render(std::ostream* stream,
                        const FlowGraph& flow_graph) const {
   for (const auto& function_address : functions_) {
     const Function* function = flow_graph.GetFunction(function_address);
-    *stream << std::hex << std::setfill('0') << std::uppercase << std::setw(8)
-            << function_address << " " << std::setfill(' ') << std::setw(8)
+    *stream << FormatAddress(function_address) << " " << std::setfill(' ')
+            << std::setw(8)
             << (function->GetType(false) != Function::TYPE_STANDARD
                     ? Function::GetTypeName(function->GetType(false))
                     : "")
@@ -81,11 +84,9 @@ void CallGraph::Render(std::ostream* stream,
 
   for (const auto& edge : edges_) {
     const Function* function = flow_graph.GetFunction(edge.target_);
-    *stream << std::hex << std::setfill('0') << std::uppercase << std::setw(8)
-            << edge.function_->GetEntryPoint() << ":" << std::hex
-            << std::setfill('0') << std::uppercase << std::setw(8)
-            << edge.source_ << " -> " << std::hex << std::setfill('0')
-            << std::uppercase << std::setw(8) << edge.target_ << "    "
+    *stream << FormatAddress(edge.function_->GetEntryPoint()) << ":"
+            << FormatAddress(edge.source_) << " -> "
+            << FormatAddress(edge.target_) << "    "
             << edge.function_->GetName(Function::DEMANGLED) << " -> "
             << (function ? function->GetName(Function::DEMANGLED) : "") << "\n";
   }

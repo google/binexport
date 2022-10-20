@@ -29,6 +29,14 @@ TEST(FormatUtilTest, FormatAddress) {
   EXPECT_THAT(FormatAddress(0x7FF00000004926F4), StrEq("7FF00000004926F4"));
 }
 
+TEST(FormatUtilTest, FormatFunctionName) {
+  EXPECT_THAT(FormatFunctionName(0x08), StrEq("sub_8"));
+  EXPECT_THAT(FormatFunctionName(0x59DE50), StrEq("sub_59DE50"));
+  EXPECT_THAT(FormatFunctionName(0x00000001004940B0), StrEq("sub_1004940B0"));
+  EXPECT_THAT(FormatFunctionName(0x7FF00000004926F4),
+              StrEq("sub_7FF00000004926F4"));
+}
+
 TEST(FormatUtilTest, HumanReadableDuration) {
   EXPECT_THAT(HumanReadableDuration(3600), StrEq("1h"));
   EXPECT_THAT(HumanReadableDuration(1800), StrEq("30m"));

@@ -17,6 +17,10 @@ std::string FormatAddress(Address address) {
   return absl::StrFormat("%016X", address);
 }
 
+std::string FormatFunctionName(Address address) {
+  return absl::StrFormat("sub_%X", address);
+}
+
 std::string HumanReadableDuration(double seconds) {
   std::string result;
 
@@ -38,9 +42,9 @@ std::string HumanReadableDuration(double seconds) {
     absl::StrAppend(&result, (need_space ? " " : ""), full_minutes, "m");
     need_space = true;
   }
-  if (full_seconds > 0 || absl::ToInt64Milliseconds(full) > 0) {
+  if (full_seconds > 0 || full > absl::ZeroDuration()) {
     absl::StrAppend(&result, (need_space ? " " : ""), full_seconds);
-    if (absl::ToInt64Milliseconds(full) > 0) {
+    if (full > absl::ZeroDuration()) {
       absl::StrAppend(&result, ".", absl::ToInt64Milliseconds(full) / 10);
     }
     absl::StrAppend(&result, "s");

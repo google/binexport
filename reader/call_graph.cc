@@ -22,6 +22,7 @@
 #include "third_party/absl/memory/memory.h"
 #include "third_party/absl/strings/str_cat.h"
 #include "third_party/zynamics/binexport/reader/graph_utility.h"
+#include "third_party/zynamics/binexport/util/format.h"
 
 namespace security::binexport {
 
@@ -57,7 +58,7 @@ void VertexPropertyFromVertexProto(const BinExport2::CallGraph::Vertex& vertex,
     vertex_property->flags |= CallGraph::kVertexName;
   }
   if (!(vertex_property->flags & CallGraph::kVertexName)) {
-    vertex_property->name = absl::StrCat("sub_", absl::Hex(vertex.address()));
+    vertex_property->name = FormatFunctionName(vertex.address());
   }
   if (vertex.has_module_index()) {
     vertex_property->module_name = proto.module(vertex.module_index()).name();

@@ -22,7 +22,7 @@
 
 namespace security::binexport {
 
-// Returns a hexadecimal string representation of an address suitable for log
+// Returns a hexadecimal string representation of an address, suitable for log
 // lines and display in UIs. The returned string will always be either 8 or 16
 // uppercase hexadecimal characters, depending on whether the address is larger
 // than 0xFFFFFFFF. In any case, the string is left padded with zeroes.
@@ -33,6 +33,12 @@ namespace security::binexport {
 //   FormatAddress(0x00000001004940B0) => "00000001004940B0"
 //   FormatAddress(0x7FF00000004926F4) => "7FF00000004926F4"
 std::string FormatAddress(Address address);
+
+// Returns an artificial name for the function at address, suitable for display
+// in UIs. The returned string will start with "sub_" and uppercase hexadecmial
+// characters. The address is _not_ formatted with leading zeroes, following
+// what IDA Pro and Binary Ninja do.
+std::string FormatFunctionName(Address address);
 
 // Formats a duration given in seconds or as an absl::Duration into a human
 // readable time based on hours. Maximum precision is 1/100th of a second.

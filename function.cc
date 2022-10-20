@@ -24,9 +24,12 @@
 
 #include "third_party/absl/log/check.h"
 #include "third_party/absl/log/log.h"
-#include "third_party/absl/strings/ascii.h"
 #include "third_party/absl/strings/str_cat.h"
 #include "third_party/zynamics/binexport/call_graph.h"
+#include "third_party/zynamics/binexport/util/format.h"
+
+using security::binexport::FormatAddress;
+using security::binexport::FormatFunctionName;
 
 int Function::instance_count_ = 0;
 Function::StringCache Function::string_cache_;
@@ -48,8 +51,7 @@ Function::~Function() {
 
 void Function::Render(std::ostream* stream, const CallGraph& call_graph,
                       const FlowGraph& flow_graph) const {
-  *stream << std::hex << std::setfill('0') << std::uppercase << std::setw(8)
-          << GetEntryPoint() << "    " << GetModuleName()
+  *stream << FormatAddress(GetEntryPoint()) << "    " << GetModuleName()
           << (GetModuleName().empty() ? "" : ".") << GetName(DEMANGLED) << "\n";
   for (const auto& basic_block_ptr : basic_blocks_) {
     basic_block_ptr->Render(stream, call_graph, flow_graph);
@@ -57,10 +59,8 @@ void Function::Render(std::ostream* stream, const CallGraph& call_graph,
   }
 
   for (const auto& edge : edges_) {
-    *stream << std::hex << std::setfill('0') << std::uppercase << std::setw(8)
-            << edge.source << " -> " << std::hex << std::setfill('0')
-            << std::uppercase << std::setw(8) << edge.target << " "
-            << edge.GetTypeName() << "\n";
+    *stream << FormatAddress(edge.source) << " -> "
+            << FormatAddress(edge.target) << " " << edge.GetTypeName() << "\n";
   }
   if (!edges_.empty()) {
     *stream << "\n";
@@ -140,8 +140,7 @@ std::string Function::GetName(Name type) const {
   if (HasRealName()) {
     return type == MANGLED || demangled_name_.empty() ? name_ : demangled_name_;
   }
-  return absl::StrCat("sub_", absl::AsciiStrToUpper(absl::StrCat(absl::Hex(
-                                  GetEntryPoint(), absl::kZeroPad8))));
+  return FormatFunctionName(GetEntryPoint());
 }
 
 bool Function::HasRealName() const { return !name_.empty(); }
@@ -198,9 +197,8 @@ int Function::GetBasicBlockIndexForAddress(Address address) const {
     }
   }
 
-  LOG(WARNING) << absl::StrCat("No basic block for ",
-                               absl::Hex(address, absl::kZeroPad8), " in ",
-                               GetEntryPoint());
+  LOG(WARNING) << absl::StrCat("No basic block for ", FormatAddress(address),
+                               " in ", GetEntryPoint());
   return basic_blocks_.size();
 }
 

@@ -18,6 +18,9 @@
 #include <ostream>
 
 #include "third_party/zynamics/binexport/call_graph.h"
+#include "third_party/zynamics/binexport/util/format.h"
+
+using security::binexport::FormatAddress;
 
 BasicBlock::Cache BasicBlock::cache_;
 
@@ -57,8 +60,7 @@ BasicBlock* BasicBlock::Create(BasicBlockInstructions* instructions) {
 void BasicBlock::Render(std::ostream* stream, const CallGraph& call_graph,
                         const FlowGraph& flow_graph) const {
   for (const auto& instruction : *this) {
-    *stream << std::hex << std::setfill('0') << std::uppercase << std::setw(8)
-            << instruction.GetAddress() << " ";
+    *stream << FormatAddress(instruction.GetAddress()) << " ";
     instruction.Render(stream, flow_graph);
     std::pair<Comments::const_iterator, Comments::const_iterator> comments =
         call_graph.GetComments(instruction.GetAddress());

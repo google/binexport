@@ -19,6 +19,7 @@
 
 #include "third_party/zynamics/binexport/call_graph.h"
 #include "third_party/zynamics/binexport/flow_graph.h"
+#include "third_party/zynamics/binexport/util/format.h"
 
 namespace security::binexport {
 
