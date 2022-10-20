@@ -155,7 +155,7 @@ Instruction ParseInstructionBinaryNinja(
     return Instruction(address);
   }
 
-  // TODO(cblichmann): Is this always the case in Binja?
+  // Inside of a basic block, this is always true in Binary Ninja
   const Address next_instruction = address + instruction.length;
 
   // TODO(cblichmann): Create expression trees for operands
@@ -180,34 +180,44 @@ Instruction ParseInstructionBinaryNinja(
 
 void AnalyzeFlow(
     BinaryNinja::BinaryView* view,
-    const BinaryNinja::InstructionInfo& binja_instruction,
+    const BinaryNinja::InstructionInfo& bn_instruction,
     Instruction* instruction, FlowGraph* flow_graph, CallGraph* call_graph,
     AddressReferences* address_references,
     EntryPointManager* entry_point_manager /*, const ModuleMap& modules*/) {
   const Address address = instruction->GetAddress();
-  bool has_flow = binja_instruction.branchCount == 0;
+  bool has_flow = bn_instruction.branchCount == 0;
   bool handled = false;
-
-  for (int i = 0; i < binja_instruction.branchCount; ++i) {
-    const auto branch_target = binja_instruction.branchTarget[i];
-    switch (binja_instruction.branchType[i]) {
+  bool unresolved = false;
+  for (int i = 0; i < bn_instruction.branchCount; ++i) {
+    const uint64_t branch_target = bn_instruction.branchTarget[i];
+    const BNBranchType branch_type = bn_instruction.branchType[i];
+    switch (branch_type) {
       case BNBranchType::UnconditionalBranch:
-        flow_graph->AddEdge(FlowGraphEdge(address, branch_target,
-                                          FlowGraphEdge::TYPE_UNCONDITIONAL));
-        address_references->emplace_back(
-            address, GetSourceExpressionId(*instruction, branch_target),
-            branch_target, TYPE_UNCONDITIONAL);
-        entry_point_manager->Add(branch_target,
-                                 EntryPoint::Source::JUMP_DIRECT);
-        handled = true;
+      case BNBranchType::IndirectBranch:
+      case BNBranchType::UserDefinedBranch:
+      case BNBranchType::ExceptionBranch:
+        if (branch_target != 0) {
+          flow_graph->AddEdge(FlowGraphEdge(address, branch_target,
+                                            FlowGraphEdge::TYPE_UNCONDITIONAL));
+          address_references->emplace_back(
+              address, GetSourceExpressionId(*instruction, branch_target),
+              branch_target, TYPE_UNCONDITIONAL);
+          entry_point_manager->Add(branch_target,
+                                   branch_type == BNBranchType::IndirectBranch
+                                       ? EntryPoint::Source::JUMP_INDIRECT
+                                       : EntryPoint::Source::JUMP_DIRECT);
+          handled = true;
+        }
         break;
       case BNBranchType::CallDestination:
-        if (IsPossibleFunction(view, branch_target/*, modules*/)) {
+        if (IsPossibleFunction(view, branch_target /*, modules*/)) {
           call_graph->AddFunction(branch_target);
           call_graph->AddEdge(address, branch_target);
           entry_point_manager->Add(branch_target,
                                    EntryPoint::Source::CALL_TARGET);
         }
+        ABSL_FALLTHROUGH_INTENDED;  // Do not add entry points for syscalls
+      case BNBranchType::SystemCall:
         instruction->SetFlag(FLAG_CALL, true);
         address_references->emplace_back(
             address, GetSourceExpressionId(*instruction, branch_target),
@@ -237,8 +247,17 @@ void AnalyzeFlow(
             EntryPoint::Source::JUMP_DIRECT);  // True is main branch
         handled = true;
         break;
-      default:
+      case BNBranchType::FunctionReturn:
+        handled = true;
         break;
+      case BNBranchType::UnresolvedBranch:
+        unresolved = true;
+        handled = true;
+        break;
+      default:
+        LOG(WARNING) << absl::StrCat("Unknown branch type ", branch_type,
+                                     " at ", FormatAddress(address), " target ",
+                                     FormatAddress(branch_target));
     }
   }
 
@@ -246,34 +265,47 @@ void AnalyzeFlow(
     // Regular code flow
     entry_point_manager->Add(instruction->GetNextInstruction(),
                              EntryPoint::Source::CODE_FLOW);
+  } else {
+    // Reset flow flag. Unlike with IDA, we don't have access to flow info in
+    // ParseInstructionBinaryNinja() without using LLIL.
+    instruction->SetFlag(FLAG_FLOW, false);
   }
 
-  const std::vector<BinaryNinja::ReferenceSource> xrefs =
-      view->GetCodeReferences(address);
-  const std::vector<BinaryNinja::ReferenceSource> callers =
-      view->GetCallers(address);
-  const bool unconditional_jump = false;
-  int num_out_edges =
-      (unconditional_jump ? 1 : 0) + xrefs.size() + callers.size();
+  if (BinaryNinja::Ref<BinaryNinja::BasicBlock> bn_basic_block =
+          view->GetRecentBasicBlockForAddress(address)) {
+    if (BinaryNinja::Ref<BinaryNinja::Function> bn_function =
+            bn_basic_block->GetFunction()) {
+      BinaryNinja::ReferenceSource ref_source = {
+          /*func=*/bn_function,
+          /*arch=*/view->GetDefaultArchitecture(),
+          /*addr=*/address};
+      std::vector<uint64_t> xrefs = view->GetCodeReferencesFrom(ref_source);
 
-  if (num_out_edges > 1) {  // Switch jump table
-    auto table_address = std::numeric_limits<Address>::max();
-    for (const auto& xref : xrefs) {
-      flow_graph->AddEdge(
-          FlowGraphEdge(address, xref.addr, FlowGraphEdge::TYPE_SWITCH));
-      address_references->emplace_back(
-          address, GetSourceExpressionId(*instruction, xref.addr), xref.addr,
-          AddressReferenceType::TYPE_SWITCH);
-      entry_point_manager->Add(xref.addr, EntryPoint::Source::JUMP_TABLE);
-      table_address = std::min(table_address, static_cast<Address>(xref.addr));
-      handled = true;
+      auto table_address = std::numeric_limits<Address>::max();
+      for (const auto& xref : xrefs) {
+        // TODO(cblichmann): If we have a basic block, then it's an actual
+        //                   code reference (see Binary Ninja #3559).
+        const bool code_reference = view->GetRecentBasicBlockForAddress(xref);
+        if (unresolved && code_reference) {
+          flow_graph->AddEdge(
+              FlowGraphEdge(address, xref, FlowGraphEdge::TYPE_SWITCH));
+          address_references->emplace_back(
+              address, GetSourceExpressionId(*instruction, xref), xref,
+              AddressReferenceType::TYPE_SWITCH);
+          entry_point_manager->Add(xref, EntryPoint::Source::JUMP_TABLE);
+          table_address = std::min(table_address, static_cast<Address>(xref));
+          handled = true;
+        }
+        // TODO(cblichmann): All address references
+      }
+      if (table_address != std::numeric_limits<Address>::max()) {
+        // Add a data reference to first address in switch table
+        address_references->emplace_back(
+            address, GetSourceExpressionId(*instruction, table_address),
+            table_address, AddressReferenceType::TYPE_DATA);
+      }
     }
-    // Add a data reference to first address in switch table
-    address_references->emplace_back(
-        address, GetSourceExpressionId(*instruction, table_address),
-        table_address, AddressReferenceType::TYPE_DATA);
   }
-  // TODO(cblichmann): Address references, indirect calls...
 }
 
 void AnalyzeFlowBinaryNinja(BinaryNinja::BinaryView* view,
@@ -328,27 +360,27 @@ void AnalyzeFlowBinaryNinja(BinaryNinja::BinaryView* view,
 
     auto instr_bytes =
         GetBytes<std::vector<Byte>>(view, address, max_instr_len);
-    BinaryNinja::InstructionInfo binja_instruction;
+    BinaryNinja::InstructionInfo bn_instruction;
     if (instr_bytes.empty() ||
         !default_arch->GetInstructionInfo(&instr_bytes[0], address,
-                                          max_instr_len, binja_instruction)) {
+                                          max_instr_len, bn_instruction)) {
       continue;
     }
 
-    std::vector<BinaryNinja::InstructionTextToken> binja_tokens;
-    size_t instr_len = binja_instruction.length;
+    std::vector<BinaryNinja::InstructionTextToken> bn_tokens;
+    size_t instr_len = bn_instruction.length;
     if (!default_arch->GetInstructionText(&instr_bytes[0], address, instr_len,
-                                          binja_tokens)) {
+                                          bn_tokens)) {
       continue;
     }
 
     Instruction new_instruction = ParseInstructionBinaryNinja(
-        address, binja_instruction, binja_tokens, call_graph, flow_graph);
+        address, bn_instruction, bn_tokens, call_graph, flow_graph);
     if (new_instruction.HasFlag(FLAG_INVALID)) {
       continue;
     }
-    AnalyzeFlow(view, binja_instruction, &new_instruction, flow_graph,
-                call_graph, &address_references, &entry_point_manager);
+    AnalyzeFlow(view, bn_instruction, &new_instruction, flow_graph, call_graph,
+                &address_references, &entry_point_manager);
     // call_graph->AddStringReference(address, GetStringReference(address));
     // GetComments(ida_instruction, &call_graph->GetComments());
 
@@ -378,14 +410,28 @@ void AnalyzeFlowBinaryNinja(BinaryNinja::BinaryView* view,
   LOG(INFO) << "Binary Ninja specific post processing";
   for (const auto& [address, function] : flow_graph->GetFunctions()) {
     // Find function name
-    auto bn_symbol_ref = view->GetSymbolByAddress(address);
-    if (!bn_symbol_ref) {
+    BinaryNinja::Ref<BinaryNinja::Symbol> bn_symbol =
+        view->GetSymbolByAddress(address);
+    if (!bn_symbol) {
       continue;
     }
 
-    function->SetName(
-        bn_symbol_ref->GetRawName(),
-        BNRustSimplifyStrToStr(bn_symbol_ref->GetFullName().c_str()));
+    function->SetName(bn_symbol->GetRawName(),
+                      BNRustSimplifyStrToStr(bn_symbol->GetFullName().c_str()));
+
+    if (bn_symbol->GetType() == BNSymbolType::ImportedFunctionSymbol) {
+      function->SetType(Function::TYPE_IMPORTED);
+      // TODO(cblichmann): Figure out how to access the module that the symbol
+      //                   was imported from.
+    }
+    if (function->GetType(true) == Function::TYPE_NONE ||
+        function->GetType(false) == Function::TYPE_STANDARD) {
+      if (function->GetBasicBlocks().empty()) {
+        function->SetType(Function::TYPE_IMPORTED);
+      } else {
+        function->SetType(Function::TYPE_STANDARD);
+      }
+    }
   }
 
   const auto processing_time = absl::Seconds(timer.elapsed());
@@ -416,20 +462,22 @@ absl::Status ExportBinaryView(BinaryNinja::BinaryView* view, Writer* writer) {
   {
     EntryPointManager function_manager(&entry_points, "functions");
     EntryPointManager call_manager(&entry_points, "calls");
-    for (const auto& func_ref : view->GetAnalysisFunctionList()) {
-      auto symbol_ref = func_ref->GetSymbol();
-      switch (symbol_ref->GetType()) {
+    for (const BinaryNinja::Ref<BinaryNinja::Function>& bn_function :
+         view->GetAnalysisFunctionList()) {
+      BinaryNinja::Ref<BinaryNinja::Symbol> bn_symbol =
+          bn_function->GetSymbol();
+      switch (bn_symbol->GetType()) {
         case BNSymbolType::FunctionSymbol:
-          function_manager.Add(symbol_ref->GetAddress(),
+          function_manager.Add(bn_symbol->GetAddress(),
                                EntryPoint::Source::FUNCTION_PROLOGUE);
           break;
         case BNSymbolType::ImportedFunctionSymbol:
-          call_manager.Add(symbol_ref->GetAddress(),
+          call_manager.Add(bn_symbol->GetAddress(),
                            EntryPoint::Source::CALL_TARGET);
           break;
         default:
-          LOG(WARNING) << symbol_ref->GetShortName()
-                       << " has unimplemented type " << symbol_ref->GetType();
+          LOG(WARNING) << bn_symbol->GetShortName()
+                       << " has unimplemented type " << bn_symbol->GetType();
       }
     }
   }
@@ -466,8 +514,8 @@ void Plugin::Run(BinaryNinja::BinaryView* view) {
 }
 
 bool Plugin::Init() {
-  if (auto status = InitLogging(LoggingOptions{},
-                                absl::make_unique<BinaryNinjaLogSink>());
+  if (auto status =
+          InitLogging(LoggingOptions{}, std::make_unique<BinaryNinjaLogSink>());
       !status.ok()) {
     BinaryNinja::LogError(
         "Error initializing logging, skipping BinExport plugin: %s",
