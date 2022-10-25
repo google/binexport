@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-cmake_minimum_required(VERSION 3.14..3.22)
+cmake_minimum_required(VERSION 3.14..3.24)
 cmake_policy(VERSION 3.14)
 project(binexport VERSION 12)  # Only major version is used
 
@@ -37,13 +37,23 @@ if(BUILD_TESTING AND BINEXPORT_BUILD_TESTING)
 endif()
 
 # Make Google-style includes work
-set(_binexport_src "${BINEXPORT_BINARY_DIR}/src_include/third_party/zynamics")
-set(_binexport_gen "${BINEXPORT_BINARY_DIR}/gen_include/third_party/zynamics")
-create_directory_symlink("${BINEXPORT_SOURCE_DIR}" "${_binexport_src}/binexport")
-create_directory_symlink("${absl_SOURCE_DIR}/absl" "${_binexport_src}/../absl")
-create_directory_symlink("${BINEXPORT_BINARY_DIR}" "${_binexport_gen}/binexport")
+create_directory_symlink(i
+  "${BINEXPORT_SOURCE_DIR}"
+  "${BINEXPORT_BINARY_DIR}/src_include/third_party/zynamics/binexport"
+)
+create_directory_symlink(
+  "${absl_SOURCE_DIR}/absl"
+  "${BINEXPORT_BINARY_DIR}/src_include/third_party/absl"
+)
+create_directory_symlink(
+  "${BINEXPORT_BINARY_DIR}"
+  "${BINEXPORT_BINARY_DIR}/gen_include/third_party/zynamics/binexport"
+)
 # For Google3 workspaces
-create_directory_symlink("${BINEXPORT_SOURCE_DIR}/third_party/boost_parts/boost" "${_binexport_src}/../boost/allowed")
+create_directory_symlink(
+  "${BINEXPORT_SOURCE_DIR}/third_party/boost_parts/boost"
+  "${BINEXPORT_BINARY_DIR}/src_include/third_party/boost/allowed"
+)
 
 # Find the Git revision number, if applicable
 # TODO(cblichmann): Move this to Util.cmake
@@ -74,12 +84,12 @@ endif()
 # Interface library with include paths used by BinExport
 add_library(binexport_base INTERFACE)
 target_include_directories(binexport_base INTERFACE
-  ${PROJECT_SOURCE_DIR}
-  ${PROJECT_SOURCE_DIR}/stubs
-  ${PROJECT_BINARY_DIR}/gen_include
-  ${PROJECT_BINARY_DIR}/src_include
-  ${Boost_INCLUDE_DIR}
-  ${Protobuf_INCLUDE_DIRS}
+  "${PROJECT_SOURCE_DIR}"
+  "${PROJECT_SOURCE_DIR}/stubs"
+  "${PROJECT_BINARY_DIR}/gen_include"
+  "${PROJECT_BINARY_DIR}/src_include"
+  "${Boost_INCLUDE_DIR}"
+  "${Protobuf_INCLUDE_DIR}"
 )
 target_link_libraries(binexport_base INTERFACE
   ${Protobuf_LIBRARIES}  # Same as protobuf::libprotobuf
@@ -99,8 +109,8 @@ protobuf_generate_cpp(binexport2_proto binexport2_proto_h binexport2.proto)
 
 # Utility library code shared with BinDiff
 add_library(binexport_shared STATIC
-  ${binexport2_proto_h}
-  ${binexport2_proto}
+  "${binexport2_proto_h}"
+  "${binexport2_proto}"
   architectures.h
   binexport.cc
   binexport.h
@@ -299,6 +309,6 @@ if(BUILD_TESTING AND BINEXPORT_BUILD_TESTING)
     binexport_testing
   )
   gtest_discover_tests(binexport_reader_test PROPERTIES
-    ENVIRONMENT "TEST_SRCDIR=${_binexport_src}"
+    ENVIRONMENT "TEST_SRCDIR=${BINEXPORT_BINARY_DIR}/src_include/third_party/zynamics"
   )
 endif()

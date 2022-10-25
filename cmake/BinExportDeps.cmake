@@ -29,6 +29,8 @@ FetchContent_Declare(absl
 )
 set(ABSL_CXX_STANDARD ${CMAKE_CXX_STANDARD} CACHE STRING "" FORCE)
 set(ABSL_PROPAGATE_CXX_STD ON CACHE BOOL "" FORCE)
+# Protobuf's utf8_range fork insists on this being set
+set(ABSL_ROOT_DIR "${absl_SOURCE_DIR}" CACHE STRING "" FORCE)
 set(ABSL_USE_EXTERNAL_GOOGLETEST ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(absl)
 binexport_check_target(absl::core_headers)
@@ -62,7 +64,7 @@ endif()
 # Protocol Buffers
 FetchContent_Declare(protobuf
   GIT_REPOSITORY https://github.com/protocolbuffers/protobuf.git
-  GIT_TAG        488b8b91f81e6f7d50bd5f879ba429d50b0ba901 # 2022-10-01
+  GIT_TAG        3b4fdac42a6ec145412953ae578e7eb0cfcb800d # 2022-10-25
 )
 set(protobuf_ABSL_PROVIDER "package" CACHE STRING "" FORCE)
 set(protobuf_BUILD_TESTS OFF CACHE BOOL "" FORCE)
@@ -72,6 +74,10 @@ set(protobuf_WITH_ZLIB OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(protobuf)
 binexport_check_target(protobuf::libprotobuf)
 binexport_check_target(protobuf::protoc)
+target_include_directories(utf8_validity PUBLIC
+  "${BINEXPORT_BINARY_DIR}/src_include"
+  "${protobuf_SOURCE_DIR}"
+)
 set(Protobuf_INCLUDE_DIR "${protobuf_SOURCE_DIR}/src" CACHE INTERNAL "")
 set(Protobuf_LIBRARIES protobuf::libprotobuf CACHE INTERNAL "")
 find_package(Protobuf 3.14 REQUIRED) # Make protobuf_generate_cpp available
