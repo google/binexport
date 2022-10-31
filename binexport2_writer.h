@@ -30,14 +30,15 @@ class BinExport2Writer : public Writer {
                    const std::string& executable_hash,
                    const std::string& architecture);
 
-  absl::Status Write(const CallGraph& call_graph, const FlowGraph& flow_graph,
-                     const Instructions& instructions,
+  absl::Status Write(const ::CallGraph& call_graph,
+                     const ::FlowGraph& flow_graph,
+                     const ::Instructions& instructions,
                      const AddressReferences& address_references,
                      const AddressSpace& address_space) override;
 
-  absl::Status WriteToProto(const CallGraph& call_graph,
-                            const FlowGraph& flow_graph,
-                            const Instructions& instructions,
+  absl::Status WriteToProto(const ::CallGraph& call_graph,
+                            const ::FlowGraph& flow_graph,
+                            const ::Instructions& instructions,
                             const AddressReferences& address_references,
                             const AddressSpace& address_space,
                             BinExport2* proto) const;
