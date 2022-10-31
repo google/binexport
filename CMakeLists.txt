@@ -37,7 +37,7 @@ if(BUILD_TESTING AND BINEXPORT_BUILD_TESTING)
 endif()
 
 # Make Google-style includes work
-create_directory_symlink(i
+create_directory_symlink(
   "${BINEXPORT_SOURCE_DIR}"
   "${BINEXPORT_BINARY_DIR}/src_include/third_party/zynamics/binexport"
 )
