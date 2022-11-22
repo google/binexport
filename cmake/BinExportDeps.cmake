@@ -25,21 +25,24 @@ include(FetchContent)
 # Abseil
 FetchContent_Declare(absl
   GIT_REPOSITORY https://github.com/abseil/abseil-cpp
-  GIT_TAG        7f3c0d781134d25b24e0b55346482a2d366bf59b # 2022-09-30
+  GIT_TAG        a09d210567dfcd9c1c63b255dbaec84537f6b458 # 2022-11-22
+  GIT_SHALLOW    TRUE
+  GIT_SUBMODULES ""
 )
 set(ABSL_CXX_STANDARD ${CMAKE_CXX_STANDARD} CACHE STRING "" FORCE)
 set(ABSL_PROPAGATE_CXX_STD ON CACHE BOOL "" FORCE)
-# Protobuf's utf8_range fork insists on this being set
-set(ABSL_ROOT_DIR "${absl_SOURCE_DIR}" CACHE STRING "" FORCE)
 set(ABSL_USE_EXTERNAL_GOOGLETEST ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(absl)
+# Protobuf's utf8_range fork insists on this being set
+set(ABSL_ROOT_DIR "${absl_SOURCE_DIR}" CACHE STRING "" FORCE)
 binexport_check_target(absl::core_headers)
 
 if(BUILD_TESTING AND BINEXPORT_BUILD_TESTING)
   # Googletest (needs to come after Abseil due to C++ standard propagation)
   FetchContent_Declare(googletest
     GIT_REPOSITORY https://github.com/google/googletest.git
-    GIT_TAG        93f08be653c36ddc6943e9513fc14c7292b4d007 # 2022-09-30
+    GIT_TAG        519beb0e52c842729b4b53731d27c0e0c32ab4a2 # 2022-11-21
+    GIT_SHALLOW    TRUE
   )
   FetchContent_MakeAvailable(googletest)
   binexport_check_target(gtest)
@@ -51,6 +54,7 @@ if(BUILD_TESTING AND BINEXPORT_BUILD_TESTING)
     FetchContent_Declare(benchmark
       GIT_REPOSITORY https://github.com/google/benchmark.git
       GIT_TAG        d2a8a4ee41b923876c034afb939c4fc03598e622 # 2022-10-04
+      GIT_SHALLOW    TRUE
     )
     set(BENCHMARK_CXX_STANDARD ${CMAKE_CXX_STANDARD} CACHE STRING "" FORCE)
     set(BENCHMARK_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
@@ -64,7 +68,10 @@ endif()
 # Protocol Buffers
 FetchContent_Declare(protobuf
   GIT_REPOSITORY https://github.com/protocolbuffers/protobuf.git
-  GIT_TAG        3b4fdac42a6ec145412953ae578e7eb0cfcb800d # 2022-10-25
+  GIT_TAG        8809a113bc0a00b685b787a03d0698aa8c3e10e8 # 2022-11-21
+  GIT_SHALLOW    TRUE
+  GIT_SUBMODULES third_party/jsoncpp
+                 third_party/utf8_range
 )
 set(protobuf_ABSL_PROVIDER "package" CACHE STRING "" FORCE)
 set(protobuf_BUILD_TESTS OFF CACHE BOOL "" FORCE)
