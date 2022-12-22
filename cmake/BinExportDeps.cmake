@@ -25,7 +25,7 @@ include(FetchContent)
 # Abseil
 FetchContent_Declare(absl
   GIT_REPOSITORY https://github.com/abseil/abseil-cpp
-  GIT_TAG        a09d210567dfcd9c1c63b255dbaec84537f6b458 # 2022-11-22
+  GIT_TAG        de8322344a06067b02ab38616d267f1c75aa2514 # 2022-12-22
   GIT_SHALLOW    TRUE
   GIT_SUBMODULES ""
 )
@@ -68,7 +68,7 @@ endif()
 # Protocol Buffers
 FetchContent_Declare(protobuf
   GIT_REPOSITORY https://github.com/protocolbuffers/protobuf.git
-  GIT_TAG        8809a113bc0a00b685b787a03d0698aa8c3e10e8 # 2022-11-21
+  GIT_TAG        ce6c668a5ee687255561b5fb804ab5f61df9b06f # 2022-11-22
   GIT_SHALLOW    TRUE
   GIT_SUBMODULES third_party/jsoncpp
                  third_party/utf8_range
