@@ -1,4 +1,4 @@
-// Copyright 2011-2022 Google LLC
+// Copyright 2011-2023 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -42,10 +42,7 @@ class BaseType {
     kFunctionPrototype
   };
 
-  BaseType()
-      : id_(NextTypeId()),
-        pointer_(nullptr),
-        category_(kAtomic) {}
+  BaseType() : id_(NextTypeId()), pointer_(nullptr), category_(kAtomic) {}
 
   using BaseTypes = std::vector<const BaseType*>;
   using MemberTypes = std::vector<MemberType*>;

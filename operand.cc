@@ -1,4 +1,4 @@
-// Copyright 2011-2022 Google LLC
+// Copyright 2011-2023 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -69,13 +69,9 @@ void Operand::EmptyCache() {
   global_id_ = 0;
 }
 
-const Operand::OperandCache& Operand::GetOperands() {
-  return operand_cache_;
-}
+const Operand::OperandCache& Operand::GetOperands() { return operand_cache_; }
 
-int Operand::GetId() const {
-  return id_;
-}
+int Operand::GetId() const { return id_; }
 
 Expressions::const_iterator Operand::cbegin() const {
   return expressions_.begin() + expression_index_;

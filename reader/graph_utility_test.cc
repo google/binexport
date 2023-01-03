@@ -1,4 +1,4 @@
-// Copyright 2011-2022 Google LLC
+// Copyright 2011-2023 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,10 +14,9 @@
 
 #include "third_party/zynamics/binexport/reader/graph_utility.h"
 
+#include <boost/graph/adjacency_list.hpp>  // NOLINT
 #include <utility>
 #include <vector>
-
-#include <boost/graph/adjacency_list.hpp>  // NOLINT
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"

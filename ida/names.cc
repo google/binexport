@@ -1,4 +1,4 @@
-// Copyright 2011-2022 Google LLC
+// Copyright 2011-2023 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -170,7 +170,7 @@ size_t GetOperandByteSize(const insn_t& instruction, const op_t& operand) {
       return 6;  // 48 bit
     case dt_double:
     case dt_qword:
-      return 8;  // 64 bit
+      return 8;        // 64 bit
     case dt_packreal:  // 96 bit
       return 12;
     case dt_byte16:
@@ -178,7 +178,7 @@ size_t GetOperandByteSize(const insn_t& instruction, const op_t& operand) {
     case dt_byte32:
       return 32;  // 256 bit
     case dt_byte64:
-      return 64;  // 512 bit
+      return 64;   // 512 bit
     case dt_ldbl:  // Variable size double
       return ph.sizeof_ldbl();
     case dt_tbyte:  // Variable size

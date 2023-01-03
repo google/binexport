@@ -1,4 +1,4 @@
-// Copyright 2011-2022 Google LLC
+// Copyright 2011-2023 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -52,8 +52,7 @@ void UpdateInstructionInDegree(Instructions* instructions,
 }  // namespace
 
 void ReconstructFlowGraph(Instructions* instructions,
-                          const FlowGraph& flow_graph,
-                          CallGraph* call_graph) {
+                          const FlowGraph& flow_graph, CallGraph* call_graph) {
   UpdateInstructionInDegree(instructions, flow_graph);
 
   // Add all instructions with an in-degree count of 0 as function entry points.

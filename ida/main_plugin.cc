@@ -1,4 +1,4 @@
-// Copyright 2011-2022 Google LLC
+// Copyright 2011-2023 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -125,15 +125,15 @@ absl::Status ExportIdb(Writer* writer) {
 }
 
 int ExportBinary(const std::string& filename) {
-    const std::string hash =
-        GetInputFileSha256().value_or(GetInputFileMd5().value_or(""));
-    BinExport2Writer writer(filename, GetModuleName(), hash,
-                            GetArchitectureName().value());
-    if (absl::Status status = ExportIdb(&writer); !status.ok()) {
-      LOG(INFO) << "Error exporting: " << std::string(status.message());
-      warning("Error exporting: %s\n", std::string(status.message()).c_str());
-      return 666;
-    }
+  const std::string hash =
+      GetInputFileSha256().value_or(GetInputFileMd5().value_or(""));
+  BinExport2Writer writer(filename, GetModuleName(), hash,
+                          GetArchitectureName().value());
+  if (absl::Status status = ExportIdb(&writer); !status.ok()) {
+    LOG(INFO) << "Error exporting: " << std::string(status.message());
+    warning("Error exporting: %s\n", std::string(status.message()).c_str());
+    return 666;
+  }
   return eOk;
 }
 

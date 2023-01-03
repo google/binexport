@@ -1,4 +1,4 @@
-// Copyright 2011-2022 Google LLC
+// Copyright 2011-2023 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -391,9 +391,8 @@ void FlowGraph::MergeBasicBlocks(const CallGraph& call_graph) {
     BasicBlock* source_basic_block = BasicBlock::FindContaining(edge.source);
     if (!source_basic_block) {
       LOG(INFO) << absl::StrCat("No source basic block for edge ",
-                                   absl::Hex(edge.source, absl::kZeroPad8),
-                                   " -> ",
-                                   absl::Hex(edge.target, absl::kZeroPad8));
+                                absl::Hex(edge.source, absl::kZeroPad8), " -> ",
+                                absl::Hex(edge.target, absl::kZeroPad8));
       return true;
     }
 

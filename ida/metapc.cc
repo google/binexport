@@ -1,4 +1,4 @@
-// Copyright 2011-2022 Google LLC
+// Copyright 2011-2023 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -494,7 +494,7 @@ Instruction ParseInstructionIdaMetaPc(const insn_t& instruction,
   if (IsStringInstruction(mnemonic)) {
     for (size_t operand_position = 0;
          operand_position < UA_MAXOP &&
-             instruction.ops[operand_position].type != o_void;
+         instruction.ops[operand_position].type != o_void;
          ++operand_position) {
       if (mnemonic == "outs" && operand_position != 1) {
         continue;

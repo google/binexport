@@ -1,4 +1,4 @@
-// Copyright 2011-2022 Google LLC
+// Copyright 2011-2023 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -97,8 +97,8 @@ int LibraryManager::UseLibrary(const std::string& library, Linkage linkage) {
 void LibraryManager::InitializeImportsBase(int bitness) {
   CHECK(bitness == 32 || bitness == 64);
   bitness_ = bitness;
-  current_imported_address_ = bitness_ == 64 ?
-      kFirstImportedAddress64 : kFirstImportedAddress32;
+  current_imported_address_ =
+      bitness_ == 64 ? kFirstImportedAddress64 : kFirstImportedAddress32;
 }
 
 bool LibraryManager::GetReference(Address source, Address* target) const {

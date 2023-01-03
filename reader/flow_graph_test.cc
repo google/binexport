@@ -1,4 +1,4 @@
-// Copyright 2011-2022 Google LLC
+// Copyright 2011-2023 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -36,8 +36,7 @@ class FlowGraphTest : public testing::Test {
   void SetUp() override {
     proto_ = GetBinExportForTesting(kBinExport2Item);
     flow_graph_ = FlowGraph::FromBinExport2Proto(
-        proto_, proto_.flow_graph(0),
-        GetAllInstructionAddresses(proto_));
+        proto_, proto_.flow_graph(0), GetAllInstructionAddresses(proto_));
   }
 
   std::unique_ptr<FlowGraph> flow_graph_;
@@ -112,8 +111,7 @@ TEST_F(FlowGraphTest, GetInstructions) {
 // number of call targets, the test is successful.
 TEST_F(FlowGraphTest, GetCallTargets) {
   const auto& flow_graph(FlowGraph::FromBinExport2Proto(
-      proto_, proto_.flow_graph(1),
-      GetAllInstructionAddresses(proto_)));
+      proto_, proto_.flow_graph(1), GetAllInstructionAddresses(proto_)));
   const auto& vertex = flow_graph->GetVertex(0x003221BE);
   std::vector<Address> call_targets;
   flow_graph->GetCallTargets(vertex, std::back_inserter(call_targets));
@@ -126,8 +124,7 @@ TEST_F(FlowGraphTest, GetCallTargets) {
 // number of call targets, the test is successful.
 TEST_F(FlowGraphTest, GetCallTargetsMultiple) {
   const auto& flow_graph(FlowGraph::FromBinExport2Proto(
-      proto_, proto_.flow_graph(2),
-      GetAllInstructionAddresses(proto_)));
+      proto_, proto_.flow_graph(2), GetAllInstructionAddresses(proto_)));
   const auto& vertex = flow_graph->GetVertex(0x00322310);
   std::vector<Address> call_targets;
   flow_graph->GetCallTargets(vertex, std::back_inserter(call_targets));

@@ -1,4 +1,4 @@
-// Copyright 2011-2022 Google LLC
+// Copyright 2011-2023 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -45,42 +45,27 @@ void BaseType::SetName(const std::string& name) { name_ = name; }
 
 const std::string& BaseType::GetName() const { return name_; }
 
-void BaseType::SetSize(size_t size) {
-  size_ = size;
-}
+void BaseType::SetSize(size_t size) { size_ = size; }
 
-size_t BaseType::GetSize() const {
-  return size_;
-}
+size_t BaseType::GetSize() const { return size_; }
 
-void BaseType::SetSigned(bool is_signed) {
-  is_signed_ = is_signed;
-}
+void BaseType::SetSigned(bool is_signed) { is_signed_ = is_signed; }
 
-bool BaseType::IsSigned() const {
-  return is_signed_;
-}
+bool BaseType::IsSigned() const { return is_signed_; }
 
-void BaseType::SetPointer(const BaseType* pointer) {
-  pointer_ = pointer;
-}
+void BaseType::SetPointer(const BaseType* pointer) { pointer_ = pointer; }
 
-const BaseType* BaseType::GetPointer() const {
-  return pointer_;
-}
+const BaseType* BaseType::GetPointer() const { return pointer_; }
 
 void BaseType::AddMember(MemberType* member) {
-  members_.insert(std::lower_bound(members_.begin(),
-      members_.end(), member, &SortMemberTypes), member);
+  members_.insert(std::lower_bound(members_.begin(), members_.end(), member,
+                                   &SortMemberTypes),
+                  member);
 }
 
-const BaseType::MemberTypes& BaseType::GetMembers() const {
-  return members_;
-}
+const BaseType::MemberTypes& BaseType::GetMembers() const { return members_; }
 
-void BaseType::SetCategory(TypeCategory category) {
-  category_ = category;
-}
+void BaseType::SetCategory(TypeCategory category) { category_ = category; }
 
 std::string BaseType::GetCategoryString() const {
   switch (category_) {
@@ -103,8 +88,8 @@ std::string BaseType::GetCategoryString() const {
 }
 
 bool IsWithinMember(const MemberType* member, int offset) {
-  return offset >= member->offset
-      && offset < member->offset + member->type->GetSize();
+  return offset >= member->offset &&
+         offset < member->offset + member->type->GetSize();
 }
 
 // Finds the member x in the struct that occupies space in the range
@@ -118,11 +103,9 @@ const MemberType* BaseType::ResolveMember(const BaseType* base_type,
 
   MemberType search_member;
   search_member.offset = offset;
-  MemberTypes::const_iterator cit =
-      std::lower_bound(base_type->GetMembers().begin(),
-                       base_type->GetMembers().end(),
-                       &search_member,
-                       &SortMemberTypes);
+  MemberTypes::const_iterator cit = std::lower_bound(
+      base_type->GetMembers().begin(), base_type->GetMembers().end(),
+      &search_member, &SortMemberTypes);
   // We might have found the subsequent member (since lower bound gives us the
   // first member that is greater or equal regarding our search offset).
   if (cit == base_type->GetMembers().end() || !IsWithinMember(*cit, offset)) {
