@@ -26,10 +26,10 @@ it is just code that happens to be owned by Google.
 
 BinExport is the exporter component of
 [BinDiff](https://www.zynamics.com/software.html). It is a plugin/extension for
-the the disassemblers IDA Pro, Binary Ninja and Ghida that exports disassembly
+the the disassemblers IDA Pro, Binary Ninja and Ghidra that exports disassembly
 data into the Protocol Buffer format that BinDiff requires.
 
-An experimental version for the open source sofware reverse engineering suite
+An experimental version for the open source software reverse engineering suite
 Ghidra is available in the `java/BinExport` directory.
 
 This repository contains the complete source code necessary to build BinExport
@@ -44,9 +44,9 @@ plugins directory. These are the default paths:
 
 | OS      | Plugin path                                 |
 | ------- | ------------------------------------------- |
-| Linux   | `/opt/idapro-7.6/plugins`                   |
-| macOS   | `/Applications/IDA Pro 7.6/idabin/plugins`  |
-| Windows | `%ProgramFiles%\IDA 7.6\plugins`            |
+| Linux   | `/opt/idapro-8.2/plugins`                   |
+| macOS   | `/Applications/IDA Pro 8.2/idabin/plugins`  |
+| Windows | `%ProgramFiles%\IDA 8.2\plugins`            |
 
 To install just for the current user, copy the files into one of these
 directories instead:
@@ -86,7 +86,7 @@ plugins directory. These are the default paths for the current user:
 3.  If installed correctly, the log window contains a line similar to this one:
 
 ```
-BinExport 12 (@internal, Mar 12 2021), (c)2004-2011 zynamics GmbH, (c)2011-2022 Google LLC.
+BinExport 12 (@internal, Jan 3 2023), (c)2004-2011 zynamics GmbH, (c)2011-2023 Google LLC.
 ```
 
 ### Ghidra
@@ -217,9 +217,9 @@ There are quite a few dependencies to satisfy:
 *   GCC 9 or a recent version of Clang on Linux/macOS. On Windows, use the
     Visual Studio 2019 compiler and the Windows SDK for Windows 10.
 *   Git 1.8 or higher
-*   IDA Pro only: IDA SDK 7.6 (unpack into `third_party/idasdk`)
+*   IDA Pro only: IDA SDK 7.6 or higher (unpack into `third_party/idasdk`)
 *   Dependencies that will be downloaded:
-    *   Abseil, GoogleTest and Protocol Buffers (3.14)
+    *   Abseil, GoogleTest and Protocol Buffers (3.21)
     *   Binary Ninja SDK
 
 ### Linux
@@ -238,9 +238,9 @@ sudo apt install -qq --no-install-recommends build-essential
 Install the latest stable version of CMake:
 
 ```bash
-wget https://github.com/Kitware/CMake/releases/download/v3.20.1/cmake-3.20.1-linux-x86_64.sh
+wget https://github.com/Kitware/CMake/releases/download/v3.25.1/cmake-3.25.1-linux-x86_64.sh
 mkdir ${HOME}/cmake
-sh cmake-3.20.1-Linux-x86_64.sh --prefix=${HOME}/cmake --exclude-subdir
+sh cmake-3.25.1-Linux-x86_64.sh --prefix=${HOME}/cmake --exclude-subdir
 export PATH=${HOME}/cmake/bin:${PATH}
 ```
 
@@ -294,8 +294,8 @@ as `binexport12_binaryninja.so` (for Binary Ninja).
 
 #### Prerequisites
 
-The preferred build environment is Mac OS X 10.15 "Catalina" using Xcode
-12. Using macOS 11 "Big Sur" should also work.
+The preferred build environment is macOS 12 "Monterey" using Xcode
+14. Using macOS 13 "Ventura" should also work.
 
 After installing the Developer Tools, make sure to install the command-line
 tools as well:
@@ -313,7 +313,7 @@ Download the latest stable version of CMake from the official site and mount its
 disk image:
 
 ```bash
-curl -fsSL https://github.com/Kitware/CMake/releases/download/v3.20.1/cmake-3.20.1-Darwin-x86_64.dmg \
+curl -fsSL https://github.com/Kitware/CMake/releases/download/v3.25.1/cmake-3.25.1-Darwin-x86_64.dmg \
     -o $HOME/Downloads/cmake-osx.dmg
 hdiutil attach $HOME/Downloads/cmake-osx.dmg
 ```
@@ -322,8 +322,8 @@ At this point you will need to review and accept CMake's license agreement. Now
 install CMake:
 
 ```bash
-sudo cp -Rf /Volumes/cmake-3.20.1-Darwin-x86_64/CMake.app /Applications/
-hdiutil detach /Volumes/cmake-3.20.1-Darwin-x86_64
+sudo cp -Rf /Volumes/cmake-3.25.1-Darwin-x86_64/CMake.app /Applications/
+hdiutil detach /Volumes/cmake-3.25.1-Darwin-x86_64
 sudo /Applications/CMake.app/Contents/bin/cmake-gui --install
 ```
 
@@ -374,12 +374,12 @@ as `binexport12_binaryninja.dylib` (for Binary Ninja).
 ### Windows
 
 The preferred build environment is Windows 10 (64-bit Intel) using the Visual
-Studio 2019 compiler and the [Windows SDK for Windows
+Studio 2022 compiler and the [Windows SDK for Windows
 10](https://dev.windows.com/en-us/downloads/windows-10-sdk).
 
 #### CMake
 
-Download and install the lastest stable CMake (3.20.1 at the time of writing)
+Download and install the latest stable CMake (3.25.1 at the time of writing)
 from its [download page](https://cmake.org/download/). Make sure to select
 "Add CMake to the system PATH for all users".
 
@@ -420,7 +420,7 @@ With all prerequisites in place, configure and build BinExport:
 if not exist build_msvc mkdir build_msvc
 cd build_msvc
 cmake .. ^
-    -G "Visual Studio 16 2019" ^
+    -G "Visual Studio 17 2022" ^
     -DCMAKE_BUILD_TYPE=Release ^
     "-DCMAKE_INSTALL_PREFIX=%cd%" ^
     -DBINEXPORT_ENABLE_IDAPRO=ON ^
