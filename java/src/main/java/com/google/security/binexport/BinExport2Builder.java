@@ -30,8 +30,6 @@ import ghidra.program.model.listing.Instruction;
 import ghidra.program.model.listing.Listing;
 import ghidra.program.model.listing.Parameter;
 import ghidra.program.model.listing.Program;
-import ghidra.program.model.listing.Variable;
-import ghidra.program.model.listing.VariableFilter;
 import ghidra.program.model.mem.MemoryAccessException;
 import ghidra.program.model.mem.MemoryBlock;
 import ghidra.program.model.scalar.Scalar;
@@ -44,7 +42,6 @@ import ghidra.util.exception.CancelledException;
 import ghidra.util.task.TaskMonitor;
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
@@ -134,9 +131,8 @@ public class BinExport2Builder {
   }
 
   private void buildOperands(Map<String, Integer> expressionIndices) {
-    var entries = new ArrayList<Map.Entry<String, Integer>>();
-    entries.addAll(expressionIndices.entrySet());
-    Collections.sort(entries, (a, b) -> a.getValue().compareTo(b.getValue()));
+    var entries = new ArrayList<>(expressionIndices.entrySet());
+    entries.sort(Entry.comparingByValue());
     for (var entry : entries) {
       builder.addOperandBuilder().addExpressionIndex(entry.getValue());
     }
@@ -150,8 +146,7 @@ public class BinExport2Builder {
       mnemonicHist.merge(mnemonicMapper.getInstructionMnemonic(instr), 1,
           Integer::sum);
     }
-    var mnemonicList = new ArrayList<Map.Entry<String, Integer>>();
-    mnemonicList.addAll(mnemonicHist.entrySet());
+    var mnemonicList = new ArrayList<>(mnemonicHist.entrySet());
     mnemonicList.sort(Comparator
         .comparingInt((ToIntFunction<Entry<String, Integer>>) Entry::getValue)
         .reversed().thenComparing(Entry::getKey));
@@ -236,7 +231,7 @@ public class BinExport2Builder {
 
       var protoBb = builder.addBasicBlockBuilder();
 
-      int instructionIndex = 0;
+      int instructionIndex;
       int beginIndex = -1;
       int endIndex = -1;
       for (Instruction instr : listing.getInstructions(bb, true)) {
@@ -344,7 +339,7 @@ public class BinExport2Builder {
     var callGraph = builder.getCallGraphBuilder();
     FunctionManager funcManager = program.getFunctionManager();
     monitor.setIndeterminate(false);
-    monitor.setMaximum(funcManager.getFunctionCount() * 2);
+    monitor.setMaximum(funcManager.getFunctionCount() * 2L);
     int i = 0;
     int id = 0;
     Map<Long, Integer> vertexIndices = new HashMap<>();
@@ -448,17 +443,14 @@ public class BinExport2Builder {
     Function fun = funMgr.getFunctionContaining(instr.getAddress());
     var params =
         fun.getParameters(
-            new VariableFilter() {
-              @Override
-              public boolean matches(Variable variable) {
-                var p = (Parameter) variable;
-                Address addr = fun.getEntryPoint().add(p.getFirstUseOffset());
-                System.out.printf(
-                    "P: %s, %d, %08X %s\n",
-                    p.getName(), p.getFirstUseOffset(), addr.getOffset(), p.getRegister());
+            variable -> {
+              var p = (Parameter) variable;
+              Address addr = fun.getEntryPoint().add(p.getFirstUseOffset());
+              System.out.printf(
+                  "P: %s, %d, %08X %s\n",
+                  p.getName(), p.getFirstUseOffset(), addr.getOffset(), p.getRegister());
 
-                return instr.getAddress().equals(addr);
-              }
+              return instr.getAddress().equals(addr);
             });
     var cuf = new CodeUnitFormat(new CodeUnitFormatOptions());
 
@@ -469,33 +461,35 @@ public class BinExport2Builder {
       for (final var sym : syms) {
         System.out.printf("    \"%s\"", sym.toString());
       }
-      System.out.printf("  ]\n");
+      System.out.print("  ]\n");
 
       Reference[] refs = instr.getOperandReferences(i);
       System.out.printf("  ref:#%d[\n", refs.length);
       for (var ref : refs) {
         var var = refMgr.getReferencedVariable(ref);
-        System.out.printf("    \"%s\" (%s) @%s\n", ref.toString(),
-            (var != null ? var.getName() : ""), var.getMinAddress().toString());
+        System.out.printf("    \"%s\"", ref.toString());
+        if (var != null) {
+          System.out.printf(" (%s) @%s", var.getName(), var.getMinAddress().toString());
+        }
+        System.out.print("\n");
       }
-      System.out.printf("  ]\n");
+      System.out.print("  ]\n");
 
       Object[] objs = instr.getOpObjects(i);
       System.out.printf("  obj:#%d[\n", objs.length);
       for (var obj : objs) {
-        System.out.printf("    %s: \"%s\"", obj.getClass().getName(),
-            obj.toString());
+        System.out.printf("    %s: \"%s\"", obj.getClass().getName(), obj);
         if (obj instanceof Register) {
           var reg = (Register) obj;
         } else if (obj instanceof Scalar) {
           var scalar = (Scalar) obj;
         }
-        System.out.printf("\n");
+        System.out.print("\n");
       }
-      System.out.printf("  ]\n");
-      System.out.printf(",\n");
+      System.out.print("  ]\n");
+      System.out.print(",\n");
     }
-    System.out.printf("}\n");
+    System.out.print("}\n");
     throw new RuntimeException();
   }
 
@@ -515,8 +509,8 @@ public class BinExport2Builder {
     return String.join("::", functionNameComponents);
   }
 
-  public BinExport2 build(TaskMonitor monitor) throws CancelledException {
-    this.monitor = monitor != null ? monitor : TaskMonitor.DUMMY;
+  public BinExport2 build(TaskMonitor taskMonitor) throws CancelledException {
+    monitor = taskMonitor != null ? taskMonitor : TaskMonitor.DUMMY;
 
     buildMetaInformation();
 
@@ -537,7 +531,7 @@ public class BinExport2Builder {
     buildBasicBlocks(instructionIndices, basicBlockIndices);
     // TODO(cblichmann): Implement these:
     // buildComments()
-    // buildStrings()
+    // buildStrings();
     // buildDataReferences()
     monitor.setMessage("Exporting flow graphs");
     buildFlowGraphs(basicBlockIndices);

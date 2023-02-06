@@ -61,7 +61,7 @@ public class BinExportExporter extends Exporter {
   /** Whether to subtract the program image base from addresses for export. */
   private boolean subtractImagebase = false;
 
-  /** Whether to remap Ghidra's mnenomics into IDA Pro style ones. */
+  /** Whether to remap Ghidra's mnemonics into IDA Pro style ones. */
   private boolean remapMnemonics = false;
 
   /** Whether to prepend "namespace::" to function names where the namespace is not "Global" */
@@ -109,14 +109,12 @@ public class BinExportExporter extends Exporter {
   }
 
   @Override
+  @SuppressWarnings("JdkImmutableCollections")
   public List<Option> getOptions(DomainObjectService domainObjectService) {
     return List.of(
-        new Option(IDAPRO_COMPAT_OPTGROUP, IDAPRO_COMPAT_OPT_SUBTRACT_IMAGEBASE,
-            Boolean.FALSE),
-        new Option(IDAPRO_COMPAT_OPTGROUP, IDAPRO_COMPAT_OPT_REMAP_MNEMONICS,
-            Boolean.FALSE),
-        new Option(IDAPRO_COMPAT_OPTGROUP, IDAPRO_COMPAT_OPT_PREPEND_NAMESPACE,
-            Boolean.FALSE));
+        new Option(IDAPRO_COMPAT_OPTGROUP, IDAPRO_COMPAT_OPT_SUBTRACT_IMAGEBASE, Boolean.FALSE),
+        new Option(IDAPRO_COMPAT_OPTGROUP, IDAPRO_COMPAT_OPT_REMAP_MNEMONICS, Boolean.FALSE),
+        new Option(IDAPRO_COMPAT_OPTGROUP, IDAPRO_COMPAT_OPT_PREPEND_NAMESPACE, Boolean.FALSE));
   }
 
   @Override
