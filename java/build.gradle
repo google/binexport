@@ -104,3 +104,7 @@ else {
     throw new GradleException("GHIDRA_INSTALL_DIR is not defined!")
 }
 //----------------------END "DO NOT MODIFY" SECTION-------------------------------
+
+// Fix for newer Gradle versions that do not allow undeclared dependencies
+tasks.named("extractIncludeProto").configure { dependsOn("copyDependencies") }
+
