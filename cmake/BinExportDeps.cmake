@@ -25,7 +25,7 @@ include(FetchContent)
 # Abseil
 FetchContent_Declare(absl
   GIT_REPOSITORY https://github.com/abseil/abseil-cpp
-  GIT_TAG        bb63a76710554cebbeb20306739a7b832be38c4a # 2023-01-13
+  GIT_TAG        9d43470921bef911145ad78a8e822ee1b297f937 # 2023-05-23
   GIT_SUBMODULES ""
 )
 set(ABSL_CXX_STANDARD ${CMAKE_CXX_STANDARD} CACHE STRING "" FORCE)
@@ -40,7 +40,7 @@ if(BUILD_TESTING AND BINEXPORT_BUILD_TESTING)
   # Googletest (needs to come after Abseil due to C++ standard propagation)
   FetchContent_Declare(googletest
     GIT_REPOSITORY https://github.com/google/googletest.git
-    GIT_TAG        356fc301251378e0f6fa6aa794d73714202887ac # 2023-01-12
+    GIT_TAG        45804691223635953f311cf31a10c632553bbfc3 # 2023-05-22
   )
   FetchContent_MakeAvailable(googletest)
   binexport_check_target(gtest)
@@ -51,7 +51,7 @@ if(BUILD_TESTING AND BINEXPORT_BUILD_TESTING)
     # Benchmark
     FetchContent_Declare(benchmark
       GIT_REPOSITORY https://github.com/google/benchmark.git
-      GIT_TAG        cfbc94960f4b65ff7fe9d825ad12677dbd164026 # 2023-01-16
+      GIT_TAG        4b13b3d47a9ad3bb4b83bde3c3841b2b0b5c5789 # 2023-05-15
     )
     set(BENCHMARK_CXX_STANDARD ${CMAKE_CXX_STANDARD} CACHE STRING "" FORCE)
     set(BENCHMARK_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
@@ -65,9 +65,8 @@ endif()
 # Protocol Buffers
 FetchContent_Declare(protobuf
   GIT_REPOSITORY https://github.com/protocolbuffers/protobuf.git
-  GIT_TAG        5d7e234745de992ddb6aabdffe1f9c80ac5d4ec4 # 2023-01-16
+  GIT_TAG        06e232dcd85ab52dc5e45aa1ea8bcd03f9a9a245 # 2023-05-23
   GIT_SUBMODULES third_party/jsoncpp
-                 third_party/utf8_range
 )
 set(protobuf_ABSL_PROVIDER "package" CACHE STRING "" FORCE)
 set(protobuf_BUILD_TESTS OFF CACHE BOOL "" FORCE)
