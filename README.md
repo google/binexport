@@ -217,7 +217,7 @@ There are quite a few dependencies to satisfy:
 *   GCC 9 or a recent version of Clang on Linux/macOS. On Windows, use the
     Visual Studio 2019 compiler and the Windows SDK for Windows 10.
 *   Git 1.8 or higher
-*   IDA Pro only: IDA SDK 7.6 or higher (unpack into `third_party/idasdk`)
+*   IDA Pro only: IDA SDK 8.0 or higher (unpack into `third_party/idasdk`)
 *   Dependencies that will be downloaded:
     *   Abseil, GoogleTest and Protocol Buffers (3.21)
     *   Binary Ninja SDK
@@ -226,7 +226,7 @@ There are quite a few dependencies to satisfy:
 
 #### Prerequisites
 
-The preferred build environment is Debian testing (version 10, "Buster").
+The preferred build environment is Debian 11 ("Bullseye").
 
 This should install all the necessary packages:
 
@@ -250,12 +250,12 @@ of the cloned repository.
 #### IDA SDK
 
 Unzip the contents of the IDA SDK into `third_party/idasdk`. Shown commands are
-for IDA 7.6:
+for IDA 8.0:
 
 ```bash
-unzip PATH/TO/idasdk76.zip -d third_party/idasdk
-mv third_party/idasdk/idasdk76/* third_party/idasdk
-rmdir third_party/idasdk/idasdk76
+unzip PATH/TO/idasdk_pro80.zip -d third_party/idasdk
+mv third_party/idasdk/idasdk_pro80/* third_party/idasdk
+rmdir third_party/idasdk/idasdk_pro80
 ```
 
 #### Build BinExport
@@ -294,8 +294,8 @@ as `binexport12_binaryninja.so` (for Binary Ninja).
 
 #### Prerequisites
 
-The preferred build environment is macOS 12 "Monterey" using Xcode
-14. Using macOS 13 "Ventura" should also work.
+The preferred build environment is macOS 13 "Ventura" using Xcode
+14.1. Using macOS 12 "Monterey" should also work.
 
 After installing the Developer Tools, make sure to install the command-line
 tools as well:
@@ -332,12 +332,12 @@ The last command makes CMake available in the system path.
 #### IDA SDK
 
 Unzip the contents of the IDA SDK into `third_party/idasdk`. Shown commands are
-for IDA 7.6:
+for IDA Pro 8.0:
 
 ```bash
-unzip PATH/TO/idasdk76.zip -d third_party/idasdk
-mv third_party/idasdk/idasdk76/* third_party/idasdk
-rmdir third_party/idasdk/idasdk76
+unzip PATH/TO/idasdk_pro80.zip -d third_party/idasdk
+mv third_party/idasdk/idasdk_pro80/* third_party/idasdk
+rmdir third_party/idasdk/idasdk_pro80
 ```
 
 #### Build BinExport
@@ -405,11 +405,11 @@ cd binexport
 #### IDA SDK
 
 Unzip the contents of the IDA SDK into `third_party/idasdk`. Shown commands are
-for IDA 7.6, assuming that Git was installed into the default directory first:
+for IDA 8.0, assuming that Git was installed into the default directory first:
 
 ```bat
-"%ProgramFiles%\Git\usr\bin\unzip" PATH\TO\idasdk76.zip -d third_party
-rename third_party\idasdk76 idasdk
+"%ProgramFiles%\Git\usr\bin\unzip" PATH\TO\idasdk_pro80.zip -d third_party
+rename third_party\idasdk_pro80 idasdk
 ```
 
 #### Build BinExport
