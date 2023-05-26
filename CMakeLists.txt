@@ -13,7 +13,13 @@
 # limitations under the License.
 
 cmake_minimum_required(VERSION 3.14..3.24)
+
 cmake_policy(VERSION 3.14)
+
+if(POLICY CMP0135)
+  cmake_policy(SET CMP0135 NEW)  # Set download timestamp to current time
+endif()
+
 project(binexport VERSION 12)  # Only major version is used
 
 # BinExport settings
