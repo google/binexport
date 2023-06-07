@@ -36,7 +36,7 @@ jobs:
 
     - name: Enable Developer Command Prompt (Windows)
       if: matrix.os == 'windows-2022'
-      uses: ilammy/msvc-dev-cmd@v1.7.0
+      uses: ilammy/msvc-dev-cmd@v1.12.1
 
     - name: Configure CMake
       working-directory: ${{ runner.workspace }}/build
@@ -55,3 +55,12 @@ jobs:
       working-directory: ${{ runner.workspace }}/build
       shell: bash
       run: ctest --build-config "${BUILD_TYPE}" --output-on-failure -R '^[A-Z]'
+
+    - name: Upload Build Artifacts
+      uses: actions/upload-artifact@v3.1.2
+      with:
+        name: BinExport-${{ runner.os }}
+        path: |
+          ${{ runner.workspace }}/build/binaryninja/binexport*
+          ${{ runner.workspace }}/build/ida/binexport*
+          ${{ runner.workspace }}/build/tools/binexport2dump*
