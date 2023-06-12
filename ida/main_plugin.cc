@@ -138,7 +138,7 @@ int ExportBinary(const std::string& filename) {
 }
 
 void idaapi ButtonBinaryExport(TWidget** /* fields */, int) {
-  const auto name(GetDefaultName(ExportMode::kBinary));
+  const std::string name = GetDefaultName(ExportMode::kBinary);
   const char* filename = ask_file(
       /*for_saving=*/true, name.c_str(), "%s",
       "FILTER BinExport v2 files|*.BinExport\nExport to BinExport v2");
@@ -166,7 +166,7 @@ int ExportText(const std::string& filename) {
 }
 
 void idaapi ButtonTextExport(TWidget** /* fields */, int) {
-  const auto name = GetDefaultName(ExportMode::kText);
+  const std::string name = GetDefaultName(ExportMode::kText);
   const char* filename = ask_file(
       /*for_saving=*/true, name.c_str(), "%s",
       "FILTER Text files|*.txt\nExport to Text");
@@ -314,7 +314,7 @@ ssize_t idaapi UiHook(void*, int event_id, va_list arguments) {
   return 0;  // Not reached
 }
 
-Plugin::LoadStatus Plugin::Init() {
+bool Plugin::Init() {
   alsologtostderr_ =
       absl::AsciiStrToUpper(GetArgument("AlsoLogToStdErr")) == "TRUE";
   log_filename_ = GetArgument("LogFile");
@@ -323,8 +323,8 @@ Plugin::LoadStatus Plugin::Init() {
                                     .set_log_filename(log_filename_),
                                 absl::make_unique<IdaLogSink>());
       !status.ok()) {
-    LOG(INFO) << "Error initializing logging, skipping BinExport plugin";
-    return PLUGIN_SKIP;
+    msg("Error initializing logging, skipping BinExport plugin\n");
+    return false;
   }
 
   if (const auto heuristic =
@@ -356,17 +356,17 @@ Plugin::LoadStatus Plugin::Init() {
 
   if (!hook_to_notification_point(HT_UI, UiHook, /*user_data=*/nullptr)) {
     LOG(INFO) << "Internal error: hook_to_notification_point() failed";
-    return PLUGIN_SKIP;
+    return false;
   }
 
   if (!add_idc_func(kBinExportBinaryIdcFunc) ||
       !add_idc_func(kBinExportTextIdcFunc) ||
       !add_idc_func(kBinExportStatisticsIdcFunc)) {
     LOG(INFO) << "Error registering IDC extension, skipping BinExport plugin";
-    return PLUGIN_SKIP;
+    return false;
   }
 
-  return PLUGIN_KEEP;
+  return true;
 }
 
 void Plugin::Terminate() {
@@ -398,12 +398,12 @@ using security::binexport::Plugin;
 
 plugin_t PLUGIN = {
     IDP_INTERFACE_VERSION,
-    PLUGIN_FIX,  // Plugin flags
-    []() { return Plugin::instance()->Init(); },
-    []() { Plugin::instance()->Terminate(); },
-    [](size_t argument) { return Plugin::instance()->Run(argument); },
+    PLUGIN_MULTI | PLUGIN_FIX,  // Plugin flags
+    Plugin::Register,
+    nullptr,           // Obsolete terminate callback
+    nullptr,           // Obsolete run callback
     Plugin::kComment,  // Statusline text
-    nullptr,           // Multi-line help about the plugin, unused
+    nullptr,           // Multiline help about the plugin, unused
     security::binexport::kBinExportName,  // Preferred short name of the plugin
     Plugin::kHotKey                       // Preferred hotkey to run the plugin
 };

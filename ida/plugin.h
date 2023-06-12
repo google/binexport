@@ -19,6 +19,7 @@
 
 // clang-format off
 #include "third_party/zynamics/binexport/ida/begin_idasdk.inc"  // NOLINT
+#include <idp.hpp>                                              // NOLINT
 #include <loader.hpp>                                           // NOLINT
 #include "third_party/zynamics/binexport/ida/end_idasdk.inc"    // NOLINT
 // clang-format on
@@ -31,8 +32,6 @@ namespace security::binexport {
 template <typename T>
 class IdaPlugin {
  public:
-  using LoadStatus = decltype(PLUGIN_OK);
-
   virtual ~IdaPlugin() = default;
 
   IdaPlugin(const IdaPlugin&) = delete;
@@ -43,11 +42,34 @@ class IdaPlugin {
     return instance;
   }
 
-  virtual LoadStatus Init() { return PLUGIN_OK; }
+  // Initializes the plugin and registers it with IDA Pro. Returns nullptr on
+  // error, in which case the plugin will be skipped.
+  static plugmod_t* Register() {
+    return instance()->Init() ? new PluginContext() : nullptr;
+  }
+
+  // Performs plugin initalization. Returns true on success, false otherwise.
+  // Care must be taken with functions/libraries that should only be
+  // called/initialized once per process. Since IDA 8.0, all new-style plugins
+  // have PLUGIN_MULTI semantics, which means Init() will be called once per
+  // database.
+  // Note: Since the IdaPlugin class does not initialize logging, returning
+  //       absl::Status makes little sense here.
+  virtual bool Init() { return true; }
+
   virtual bool Run(size_t argument) = 0;
   virtual void Terminate() {}
 
  protected:
+  class PluginContext : public plugmod_t {
+   public:
+    ~PluginContext() override { instance()->Terminate(); }
+
+    bool idaapi run(size_t argument) override {
+      return instance()->Run(argument);
+    }
+  };
+
   IdaPlugin() = default;
 };
 

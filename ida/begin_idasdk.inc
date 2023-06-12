@@ -56,7 +56,7 @@
 #pragma warning(disable : 4267)
 #endif
 
-// Include standard header that is implicitly assumed to be includeds
+// Include standard header that is implicitly assumed to be included
 // transitively by pro.h.
 #include <type_traits>
 
