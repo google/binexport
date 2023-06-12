@@ -35,14 +35,15 @@
 namespace {
 
 std::string FormatMessage(absl::string_view message, bool cancellable) {
-  return (cancellable ? "" : "HIDECANCEL\n") + std::string(message);
+  return absl::StrCat(cancellable ? "" : "HIDECANCEL\n", message);
 }
 
 }  // namespace
 
-WaitBox::WaitBox(absl::string_view message, WaitBox::Cancellable cancel_state)
+WaitBox::WaitBox(absl::string_view initial_message,
+                 WaitBox::Cancellable cancel_state)
     : cancellable_(cancel_state == WaitBox::kCancellable) {
-  show_wait_box("%s", FormatMessage(message, cancellable_).c_str());
+  show_wait_box("%s", FormatMessage(initial_message, cancellable_).c_str());
 }
 
 WaitBox::~WaitBox() { hide_wait_box(); }
@@ -50,7 +51,21 @@ WaitBox::~WaitBox() { hide_wait_box(); }
 bool WaitBox::IsCancelled() { return user_cancelled(); }
 
 void WaitBox::ReplaceText(absl::string_view message) const {
-  replace_wait_box("%s", FormatMessage(message, cancellable_).c_str());
+  struct ida_local ReplaceWaitBoxRequest : public exec_request_t {
+    ReplaceWaitBoxRequest(const WaitBox& wait_box, absl::string_view message)
+        : wait_box(wait_box), message(message) {}
+
+    int idaapi execute() override {
+      replace_wait_box("%s",
+                       FormatMessage(message, wait_box.cancellable_).c_str());
+      return 0;
+    }
+
+    const WaitBox& wait_box;
+    std::string message;
+  };
+  ReplaceWaitBoxRequest replace_wait_box(*this, message);
+  execute_sync(replace_wait_box, MFF_FAST);
 }
 
 absl::Status CopyToClipboard(absl::string_view data) {

@@ -30,12 +30,14 @@ class WaitBox {
  public:
   enum Cancellable { kNoCancel, kCancellable };
 
-  explicit WaitBox(absl::string_view message) : WaitBox(message, kNoCancel) {}
-  WaitBox(absl::string_view message, Cancellable cancel_state);
+  WaitBox(absl::string_view initial_message,
+          Cancellable cancel_state = kNoCancel);
   ~WaitBox();
 
   static bool IsCancelled();
 
+  // Replaces the current wait message. This function is thread-safe, and uses
+  // an exec_request_t to schedule the text change on the main thread.
   void ReplaceText(absl::string_view message) const;
 
  private:
