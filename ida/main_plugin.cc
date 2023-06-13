@@ -138,20 +138,12 @@ int ExportBinary(const std::string& filename) {
 }
 
 void idaapi ButtonBinaryExport(TWidget** /* fields */, int) {
-  const std::string name = GetDefaultName(ExportMode::kBinary);
-  const char* filename = ask_file(
-      /*for_saving=*/true, name.c_str(), "%s",
-      "FILTER BinExport v2 files|*.BinExport\nExport to BinExport v2");
-  if (!filename) {
-    return;
+  if (absl::StatusOr<std::string> filename = GetSaveFilename(
+          "Export to BinExport v2", GetDefaultName(ExportMode::kBinary),
+          {{"BinExport v2 files", "*.BinExport"}});
+      filename.ok()) {
+    ExportBinary(*filename);
   }
-
-  if (FileExists(filename) &&
-      ask_yn(0, "'%s' already exists - overwrite?", filename) != 1) {
-    return;
-  }
-
-  ExportBinary(filename);
 }
 
 int ExportText(const std::string& filename) {
@@ -166,25 +158,17 @@ int ExportText(const std::string& filename) {
 }
 
 void idaapi ButtonTextExport(TWidget** /* fields */, int) {
-  const std::string name = GetDefaultName(ExportMode::kText);
-  const char* filename = ask_file(
-      /*for_saving=*/true, name.c_str(), "%s",
-      "FILTER Text files|*.txt\nExport to Text");
-  if (!filename) {
-    return;
+  if (absl::StatusOr<std::string> filename =
+          GetSaveFilename("Export to Text", GetDefaultName(ExportMode::kText),
+                          {{"Text files", "*.txt"}});
+      filename.ok()) {
+    ExportText(*filename);
   }
-
-  if (FileExists(filename) &&
-      ask_yn(0, "'%s' already exists - overwrite?", filename) != 1) {
-    return;
-  }
-
-  ExportText(filename);
 }
 
 int ExportStatistics(const std::string& filename) {
   std::ofstream file(filename);
-  StatisticsWriter writer{file};
+  StatisticsWriter writer(file);
   if (absl::Status status = ExportIdb(&writer); !status.ok()) {
     LOG(INFO) << "Error exporting: " << std::string(status.message());
     warning("Error exporting: %s\n", std::string(status.message()).c_str());
@@ -194,20 +178,12 @@ int ExportStatistics(const std::string& filename) {
 }
 
 void idaapi ButtonStatisticsExport(TWidget** /* fields */, int) {
-  const auto name = GetDefaultName(ExportMode::kStatistics);
-  const char* filename = ask_file(
-      /*for_saving=*/true, name.c_str(), "%s",
-      "FILTER BinExport Statistics|*.statistics\nExport Statistics");
-  if (!filename) {
-    return;
+  if (absl::StatusOr<std::string> filename = GetSaveFilename(
+          "Export Statistics", GetDefaultName(ExportMode::kStatistics),
+          {{"BinExport Statistics", "*.statistics"}});
+      filename.ok()) {
+    ExportStatistics(*filename);
   }
-
-  if (FileExists(filename) &&
-      ask_yn(0, "'%s' already exists - overwrite?", filename) != 1) {
-    return;
-  }
-
-  ExportStatistics(filename);
 }
 
 const char* GetDialog() {

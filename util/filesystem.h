@@ -25,7 +25,7 @@
 #include "third_party/absl/strings/string_view.h"
 #include "third_party/zynamics/binexport/util/types.h"
 
-#ifdef WIN32
+#ifdef _WIN32
 // Some Abseil headers include Windows.h, so undo a few macros
 #undef CopyFile             // winbase.h
 #undef GetCurrentDirectory  // processenv.h

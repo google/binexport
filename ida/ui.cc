@@ -14,8 +14,10 @@
 
 #include "third_party/zynamics/binexport/ida/ui.h"
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <windows.h>
+#undef GetOpenFilename  // commdlg.h
+#undef GetSaveFilename  // commdlg.h
 #endif
 
 #include <string>
@@ -29,6 +31,7 @@
 #include "third_party/absl/status/status.h"
 #include "third_party/absl/strings/str_cat.h"
 #include "third_party/absl/strings/string_view.h"
+#include "third_party/zynamics/binexport/util/filesystem.h"
 #include "third_party/zynamics/binexport/util/process.h"
 #include "third_party/zynamics/binexport/util/types.h"
 
@@ -66,6 +69,54 @@ void WaitBox::ReplaceText(absl::string_view message) const {
   };
   ReplaceWaitBoxRequest replace_wait_box(*this, message);
   execute_sync(replace_wait_box, MFF_FAST);
+}
+
+static absl::StatusOr<std::string> DoGetFilename(
+    bool for_saving, absl::string_view title,
+    absl::string_view default_filename,
+    absl::Span<const std::pair<absl::string_view, absl::string_view>>
+        file_types_and_extensions) {
+  std::string format = "FILTER ";
+  while (!file_types_and_extensions.empty()) {
+    auto& [file_type, extension] = file_types_and_extensions.front();
+    absl::StrAppend(&format, file_type, "|", extension);
+    file_types_and_extensions.remove_prefix(1);
+    if (!file_types_and_extensions.empty()) {
+      absl::StrAppend(&format, "|");
+    }
+  }
+  absl::StrAppend(&format, "\n", title);
+
+  const char* filename = ask_file(
+      for_saving, std::string(default_filename).c_str(), "%s", format.c_str());
+  if (!filename) {
+    return absl::CancelledError();
+  }
+#ifndef __APPLE__
+  // On macOS, the built-in file chooser asks for confirmation already.
+  if (for_saving && FileExists(filename) &&
+      ask_yn(ASKBTN_NO, "'%s' already exists - overwrite?", filename) !=
+          ASKBTN_YES) {
+    return absl::AlreadyExistsError("");
+  }
+#endif
+  return filename;
+}
+
+absl::StatusOr<std::string> GetSaveFilename(
+    absl::string_view title, absl::string_view default_filename,
+    absl::Span<const std::pair<absl::string_view, absl::string_view>>
+        file_types_and_extensions) {
+  return DoGetFilename(/*for_saving=*/true, title, default_filename,
+                       file_types_and_extensions);
+}
+
+absl::StatusOr<std::string> GetOpenFilename(
+    absl::string_view title, absl::string_view default_filename,
+    absl::Span<const std::pair<absl::string_view, absl::string_view>>
+        file_types_and_extensions) {
+  return DoGetFilename(/*for_saving=*/false, title, default_filename,
+                       file_types_and_extensions);
 }
 
 absl::Status CopyToClipboard(absl::string_view data) {

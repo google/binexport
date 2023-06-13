@@ -15,6 +15,8 @@
 #ifndef IDA_UI_H_
 #define IDA_UI_H_
 
+#include <utility>
+
 // clang-format off
 #include "third_party/zynamics/binexport/ida/begin_idasdk.inc"  // NOLINT
 #include <kernwin.hpp>                                          // NOLINT
@@ -23,7 +25,9 @@
 // clang-format on
 
 #include "third_party/absl/status/status.h"
+#include "third_party/absl/status/statusor.h"
 #include "third_party/absl/strings/string_view.h"
+#include "third_party/absl/types/span.h"
 
 // Small RAII class that displays a wait message for long-running actions.
 class WaitBox {
@@ -43,6 +47,24 @@ class WaitBox {
  private:
   bool cancellable_;
 };
+
+// Shows the built-in file dialog for saving files. Handles the case for when
+// the user selected a file that already exists.
+// Returns the selected filename on success and absl::CancelledError if the
+// dialog was dismissed. If the file already existed, and the user chose not to
+// overwrite, returns absl::AlreadyExistsError.
+absl::StatusOr<std::string> GetSaveFilename(
+    absl::string_view title, absl::string_view default_filename,
+    absl::Span<const std::pair<absl::string_view, absl::string_view>>
+        file_types_and_extensions);
+
+// Shows the built-in file dialog for opening files. This is for consistency
+// with GetSaveFilename(). Returns the filename on success and
+// absl::CancelledError otherwise.
+absl::StatusOr<std::string> GetOpenFilename(
+    absl::string_view title, absl::string_view default_filename,
+    absl::Span<const std::pair<absl::string_view, absl::string_view>>
+        file_types_and_extensions);
 
 // Base class using CRTP that makes working with UI actions easier.
 // Example usage:
