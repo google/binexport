@@ -14,6 +14,9 @@
 
 #include "third_party/zynamics/binexport/util/filesystem.h"
 
+#include <fstream>
+#include <iostream>
+
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "third_party/absl/strings/str_cat.h"
@@ -101,6 +104,20 @@ TEST(FileSystemTest, CreateAndRemoveDirectories) {
 
   EXPECT_THAT(RemoveAll(test_path).ok(), IsTrue());
   EXPECT_THAT(IsDirectory(test_path), IsFalse());
+}
+
+TEST(FileSystemTest, LinkingFiles) {
+  NA_ASSERT_OK_AND_ASSIGN(std::string temp_dir,
+                          GetOrCreateTempDirectory("test"));
+  const std::string target = JoinPath(temp_dir, "target");
+  const std::string link_path = JoinPath(temp_dir, "link");
+  {
+    std::ofstream out(target, std::ios::trunc);
+    out << "test_content";
+    ASSERT_THAT(out.good(), IsTrue());
+  }
+
+  EXPECT_THAT(CreateOrUpdateLinkWithFallback(target, link_path).ok(), IsTrue());
 }
 
 }  // namespace

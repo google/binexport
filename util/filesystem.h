@@ -106,4 +106,12 @@ absl::Status RemoveAll(absl::string_view path);
 // Copies a file.
 absl::Status CopyFile(absl::string_view from, absl::string_view to);
 
+// Creates a symbolic link at link_path that links to target. On Linux and
+// macOS, this simply symlink()s. The situation is more complex on Windows:
+// Symlinks are a privileged operation, unless explicitly in "Developer Mode",
+// so this function first tries to use that first. If it fails, it then tries to
+// create a hardlink and falls back to just copying the file otherwise.
+absl::Status CreateOrUpdateLinkWithFallback(const std::string& target,
+                                            const std::string& link_path);
+
 #endif  // UTIL_FILESYSTEM_H_

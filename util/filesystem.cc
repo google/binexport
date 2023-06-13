@@ -15,6 +15,8 @@
 #include "third_party/zynamics/binexport/util/filesystem.h"
 
 #ifdef _WIN32
+#define _WIN32_WINNT 0x0600
+#define VC_EXTRALEAN
 // clang-format off
 #include <windows.h>
 #include <shellapi.h>
@@ -22,9 +24,6 @@
 #include <shlwapi.h>
 #include <stdlib.h>
 // clang-format on
-
-#include <filesystem>
-#include <system_error>  // NOLINT(build/c++11)
 
 #undef CopyFile             // winbase.h
 #undef GetCurrentDirectory  // processenv.h
@@ -38,16 +37,23 @@
 #include <unistd.h>
 #endif
 
-#ifdef __APPLE__
+#include <algorithm>  // IWYU pragma: keep
 #include <cerrno>
-#include <cstring>
-#endif
-
-#include <algorithm>
+#include <cstdint>
+#include <cstdlib>
+#include <cstring>     // IWYU pragma: keep
+#include <filesystem>  // NOLINT(build/c++17)
 #include <fstream>
+#include <initializer_list>
+#include <ios>
+#include <memory>
 #include <string>
+#include <system_error>  // NOLINT(build/c++11)
+#include <vector>
 
+#include "third_party/absl/status/status.h"
 #include "third_party/absl/strings/ascii.h"
+#include "third_party/absl/strings/match.h"
 #include "third_party/absl/strings/str_cat.h"
 #include "third_party/absl/strings/str_replace.h"  // IWYU pragma: keep
 #include "third_party/absl/strings/string_view.h"
@@ -222,8 +228,8 @@ absl::StatusOr<mode_t> GetFileMode(const std::string& path) {
       case ENOTDIR:
         return 0;
       default:
-        return absl::UnknownError(absl::StrCat("stat() failed for \"", path,
-                                               "\": ", GetLastOsError()));
+        return absl::ErrnoToStatus(
+            errno, absl::StrCat("stat() failed for \"", path, "\""));
     }
   }
   return file_info.st_mode;
@@ -287,8 +293,8 @@ absl::Status GetDirectoryEntries(absl::string_view path,
   errno = 0;
   DIR* directory = opendir(path_copy.c_str());
   if (!directory) {
-    return absl::UnknownError(absl::StrCat("opendir() failed for \"", path,
-                                           "\": ", GetLastOsError()));
+    return absl::ErrnoToStatus(
+        errno, absl::StrCat("opendir() failed for \"", path, "\""));
   }
   struct dirent* entry;
   while ((entry = readdir(directory))) {
@@ -298,8 +304,7 @@ absl::Status GetDirectoryEntries(absl::string_view path,
     }
   }
   if (errno != 0) {
-    return absl::UnknownError(
-        absl::StrCat("readdir() failed: ", GetLastOsError()));
+    return absl::ErrnoToStatus(errno, "readdir() failed");
   }
   closedir(directory);
 #endif
@@ -325,8 +330,8 @@ absl::Status RemoveAll(absl::string_view path) {
   }
   DIR* directory = opendir(path_copy.c_str());
   if (!directory) {
-    return absl::UnknownError(absl::StrCat("opendir() failed for \"", path,
-                                           "\": ", GetLastOsError()));
+    return absl::ErrnoToStatus(
+        errno, absl::StrCat("opendir() failed for \"", path, "\""));
   }
   struct dirent* entry;
   while ((entry = readdir(directory))) {
@@ -342,13 +347,11 @@ absl::Status RemoveAll(absl::string_view path) {
     }
   }
   if (errno != 0) {
-    return absl::UnknownError(
-        absl::StrCat("readdir() failed: ", GetLastOsError()));
+    return absl::ErrnoToStatus(errno, "readdir() failed");
   }
   closedir(directory);
   if (rmdir(path_copy.c_str()) == -1) {
-    return absl::UnknownError(
-        absl::StrCat("rmdir() failed: ", GetLastOsError()));
+    return absl::ErrnoToStatus(errno, "rmdir() failed ");
   }
 #endif
   return absl::OkStatus();
@@ -368,4 +371,69 @@ absl::Status CopyFile(absl::string_view from, absl::string_view to) {
                                            "\": ", GetLastOsError()));
   }
   return absl::OkStatus();
+}
+
+absl::Status CreateOrUpdateLinkWithFallback(const std::string& target,
+                                            const std::string& link_path) {
+#ifndef _WIN32
+  std::unique_ptr<char, void (*)(char*)> canonical_path(
+      nullptr, [](char* p) { free(p); });
+  if (canonical_path.reset(realpath(target.c_str(), nullptr));
+      !canonical_path) {
+    return absl::ErrnoToStatus(errno,
+                               absl::StrCat("Cannot read '", target, "'"));
+  }
+
+  // symlink() will not overwrite, so remove first. Since remove can fail for
+  // many reasons, the error is ignored here and symlink() will fail below.
+  remove(link_path.c_str());
+
+  if (symlink(canonical_path.get(), link_path.c_str()) == -1) {
+    return absl::ErrnoToStatus(
+        errno, absl::StrCat("Symlink creation of '", link_path, "': "));
+  }
+  return absl::OkStatus();
+#else
+  std::string canonical_target(MAX_PATH, '\0');
+  if (!PathCanonicalize(&canonical_target[0], target.c_str()) ||
+      !PathFileExists(canonical_target.c_str())) {
+    return absl::FailedPreconditionError(
+        absl::StrCat("Cannot read '", target, "': ", GetLastOsError()));
+  }
+  canonical_target.resize(strlen(canonical_target.c_str()));  // Right-trim NULs
+
+  std::string canonical_path(MAX_PATH, '\0');
+  if (!PathCanonicalize(&canonical_path[0], link_path.c_str())) {
+    return absl::FailedPreconditionError(
+        absl::StrCat("Path '", link_path, "' invalid: ", GetLastOsError()));
+  }
+  canonical_path.resize(strlen(canonical_path.c_str()));
+
+  // Remove existing file first
+  if (DeleteFile(canonical_path.c_str()) == 0 &&
+      GetLastError() != ERROR_FILE_NOT_FOUND) {
+    return absl::FailedPreconditionError(absl::StrCat(
+        "Cannot remove existing '", canonical_path, "': ", GetLastOsError()));
+  }
+  if (CreateSymbolicLink(canonical_path.c_str(), canonical_target.c_str(),
+                         SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE)) {
+    return absl::OkStatus();
+  }
+  // Symlink creation failed. Either "Developer Mode" is not enabled, or the
+  // user does not have elevated privileges.
+  // Try to create a hard link instead.
+  if (CreateHardLink(canonical_path.c_str(), canonical_target.c_str(),
+                     /*lpSecurityAttributes=*/nullptr)) {
+    return absl::OkStatus();
+  }
+  // Not on NTFS, or on a network share without support for hard links, copy
+  // the file instead.
+  if (CopyFileA(canonical_target.c_str(), canonical_path.c_str(),
+                /*bFailIfExists=*/true)) {
+    return absl::OkStatus();
+  }
+  return absl::UnknownError(absl::StrCat("Copying '", canonical_target,
+                                         "' to '", canonical_path,
+                                         "' failed: ", GetLastOsError()));
+#endif
 }
