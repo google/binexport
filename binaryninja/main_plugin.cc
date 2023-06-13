@@ -69,7 +69,8 @@ std::string GetArchitectureName(BinaryNinja::BinaryView* view) {
   std::string architecture;
   if (absl::StartsWith(name, "x86")) {
     architecture = "x86";
-  } else if (absl::StartsWith(name, "arm") || name == "aarch64") {
+  } else if (absl::StartsWith(name, "arm") || name == "aarch64" ||
+             name == "thumb") {
     architecture = "ARM";
   } else if (absl::StartsWith(name, "mips")) {
     architecture = "MIPS";
@@ -277,7 +278,7 @@ void AnalyzeFlow(
             bn_basic_block->GetFunction()) {
       BinaryNinja::ReferenceSource ref_source = {
           /*func=*/bn_function,
-          /*arch=*/view->GetDefaultArchitecture(),
+          /*arch=*/bn_function->GetArchitecture(),
           /*addr=*/address};
       std::vector<uint64_t> xrefs = view->GetCodeReferencesFrom(ref_source);
 
@@ -346,8 +347,6 @@ void AnalyzeFlowBinaryNinja(BinaryNinja::BinaryView* view,
   LOG(INFO) << "flow analysis";
   // TODO(cblichmann): Support binaries with mixed archs where this makes sense
   //                   (i.e. ARM/Thumb)
-  auto default_arch = view->GetDefaultArchitecture();
-  const size_t max_instr_len = default_arch->GetMaxInstructionLength();
   for (EntryPointManager entry_point_manager(entry_points, "flow analysis");
        !entry_points->empty();) {
     const Address address = entry_points->back().address_;
@@ -358,19 +357,37 @@ void AnalyzeFlowBinaryNinja(BinaryNinja::BinaryView* view,
     }
     flags[address] |= FLAG_VISITED;
 
+    auto bn_functions = view->GetAnalysisFunctionsContainingAddress(address);
+    if(bn_functions.size() == 0) {
+        continue;
+    }
+
+    BinaryNinja::Ref<BinaryNinja::Function> bn_function = bn_functions[0];
+    if (!bn_function) {
+      continue;
+    }
+
+    BinaryNinja::Ref<BinaryNinja::Architecture> bn_function_architecture =
+        bn_function->GetArchitecture();
+    if (!bn_function_architecture) {
+      continue;
+    }
+
+    size_t max_instr_len = bn_function_architecture->GetMaxInstructionLength();
+
     auto instr_bytes =
         GetBytes<std::vector<Byte>>(view, address, max_instr_len);
     BinaryNinja::InstructionInfo bn_instruction;
     if (instr_bytes.empty() ||
-        !default_arch->GetInstructionInfo(&instr_bytes[0], address,
-                                          max_instr_len, bn_instruction)) {
+        !bn_function_architecture->GetInstructionInfo(
+            &instr_bytes[0], address, max_instr_len, bn_instruction)) {
       continue;
     }
 
     std::vector<BinaryNinja::InstructionTextToken> bn_tokens;
     size_t instr_len = bn_instruction.length;
-    if (!default_arch->GetInstructionText(&instr_bytes[0], address, instr_len,
-                                          bn_tokens)) {
+    if (!bn_function_architecture->GetInstructionText(&instr_bytes[0], address,
+                                                      instr_len, bn_tokens)) {
       continue;
     }
 
