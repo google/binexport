@@ -67,6 +67,9 @@ std::string GetArchitectureName(BinaryNinja::BinaryView* view) {
   auto default_arch = view->GetDefaultArchitecture();
   std::string name = default_arch->GetName();
   std::string architecture;
+  // Binary Ninja documentation has a list of architectures here:
+  // https://api.binary.ninja/binaryninja.architecture-module.html#binaryninja.architecture.Architecture
+  // Note: Like with IDA Pro, we're ignoring the endianness here completely.
   if (absl::StartsWith(name, "x86")) {
     architecture = "x86";
   } else if (absl::StartsWith(name, "arm") || name == "aarch64" ||
@@ -74,16 +77,30 @@ std::string GetArchitectureName(BinaryNinja::BinaryView* view) {
     architecture = "ARM";
   } else if (absl::StartsWith(name, "mips")) {
     architecture = "MIPS";
-  } else if (name == "ppc64") {
+  } else if (absl::StartsWith(name, "ppc")) {
     architecture = "PowerPC";
   } else {
     architecture = "GENERIC";
   }
 
-  if (default_arch->GetAddressSize() == 8) {
-    absl::StrAppend(&architecture, "-64");
-  } else if (default_arch->GetAddressSize() == 4) {
-    absl::StrAppend(&architecture, "-32");
+  switch (size_t address_size = default_arch->GetAddressSize(); address_size) {
+    case 8:
+      absl::StrAppend(&architecture, "-64");
+      break;
+    case 4:
+      absl::StrAppend(&architecture, "-32");
+      break;
+    case 2:
+      absl::StrAppend(&architecture, "-16");
+      break;
+    default:
+      LOG(WARNING) << "Unexpected address size " << address_size
+                   << " for architecture \"" << architecture
+                   << "\", export may be incorrect";
+      LOG_IF(WARNING, architecture != "GENERIC")
+          << "If you're not using a custom processor module, you may want to "
+             "file a bug";
+      break;
   }
   return architecture;
 }
