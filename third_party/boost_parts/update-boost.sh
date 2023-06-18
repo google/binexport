@@ -51,9 +51,10 @@ cd "$THIS_DIR/../.."
 
 # Build bcp utility if necessary
 if [ ! -x "$BOOST_SRC/dist/bin/bcp" ]; then
-  cd "$BOOST_SRC"
+  pushd "$BOOST_SRC"
   "$BOOST_SRC/bootstrap.sh"
   "$BOOST_SRC/b2" --built-type=minimal -j$(nproc) tools/bcp
+  popd
 fi
 
 BOOST_OUT=$(mktemp -d)
