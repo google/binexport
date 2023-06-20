@@ -106,10 +106,26 @@ absl::optional<std::string> GetArchitectureName() {
     default:
       return {};
   }
-  // This is not strictly correct, i.e. for 16-bit archs and also for 128-bit
-  // archs, but is what IDA supports. This needs to be changed if IDA introduces
-  // is_128bit().
-  absl::StrAppend(&architecture, inf_is_64bit() ? "-64" : "-32");
+
+  switch (size_t address_size = inf_get_app_bitness(); address_size) {
+    case 8:
+      absl::StrAppend(&architecture, "-64");
+      break;
+    case 4:
+      absl::StrAppend(&architecture, "-32");
+      break;
+    case 2:
+      absl::StrAppend(&architecture, "-16");
+      break;
+    default:
+      LOG(WARNING) << "Unexpected address size " << address_size
+                   << " for architecture \"" << architecture
+                   << "\", export may be incorrect";
+      LOG_IF(WARNING, architecture != "GENERIC")
+          << "If you're not using a custom processor module, you may want to "
+             "file a bug";
+      break;
+  }
   return architecture;
 }
 
