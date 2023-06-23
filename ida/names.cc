@@ -422,18 +422,17 @@ std::string GetBytes(const Instruction& instruction) {
   return bytes;
 }
 
-bool idaapi HasNoValue(flags_t flags, void* /* ud */) {
-  return !has_value(flags);
-}
-
-// Returns the raw bytes that are contained within a segment.
+// Returns raw bytes that are contained within a segment. This will copy bytes
+// from the start of the segment up until the first undefined location or the
+// end of the segment, if all locations are valid.
 std::vector<Byte> GetSectionBytes(ea_t segment_start_address) {
   std::vector<Byte> bytes;
   const segment_t* ida_segment = getseg(segment_start_address);
   if (ida_segment && is_loaded(ida_segment->start_ea)) {
-    const ea_t undefined_bytes =
-        next_that(ida_segment->start_ea, ida_segment->end_ea, HasNoValue,
-                  nullptr /* user data */);
+    const ea_t undefined_bytes = next_that(
+        ida_segment->start_ea, ida_segment->end_ea,
+        [](auto flags, void* /* ud */) { return !has_value(flags); },
+        nullptr /* user data */);
     bytes.resize(
         (undefined_bytes == BADADDR ? ida_segment->end_ea : undefined_bytes) -
         ida_segment->start_ea);
