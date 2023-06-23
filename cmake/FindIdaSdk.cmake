@@ -28,6 +28,9 @@
 #   IdaSdk_INCLUDE_DIRS - Include directories for the IDA Pro SDK.
 #   IdaSdk_PLATFORM     - IDA SDK platform, one of __LINUX__, __NT__ or
 #                         __MAC__.
+#   IdaSdk_LIB32        - Windows: full path to a suitable ida.lib for 32-bit
+#                                  address aware IDA.
+#   IdaSdk_LIB          - Windows: path to ida.lib for 64-bit address sizes
 #
 # This module reads hints about search locations from variables:
 #
@@ -99,6 +102,30 @@ else()
   message(FATAL_ERROR "Unsupported system type: ${CMAKE_SYSTEM_NAME}")
 endif()
 
+if(WIN32)
+  find_library(IdaSdk_LIB ida
+    PATHS ${IdaSdk_DIR}/lib
+    PATH_SUFFIXES x64_win_vc_64
+                  # IDA SDK 8.3 and later
+                  x64_win_vc_64_teams
+                  x64_win_vc_64_pro
+                  x64_win_vc_64_home
+    NO_DEFAULT_PATH
+  )
+  find_library(IdaSdk_LIB32 ida
+    PATHS ${IdaSdk_DIR}/lib
+    PATH_SUFFIXES x64_win_vc_32
+                  # IDA SDK 8.3 and later
+                  x64_win_vc_32_teams
+                  x64_win_vc_32_pro
+                  x64_win_vc_32_home
+    NO_DEFAULT_PATH
+  )
+  if(NOT IdaSdk_LIB OR NOT IdaSdk_LIB32)
+    message(FATAL_ERROR "Missing ida.lib from SDK lib dir")
+  endif()
+endif()
+
 function(_ida_common_target_settings t ea64)
   if(ea64)  # Support for 64-bit addresses.
     target_compile_definitions(${t} PUBLIC __EA64__)
@@ -164,9 +191,9 @@ function(_ida_plugin name ea64 link_script)  # ARGN contains sources
     )
   elseif(WIN32)
     if(ea64)
-      target_link_libraries(${t} ${IdaSdk_DIR}/lib/x64_win_vc_64/ida.lib)
+      target_link_libraries(${t} ${IdaSdk_LIB})
     else()
-      target_link_libraries(${t} ${IdaSdk_DIR}/lib/x64_win_vc_32/ida.lib)
+      target_link_libraries(${t} ${IdaSdk_LIB32})
     endif()
   endif()
 endfunction()
