@@ -24,9 +24,8 @@ include(FetchContent)
 
 # Abseil
 FetchContent_Declare(absl
-  GIT_REPOSITORY https://github.com/abseil/abseil-cpp
-  GIT_TAG        9d43470921bef911145ad78a8e822ee1b297f937 # 2023-05-23
-  GIT_SUBMODULES ""
+  URL https://github.com/abseil/abseil-cpp/archive/ae87791869cacbc125aa708108c4721e51ff703d.zip  # 2023-06-08
+  URL_HASH SHA256=fbe050daabadda2297cea9ace55ccde48e3994887bc0b1e6c7330f1a97ee071b
 )
 set(ABSL_CXX_STANDARD ${CMAKE_CXX_STANDARD} CACHE STRING "" FORCE)
 set(ABSL_PROPAGATE_CXX_STD ON CACHE BOOL "" FORCE)
@@ -39,8 +38,8 @@ binexport_check_target(absl::core_headers)
 if(BUILD_TESTING AND BINEXPORT_BUILD_TESTING)
   # Googletest (needs to come after Abseil due to C++ standard propagation)
   FetchContent_Declare(googletest
-    GIT_REPOSITORY https://github.com/google/googletest.git
-    GIT_TAG        45804691223635953f311cf31a10c632553bbfc3 # 2023-05-22
+    URL https://github.com/google/googletest/archive/334704df263b480a3e9e7441ed3292a5e30a37ec.zip  # 2023-06-06
+    URL_HASH SHA256=a217118c2c36a3632b594af7ff98111a65bb2b980b726a7fa62305e02a998440
   )
   FetchContent_MakeAvailable(googletest)
   binexport_check_target(gtest)
@@ -50,8 +49,8 @@ if(BUILD_TESTING AND BINEXPORT_BUILD_TESTING)
   if(BINEXPORT_BUILD_BENCHMARK)
     # Benchmark
     FetchContent_Declare(benchmark
-      GIT_REPOSITORY https://github.com/google/benchmark.git
-      GIT_TAG        4b13b3d47a9ad3bb4b83bde3c3841b2b0b5c5789 # 2023-05-15
+      URL https://github.com/google/benchmark/archive/604f6fd3f4b34a84ec4eb4db81d842fa4db829cd.zip  # 2023-05-30
+      URL_HASH SHA256=342705876335bf894147e052d0dac141fe15962034b41bef5aa59c4b279ca89c
     )
     set(BENCHMARK_CXX_STANDARD ${CMAKE_CXX_STANDARD} CACHE STRING "" FORCE)
     set(BENCHMARK_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
@@ -65,8 +64,9 @@ endif()
 # Protocol Buffers
 FetchContent_Declare(protobuf
   GIT_REPOSITORY https://github.com/protocolbuffers/protobuf.git
-  GIT_TAG        06e232dcd85ab52dc5e45aa1ea8bcd03f9a9a245 # 2023-05-23
+  GIT_TAG        v23.4 # 2023-07-05 (must be a branch for GIT_SHALLOW to work)
   GIT_SUBMODULES third_party/jsoncpp
+  GIT_SHALLOW    TRUE
 )
 set(protobuf_ABSL_PROVIDER "package" CACHE STRING "" FORCE)
 set(protobuf_BUILD_TESTS OFF CACHE BOOL "" FORCE)
