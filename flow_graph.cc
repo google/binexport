@@ -18,7 +18,9 @@
 #include <cinttypes>
 #include <iterator>
 #include <list>
+#include <memory>
 #include <stack>
+#include <string>
 #include <unordered_map>
 
 #include "third_party/absl/container/flat_hash_set.h"
@@ -27,7 +29,10 @@
 #include "third_party/absl/strings/str_cat.h"
 #include "third_party/zynamics/binexport/call_graph.h"
 #include "third_party/zynamics/binexport/comment.h"
+#include "third_party/zynamics/binexport/util/format.h"
 #include "third_party/zynamics/binexport/virtual_memory.h"
+
+using ::security::binexport::FormatAddress;
 
 FlowGraph::~FlowGraph() {
   for (auto function : functions_) {
@@ -66,12 +71,10 @@ void FlowGraph::MarkOrphanInstructions(Instructions* instructions) const {
       for (auto& instruction : *basic_block) {
         if (instruction.GetMnemonic().empty()) {
           LOG(WARNING) << absl::StrCat(
-              absl::Hex(instruction.GetAddress(), absl::kZeroPad8),
+              FormatAddress(instruction.GetAddress()),
               " is reachable from function ",
-              absl::Hex(function.second->GetEntryPoint(), absl::kZeroPad8),
-              " basic block ",
-              absl::Hex(basic_block->GetEntryPoint(), absl::kZeroPad8),
-              " but invalid!");
+              FormatAddress(function.second->GetEntryPoint()), " basic block ",
+              FormatAddress(basic_block->GetEntryPoint()), " but invalid!");
           continue;
         }
         instruction.SetFlag(FLAG_INVALID, false);
@@ -274,7 +277,7 @@ void FlowGraph::CreateBasicBlocks(Instructions* instructions,
         number_of_instructions += bb_instr_cnt;
         if (bb_skip) {
           LOG(WARNING) << absl::StrCat("Skipping enormous basic block: ",
-                                       absl::Hex(address, absl::kZeroPad8));
+                                       FormatAddress(address));
           continue;
         }
       } else {
@@ -372,9 +375,8 @@ void FlowGraph::MergeBasicBlocks(const CallGraph& call_graph) {
     BasicBlock* target_basic_block = BasicBlock::Find(edge.target);
     if (!target_basic_block) {
       DLOG(INFO) << absl::StrCat("No target basic block for edge ",
-                                 absl::Hex(edge.source, absl::kZeroPad8),
-                                 " -> ",
-                                 absl::Hex(edge.target, absl::kZeroPad8));
+                                 FormatAddress(edge.source), " -> ",
+                                 FormatAddress(edge.target));
       return true;
     }
 
@@ -391,8 +393,8 @@ void FlowGraph::MergeBasicBlocks(const CallGraph& call_graph) {
     BasicBlock* source_basic_block = BasicBlock::FindContaining(edge.source);
     if (!source_basic_block) {
       LOG(INFO) << absl::StrCat("No source basic block for edge ",
-                                absl::Hex(edge.source, absl::kZeroPad8), " -> ",
-                                absl::Hex(edge.target, absl::kZeroPad8));
+                                FormatAddress(edge.source), " -> ",
+                                FormatAddress(edge.target));
       return true;
     }
 
@@ -435,7 +437,7 @@ void FlowGraph::FinalizeFunctions(CallGraph* call_graph) {
   for (Address entry_point : call_graph->GetFunctions()) {
     std::stack<Address> address_stack;
     address_stack.push(entry_point);
-    std::unique_ptr<Function> function(new Function(entry_point));
+    auto function = std::make_unique<Function>(entry_point);
     size_t num_instructions = 0;
     // Keep track of basic blocks and edges already added to this function.
     absl::flat_hash_set<Address> function_basic_blocks;
@@ -473,10 +475,10 @@ void FlowGraph::FinalizeFunctions(CallGraph* call_graph) {
       uint64_t dropped_edges = 0;
       for (; edge != edges_.end() && edge->source == source_address; ++edge) {
         if (!BasicBlock::Find(edge->target)) {
-          DLOG(INFO) << absl::StrCat(
-              "Dropping edge ", absl::Hex(edge->source, absl::kZeroPad8),
-              " -> ", absl::Hex(edge->target, absl::kZeroPad8),
-              " because the target address is invalid.");
+          DLOG(INFO) << absl::StrCat("Dropping edge ",
+                                     FormatAddress(edge->source), " -> ",
+                                     FormatAddress(edge->target),
+                                     " because the target address is invalid.");
           ++dropped_edges;
           continue;
         }
@@ -488,15 +490,14 @@ void FlowGraph::FinalizeFunctions(CallGraph* call_graph) {
       LOG_IF(INFO, dropped_edges > 0) << absl::StrCat(
           "Dropped ", dropped_edges,
           " edges because the target address is invalid (current basic block ",
-          absl::Hex(address, absl::kZeroPad8), ").");
+          FormatAddress(address), ").");
     }
     if (function_basic_blocks.size() >= kMaxFunctionBasicBlocks ||
         function->GetEdges().size() >= kMaxFunctionEdges ||
         num_instructions >= kMaxFunctionInstructions) {
       DLOG(INFO) << absl::StrCat(
-          "Discarding excessively large function ",
-          absl::Hex(entry_point, absl::kZeroPad8), ": ",
-          function_basic_blocks.size(), " basic blocks, ",
+          "Discarding excessively large function ", FormatAddress(entry_point),
+          ": ", function_basic_blocks.size(), " basic blocks, ",
           function->GetEdges().size(), " edges, ", num_instructions,
           " instructions (Limit is ", kMaxFunctionBasicBlocks, ", ",
           kMaxFunctionEdges, ", ", kMaxFunctionInstructions, ")");
