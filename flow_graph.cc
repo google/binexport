@@ -502,6 +502,8 @@ void FlowGraph::FinalizeFunctions(CallGraph* call_graph) {
           " instructions (Limit is ", kMaxFunctionBasicBlocks, ", ",
           kMaxFunctionEdges, ", ", kMaxFunctionInstructions, ")");
       function->Clear();
+      // https://github.com/google/binexport/issues/90
+      function->SetType(Function::TYPE_INVALID);
     }
     for (const auto* basic_block : function->GetBasicBlocks()) {
       // Iterate the basic block and add edges to the call graph for every
