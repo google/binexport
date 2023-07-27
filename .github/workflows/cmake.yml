@@ -38,6 +38,10 @@ jobs:
       if: matrix.os == 'windows-2022'
       uses: ilammy/msvc-dev-cmd@v1.12.1
 
+    - name: Enable mold linker (Linux)
+      if: matrix.os == 'ubuntu-22.04'
+      uses: rui314/setup-mold@v1
+
     - name: Configure CMake
       working-directory: ${{ runner.workspace }}/build
       shell: bash
