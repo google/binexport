@@ -108,13 +108,13 @@ absl::optional<std::string> GetArchitectureName() {
   }
 
   switch (size_t address_size = inf_get_app_bitness(); address_size) {
-    case 8:
+    case 64:
       absl::StrAppend(&architecture, "-64");
       break;
-    case 4:
+    case 32:
       absl::StrAppend(&architecture, "-32");
       break;
-    case 2:
+    case 16:
       absl::StrAppend(&architecture, "-16");
       break;
     default:
