@@ -456,8 +456,8 @@ void AnalyzeFlowBinaryNinja(BinaryNinja::BinaryView* view,
       // TODO(cblichmann): Figure out how to access the module that the symbol
       //                   was imported from.
     }
-    if (function->GetType(true) == Function::TYPE_NONE ||
-        function->GetType(false) == Function::TYPE_STANDARD) {
+    if (function->GetType() == Function::TYPE_NONE ||
+        function->GetTypeHeuristic() == Function::TYPE_STANDARD) {
       if (function->GetBasicBlocks().empty()) {
         function->SetType(Function::TYPE_IMPORTED);
       } else {

@@ -372,7 +372,7 @@ void WriteFlowGraphs(const FlowGraph& flow_graph, BinExport2* proto) {
   for (const auto& address_to_function : flow_graph.GetFunctions()) {
     const Function& function = *address_to_function.second;
     if (function.GetBasicBlocks().empty() ||
-        function.GetType(true /* raw type */) == Function::TYPE_INVALID) {
+        function.GetType() == Function::TYPE_INVALID) {
       continue;  // Skip empty flow graphs, they only exist as call graph nodes.
     }
 
@@ -500,7 +500,7 @@ void WriteCallGraph(const CallGraph& call_graph, const FlowGraph& flow_graph,
         proto_call_graph->add_vertex());
     proto_function->set_address(function.GetEntryPoint());
     const auto vertex_type =
-        CallGraphVertexTypeToProtoType(function.GetType(false));
+        CallGraphVertexTypeToProtoType(function.GetTypeHeuristic());
     if (vertex_type != BinExport2::CallGraph::Vertex::NORMAL) {
       // Only store if different from default value.
       proto_function->set_type(vertex_type);

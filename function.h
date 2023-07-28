@@ -71,15 +71,14 @@ class Function {
 
   Address GetEntryPoint() const;
 
-  void SetType(FunctionType type);
+  void SetType(FunctionType value) { type_ = value; }
+  FunctionType GetType() const { return type_; }
 
-  // Returns the function type (if assigned) as-is if raw is set to true. If
-  // raw is false or the function has not been assigned any type, extra
-  // heuristics are applied; returning TYPE_THUNK for functions with entry
+  // Returns the function type. If the function has not been assigned any type,
+  // extra heuristics are applied; returning TYPE_THUNK for functions with entry
   // point address 0, THUNK_IMPORTED if it has no basic blocks and
   // TYPE_STANDARD otherwise.
-  // TODO(cblichmann): Split into two functions: GetType() and GetRawType().
-  FunctionType GetType(bool raw) const;
+  FunctionType GetTypeHeuristic() const;
 
   bool IsImported() const;
 
@@ -89,19 +88,18 @@ class Function {
   std::string GetName(Name type) const;
   bool HasRealName() const;
 
-  const Edges& GetEdges() const;
-  const BasicBlocks& GetBasicBlocks() const;
+  const Edges& GetEdges() const { return edges_; }
+  const BasicBlocks& GetBasicBlocks() const { return basic_blocks_; }
   const BasicBlock* GetBasicBlockForAddress(Address address) const;
 
   void Render(std::ostream* stream, const CallGraph& call_graph,
               const FlowGraph& flow_graph) const;
 
   int GetLibraryIndex() const { return library_index_; }
-
-  void SetLibraryIndex(int library_index) { library_index_ = library_index; }
+  void SetLibraryIndex(int value) { library_index_ = value; }
 
   double GetMdIndex() const { return md_index_; }
-  void SetMdIndex(double md_index) { md_index_ = md_index; }
+  void SetMdIndex(double value) { md_index_ = value; }
 
  private:
   int GetBasicBlockIndexForAddress(Address address) const;
@@ -116,9 +114,9 @@ class Function {
   Edges edges_;
   std::string name_;
   std::string demangled_name_;
-  const std::string* module_name_;
-  FunctionType type_;
-  int library_index_;
+  const std::string* module_name_ = nullptr;
+  FunctionType type_ = TYPE_NONE;
+  int library_index_ = -1;
   double md_index_;
 };
 

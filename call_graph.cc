@@ -64,8 +64,8 @@ void CallGraph::Render(std::ostream* stream,
     const Function* function = flow_graph.GetFunction(function_address);
     *stream << FormatAddress(function_address) << " " << std::setfill(' ')
             << std::setw(8)
-            << (function->GetType(false) != Function::TYPE_STANDARD
-                    ? Function::GetTypeName(function->GetType(false))
+            << (function->GetTypeHeuristic() != Function::TYPE_STANDARD
+                    ? Function::GetTypeName(function->GetTypeHeuristic())
                     : "")
             << " " << function->GetModuleName()
             << (function->GetModuleName().empty() ? "" : ".")
@@ -96,7 +96,7 @@ CallGraph::CallGraph() { ++instance_count_; }
 CallGraph::~CallGraph() {
   --instance_count_;
   if (instance_count_ == 0) {
-    StringCache{}.swap(string_cache_);
+    StringCache().swap(string_cache_);
   }
 }
 
@@ -132,28 +132,30 @@ void CallGraph::CommitEdges() {
 
 int CallGraph::DeleteInvalidFunctions(FlowGraph* flow_graph) {
   // Delete all edges with invalid source or target functions.
-  edges_.erase(
-      std::remove_if(
-          edges_.begin(), edges_.end(),
-          [&flow_graph](const EdgeInfo& edge) {
-            // The source function must exist and be valid.
-            const Function* source = edge.function_;
-            if (!source || source->GetType(false) == Function::TYPE_INVALID) {
-              return true;
-            }
+  edges_.erase(std::remove_if(edges_.begin(), edges_.end(),
+                              [&flow_graph](const EdgeInfo& edge) {
+                                // The source function must exist and be valid.
+                                const Function* source = edge.function_;
+                                if (!source || source->GetTypeHeuristic() ==
+                                                   Function::TYPE_INVALID) {
+                                  return true;
+                                }
 
-            // The target function must not exist or be valid. The "target not
-            // exist" case covers calls into imported functions such as
-            // operating system dlls.
-            const Function* target = flow_graph->GetFunction(edge.target_);
-            return target && target->GetType(false) == Function::TYPE_INVALID;
-          }),
-      edges_.end());
+                                // The target function must not exist or be
+                                // valid. The "target not exist" case covers
+                                // calls into imported functions such as
+                                // operating system dlls.
+                                const Function* target =
+                                    flow_graph->GetFunction(edge.target_);
+                                return target && target->GetTypeHeuristic() ==
+                                                     Function::TYPE_INVALID;
+                              }),
+               edges_.end());
 
   int num_invalid_functions = 0;
   for (auto function = flow_graph->GetFunctions().begin();
        function != flow_graph->GetFunctions().end();) {
-    if (function->second->GetType(false) == Function::TYPE_INVALID) {
+    if (function->second->GetTypeHeuristic() == Function::TYPE_INVALID) {
       functions_.erase(function->first);
       delete function->second;
       // Note: btree_map<>::erase() invalidates iterators

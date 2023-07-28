@@ -62,8 +62,8 @@ void StatisticsWriter::GenerateStatistics(
   for (Functions::const_iterator i = functions.begin(); i != functions.end();
        ++i) {
     const Function& function = *i->second;
-    assert(function.GetType(false) != Function::TYPE_NONE);
-    statistics[kFunctionTypeNames[function.GetType(false)]]++;
+    assert(function.GetTypeHeuristic() != Function::TYPE_NONE);
+    statistics[kFunctionTypeNames[function.GetTypeHeuristic()]]++;
     statistics["functions with real name"] += function.HasRealName();
 
     const auto& basic_blocks = function.GetBasicBlocks();

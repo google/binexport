@@ -34,11 +34,7 @@ using security::binexport::FormatFunctionName;
 int Function::instance_count_ = 0;
 Function::StringCache Function::string_cache_;
 
-Function::Function(Address entry_point)
-    : entry_point_(entry_point),
-      module_name_(nullptr),
-      type_(TYPE_NONE),
-      library_index_(-1) {
+Function::Function(Address entry_point) : entry_point_(entry_point) {
   ++instance_count_;
 }
 
@@ -93,16 +89,18 @@ void Function::Clear() {
 
 void Function::AddEdge(const FlowGraphEdge& edge) { edges_.push_back(edge); }
 
-void Function::SetType(FunctionType type) { type_ = type; }
-
-Function::FunctionType Function::GetType(bool raw) const {
-  if ((type_ != TYPE_NONE) || raw) {
+Function::FunctionType Function::GetTypeHeuristic() const {
+  if (type_ != TYPE_NONE) {
     return type_;
   }
   if (GetEntryPoint() == 0) {
     return TYPE_THUNK;
   }
   if (basic_blocks_.empty()) {
+    // For this to be correct, any pruning of excessively large function needs
+    // to either truncate the function or set its type to TYPE_INVALID.
+    // Otherwise, such functions will incorrectly be interpreted as being
+    // imported (https://github.com/google/binexport/issues/90).
     return TYPE_IMPORTED;
   }
   return TYPE_STANDARD;
@@ -144,10 +142,6 @@ std::string Function::GetName(Name type) const {
 }
 
 bool Function::HasRealName() const { return !name_.empty(); }
-
-const Function::Edges& Function::GetEdges() const { return edges_; }
-
-const BasicBlocks& Function::GetBasicBlocks() const { return basic_blocks_; }
 
 BasicBlock* Function::GetMutableBasicBlockForAddress(Address address) {
   const int index = GetBasicBlockIndexForAddress(address);
@@ -202,7 +196,9 @@ int Function::GetBasicBlockIndexForAddress(Address address) const {
   return basic_blocks_.size();
 }
 
-bool Function::IsImported() const { return GetType(false) == TYPE_IMPORTED; }
+bool Function::IsImported() const {
+  return GetTypeHeuristic() == TYPE_IMPORTED;
+}
 
 std::string Function::GetModuleName() const {
   return module_name_ ? *module_name_ : "";

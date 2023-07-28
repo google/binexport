@@ -418,8 +418,8 @@ absl::Status AnalyzeFlowIda(EntryPoints* entry_points, const ModuleMap& modules,
       function.SetType(Function::TYPE_IMPORTED);
       function.SetModuleName(module);
     }
-    if (function.GetType(true) == Function::TYPE_NONE ||
-        function.GetType(false) == Function::TYPE_STANDARD) {
+    if (function.GetType() == Function::TYPE_NONE ||
+        function.GetTypeHeuristic() == Function::TYPE_STANDARD) {
       if (function.GetBasicBlocks().empty()) {
         function.SetType(Function::TYPE_IMPORTED);
       } else {
