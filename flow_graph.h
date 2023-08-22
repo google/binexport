@@ -16,14 +16,17 @@
 #define FLOWGRAPH_H_
 
 #include <cstdint>
-#include <map>
+#include <ostream>
+#include <string>
 #include <tuple>
+#include <vector>
 
 #include "third_party/absl/container/btree_map.h"
 #include "third_party/absl/container/node_hash_set.h"
 #include "third_party/zynamics/binexport/edge.h"
 #include "third_party/zynamics/binexport/function.h"
 #include "third_party/zynamics/binexport/instruction.h"
+#include "third_party/zynamics/binexport/util/types.h"
 
 class CallGraph;
 
@@ -31,13 +34,15 @@ class FlowGraph {
  public:
   // Maximum number of basic blocks/edges/instructions we want to allow for a
   // single function. If a function has more than this, we simply discard it as
-  // invalid. kMaxFunctionEarlyBasicBlocks limit is evaluated before bb merging
-  // thus its value is set to be relative to kMaxFunctionBasicBlocks
+  // invalid. These limits were arbitrarily chosen in order to limit memory and
+  // CPU usage in BinDiff.
+  // kMaxFunctionEarlyBasicBlocks limit is evaluated before basic block merging,
+  // thus its value is set to be relative to kMaxFunctionBasicBlocks.
   enum {
-    kMaxFunctionBasicBlocks = 5000,
-    kMaxFunctionEarlyBasicBlocks = kMaxFunctionBasicBlocks + 1000,
-    kMaxFunctionEdges = 5000,
-    kMaxFunctionInstructions = 20000
+    kMaxFunctionBasicBlocks = 10000,
+    kMaxFunctionEarlyBasicBlocks = kMaxFunctionBasicBlocks + 2000,
+    kMaxFunctionEdges = 10000,
+    kMaxFunctionInstructions = 40000
   };
 
   enum class NoReturnHeuristic { kNopsAfterCall, kNone };
