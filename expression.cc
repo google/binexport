@@ -20,9 +20,9 @@
 #include "third_party/zynamics/binexport/instruction.h"
 #include "third_party/zynamics/binexport/util/hash.h"
 
-Expression::StringCache Expression::string_cache_;
-Expression::ExpressionCache Expression::expression_cache_;
-int Expression::global_id_ = 0;
+thread_local Expression::StringCache Expression::string_cache_;
+thread_local Expression::ExpressionCache Expression::expression_cache_;
+thread_local int Expression::global_id_ = 0;
 
 Expression::Expression(const Expression* parent, const std::string& symbol,
                        int64_t immediate, Type type, uint16_t position,

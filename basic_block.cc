@@ -22,7 +22,7 @@
 
 using security::binexport::FormatAddress;
 
-BasicBlock::Cache BasicBlock::cache_;
+thread_local BasicBlock::Cache BasicBlock::cache_;
 
 void BasicBlockInstructions::AddInstruction(
     Instructions::iterator instruction) {

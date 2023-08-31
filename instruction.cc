@@ -20,7 +20,6 @@
 #include <list>
 #include <memory>
 #include <sstream>
-#include <tuple>
 
 #include "third_party/absl/log/check.h"
 #include "third_party/absl/log/log.h"
@@ -279,13 +278,13 @@ Instructions::iterator GetNextInstruction(Instructions* instructions,
   return instructions->end();
 }
 
-int Instruction::instance_count_ = 0;
-Instruction::StringCache Instruction::string_cache_;
-Operands Instruction::operands_;
-int Instruction::bitness_ = 32;
-Instruction::GetBytesCallback Instruction::get_bytes_callback_ = 0;
-AddressSpace* Instruction::flags_ = nullptr;
-AddressSpace* Instruction::virtual_memory_ = nullptr;
+thread_local int Instruction::instance_count_ = 0;
+thread_local Instruction::StringCache Instruction::string_cache_;
+thread_local Operands Instruction::operands_;
+thread_local int Instruction::bitness_ = 32;
+thread_local Instruction::GetBytesCallback Instruction::get_bytes_callback_ = 0;
+thread_local AddressSpace* Instruction::flags_ = nullptr;
+thread_local AddressSpace* Instruction::virtual_memory_ = nullptr;
 
 Instruction::Instruction(Address address, Address next_instruction,
                          uint16_t size, const std::string& mnemonic,

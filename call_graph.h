@@ -93,8 +93,8 @@ class CallGraph {
   Comments comments_;
   StringReferences string_references_;
   LibraryManager library_manager_;
-  static StringCache string_cache_;
-  static int instance_count_;
+  static thread_local StringCache string_cache_;
+  static thread_local int instance_count_;
 };
 
 bool operator<(const EdgeInfo& one, const EdgeInfo& two);

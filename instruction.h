@@ -120,13 +120,13 @@ class Instruction {
   bool HasFlag(uint8_t flag) const;
 
  private:
-  static int instance_count_;
-  static StringCache string_cache_;
-  static Operands operands_;
-  static int bitness_;
-  static GetBytesCallback get_bytes_callback_;
-  static AddressSpace* flags_;
-  static AddressSpace* virtual_memory_;
+  static thread_local int instance_count_;
+  static thread_local StringCache string_cache_;
+  static thread_local Operands operands_;
+  static thread_local int bitness_;
+  static thread_local GetBytesCallback get_bytes_callback_;
+  static thread_local AddressSpace* flags_;
+  static thread_local AddressSpace* virtual_memory_;
 
   const std::string* mnemonic_;  // 4|8 + overhead in stringcache
   Address address_;              // 8

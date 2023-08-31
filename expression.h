@@ -161,9 +161,9 @@ class Expression {
   Type type_;
   bool relocatable_;
 
-  static StringCache string_cache_;
-  static ExpressionCache expression_cache_;
-  static int global_id_;
+  static thread_local StringCache string_cache_;
+  static thread_local ExpressionCache expression_cache_;
+  static thread_local int global_id_;
 };
 #pragma pack(pop)
 

@@ -181,7 +181,7 @@ class BasicBlock {
 
   RangeConstIterator BeforeEndRange() const;
 
-  static Cache cache_;
+  static thread_local Cache cache_;
 
   int id_;  // Careful: This might not stay constant for shared basic blocks.
   InstructionRanges ranges_;

@@ -36,8 +36,8 @@ bool AreDuplicateRegularComments(const Comment& lhs, const Comment& rhs) {
 
 }  // namespace
 
-CallGraph::StringCache CallGraph::string_cache_;
-int CallGraph::instance_count_ = 0;
+thread_local CallGraph::StringCache CallGraph::string_cache_;
+thread_local int CallGraph::instance_count_ = 0;
 
 // Attention: do _not_ use source_basic_block_id for sorting!
 // We change that after putting EdgeInfos in a set!

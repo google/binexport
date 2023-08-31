@@ -18,9 +18,9 @@
 
 #include "third_party/absl/log/check.h"
 
-Expressions Operand::expressions_;
-Operand::OperandCache Operand::operand_cache_;
-uint32_t Operand::global_id_ = 0;
+thread_local Expressions Operand::expressions_;
+thread_local Operand::OperandCache Operand::operand_cache_;
+thread_local uint32_t Operand::global_id_ = 0;
 
 // Delete unreferenced operands from cache and relabel surviving ones so we'll
 // have continuous ids again.
