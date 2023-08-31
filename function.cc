@@ -14,13 +14,15 @@
 
 #include "third_party/zynamics/binexport/function.h"
 
+#include <algorithm>
 #include <boost/graph/compressed_sparse_row_graph.hpp>  // NOLINT
 #include <boost/graph/dominator_tree.hpp>               // NOLINT
 #include <boost/graph/filtered_graph.hpp>               // NOLINT
 #include <boost/graph/iteration_macros.hpp>             // NOLINT
-#include <cinttypes>
-#include <iomanip>
 #include <iostream>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "third_party/absl/log/check.h"
 #include "third_party/absl/log/log.h"

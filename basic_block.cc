@@ -14,8 +14,8 @@
 
 #include "third_party/zynamics/binexport/basic_block.h"
 
-#include <iomanip>
 #include <ostream>
+#include <utility>
 
 #include "third_party/zynamics/binexport/call_graph.h"
 #include "third_party/zynamics/binexport/util/format.h"

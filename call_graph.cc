@@ -18,6 +18,8 @@
 #include <iomanip>
 #include <iterator>
 #include <ostream>
+#include <string>
+#include <utility>
 
 #include "third_party/zynamics/binexport/flow_graph.h"
 #include "third_party/zynamics/binexport/util/format.h"

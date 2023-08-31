@@ -16,13 +16,11 @@
 #define OPERAND_H_
 
 #include <cstdint>
-#include <functional>
 #include <string>
 
 #include "third_party/absl/container/flat_hash_set.h"
 #include "third_party/absl/container/node_hash_map.h"
 #include "third_party/zynamics/binexport/expression.h"
-#include "third_party/zynamics/binexport/util/types.h"
 
 #pragma pack(push, 1)
 class Operand {
@@ -40,6 +38,7 @@ class Operand {
   static void EmptyCache();
   static const OperandCache& GetOperands();
   static void PurgeCache(const absl::flat_hash_set<int>& ids_to_keep);
+
   const Expression& GetExpression(int index) const;
   const Expression& GetLastExpression() const;
 
@@ -50,7 +49,7 @@ class Operand {
 
   explicit Operand(const Expressions& expressions);
 
-  uint32_t id_;
+  uint32_t id_ = 0;
   uint32_t expression_index_;
   uint8_t expression_count_;
 };

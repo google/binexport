@@ -14,7 +14,10 @@
 
 #include "third_party/zynamics/binexport/expression.h"
 
-#include <sstream>
+#include <ios>
+#include <ostream>
+#include <string>
+#include <utility>
 
 #include "third_party/absl/log/check.h"
 #include "third_party/zynamics/binexport/instruction.h"

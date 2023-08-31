@@ -15,22 +15,23 @@
 #include "third_party/zynamics/binexport/flow_graph.h"
 
 #include <algorithm>
-#include <cinttypes>
+#include <cstdint>
 #include <iterator>
-#include <list>
-#include <memory>
+#include <ostream>
 #include <stack>
 #include <string>
+#include <tuple>
 #include <unordered_map>
+#include <utility>
+#include <vector>
 
 #include "third_party/absl/container/flat_hash_set.h"
 #include "third_party/absl/log/check.h"
 #include "third_party/absl/log/log.h"
 #include "third_party/absl/strings/str_cat.h"
 #include "third_party/zynamics/binexport/call_graph.h"
-#include "third_party/zynamics/binexport/comment.h"
+#include "third_party/zynamics/binexport/function.h"
 #include "third_party/zynamics/binexport/util/format.h"
-#include "third_party/zynamics/binexport/virtual_memory.h"
 
 using ::security::binexport::FormatAddress;
 

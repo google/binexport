@@ -16,6 +16,8 @@
 #define FUNCTION_H_
 
 #include <cstdint>
+#include <ostream>
+#include <vector>
 
 #include "third_party/absl/container/btree_map.h"
 #include "third_party/absl/container/node_hash_set.h"

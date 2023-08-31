@@ -14,8 +14,13 @@
 
 #include "third_party/zynamics/binexport/dump_writer.h"
 
+#include <algorithm>
 #include <iomanip>
 #include <limits>
+#include <ostream>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "third_party/zynamics/binexport/call_graph.h"
 #include "third_party/zynamics/binexport/flow_graph.h"

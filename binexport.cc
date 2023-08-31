@@ -14,6 +14,8 @@
 
 #include "third_party/zynamics/binexport/binexport.h"
 
+#include <vector>
+
 #include "third_party/absl/log/check.h"
 #include "third_party/absl/log/log.h"
 

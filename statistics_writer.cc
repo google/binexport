@@ -15,6 +15,8 @@
 #include "third_party/zynamics/binexport/statistics_writer.h"
 
 #include <iomanip>
+#include <ios>
+#include <ostream>
 #include <string>
 
 #include "third_party/absl/container/flat_hash_map.h"

@@ -14,6 +14,9 @@
 
 #include "third_party/zynamics/binexport/library_manager.h"
 
+#include <string>
+#include <vector>
+
 #include "third_party/absl/log/check.h"
 
 int LibraryManager::AddKnownLibrary(const std::string& library_name,

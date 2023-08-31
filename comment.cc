@@ -14,6 +14,8 @@
 
 #include "third_party/zynamics/binexport/comment.h"
 
+#include <string>
+
 #include "third_party/absl/log/log.h"
 #include "third_party/absl/strings/str_cat.h"
 #include "third_party/zynamics/binexport/util/format.h"

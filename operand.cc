@@ -14,7 +14,8 @@
 
 #include "third_party/zynamics/binexport/operand.h"
 
-#include <iterator>
+#include <cstdint>
+#include <string>
 
 #include "third_party/absl/log/check.h"
 
@@ -38,8 +39,7 @@ void Operand::PurgeCache(const absl::flat_hash_set<int>& ids_to_keep) {
 }
 
 Operand::Operand(const Expressions& expressions)
-    : id_(0),
-      expression_index_(static_cast<uint32_t>(expressions_.size())),
+    : expression_index_(static_cast<uint32_t>(expressions_.size())),
       expression_count_(static_cast<uint8_t>(expressions.size())) {
   expressions_.insert(expressions_.end(), expressions.begin(),
                       expressions.end());
@@ -52,8 +52,7 @@ Operand* Operand::CreateOperand(const Expressions& expressions) {
     signature.append(expression->CreateSignature());
   }
 
-  auto it = operand_cache_.find(signature);
-  if (it != operand_cache_.end()) {
+  if (auto it = operand_cache_.find(signature); it != operand_cache_.end()) {
     return &it->second;
   }
 

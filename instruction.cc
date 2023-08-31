@@ -15,15 +15,21 @@
 #include "third_party/zynamics/binexport/instruction.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <iomanip>
+#include <ios>
 #include <iterator>
 #include <list>
 #include <memory>
+#include <ostream>
 #include <sstream>
+#include <string>
+#include <vector>
 
 #include "third_party/absl/log/check.h"
 #include "third_party/absl/log/log.h"
 #include "third_party/zynamics/binexport/flow_graph.h"
+#include "third_party/zynamics/binexport/operand.h"
 #include "third_party/zynamics/binexport/virtual_memory.h"
 
 namespace {

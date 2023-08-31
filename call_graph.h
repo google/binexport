@@ -16,7 +16,6 @@
 #define CALLGRAPH_H_
 
 #include <iosfwd>
-#include <set>
 
 #include "third_party/absl/container/btree_set.h"
 #include "third_party/absl/container/node_hash_map.h"

@@ -29,18 +29,20 @@
 #include "third_party/zynamics/binexport/binexport2_writer.h"
 
 #include <algorithm>
-#include <array>
-#include <cinttypes>
-#include <codecvt>
+#include <array>    // IWYU pragma: keep
+#include <codecvt>  // IWYU pragma: keep
+#include <cstdint>
 #include <fstream>
-#include <locale>
+#include <ios>
+#include <locale>  // IWYU pragma: keep
 #include <string>
+#include <utility>
+#include <vector>
 
 #include "third_party/absl/container/flat_hash_map.h"
 #include "third_party/absl/log/check.h"
 #include "third_party/absl/log/log.h"
 #include "third_party/absl/strings/str_cat.h"
-#include "third_party/absl/strings/string_view.h"
 #include "third_party/absl/time/clock.h"
 #include "third_party/absl/time/time.h"
 #include "third_party/zynamics/binexport/binexport2.pb.h"

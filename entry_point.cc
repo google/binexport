@@ -14,6 +14,9 @@
 
 #include "third_party/zynamics/binexport/entry_point.h"
 
+#include <ios>
+#include <string>
+
 #include "third_party/absl/log/log.h"
 
 EntryPoint::EntryPoint(Address address, EntryPoint::Source source,
