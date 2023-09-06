@@ -14,16 +14,17 @@
 
 // Dumps the disassembly from BinExport files.
 
+#include <cerrno>
 #include <cstdio>  // fileno()
-#include <ctime>
-#include <memory>
 #include <string>
 #include <vector>
 
+#include "third_party/absl/cleanup/cleanup.h"
 #include "third_party/absl/container/flat_hash_map.h"
 #include "third_party/absl/log/check.h"
 #include "third_party/absl/log/initialize.h"
 #include "third_party/absl/log/log.h"
+#include "third_party/absl/status/status.h"
 #include "third_party/absl/strings/match.h"
 #include "third_party/absl/strings/str_cat.h"
 #include "third_party/absl/strings/str_format.h"
@@ -31,6 +32,7 @@
 #include "third_party/absl/time/time.h"
 #include "third_party/zynamics/binexport/binexport.h"
 #include "third_party/zynamics/binexport/binexport2.pb.h"
+#include "third_party/zynamics/binexport/tools/command_util.h"
 #include "third_party/zynamics/binexport/util/filesystem.h"
 #include "third_party/zynamics/binexport/util/format.h"
 
@@ -256,30 +258,37 @@ void DumpBinExport2(const BinExport2& proto) {
   }
 }
 
+absl::Status BinExport2DumpMain(int argc, char* argv[]) {
+  absl::InitializeLog();
+  InstallFlagsUsageConfig(
+      absl::StrCat("Dump the disassembly from BinExport files.\n",
+                   "Usage: ", Basename(argv[0]), " BINEXPORT2"));
+  std::vector<char*> positional =
+      ParseSubCommandLine("binexport2dump", argc, argv);
+
+  if (positional.size() != 1) {
+    return absl::FailedPreconditionError("Missing input file");
+  }
+
+  FILE* file = fopen(positional[0], "rb");
+  if (!file) {
+    return absl::ErrnoToStatus(errno, "Could not open file");
+  }
+  absl::Cleanup file_closer([file] { fclose(file); });
+
+  BinExport2 proto;
+  if (!proto.ParseFromFileDescriptor(fileno(file))) {
+    return absl::FailedPreconditionError("Failed to parse BinExport v2 data");
+  }
+
+  DumpBinExport2(proto);
+  return absl::OkStatus();
+}
+
 }  // namespace
 }  // namespace security::binexport
 
 int main(int argc, char* argv[]) {
-  absl::InitializeLog();
-
-  if (argc != 2) {
-    absl::FPrintF(stderr, "Usage: %s BINEXPORT2\n", Basename(argv[0]));
-    return EXIT_FAILURE;
-  }
-
-  std::unique_ptr<FILE, void (*)(FILE*)> file(fopen(argv[1], "rb"),
-                                              [](FILE* fp) { fclose(fp); });
-  if (!file) {
-    perror("could not open file");
-    return EXIT_FAILURE;
-  }
-
-  BinExport2 proto;
-  if (!proto.ParseFromFileDescriptor(fileno(file.get()))) {
-    absl::FPrintF(stderr, "Failed to parse BinExport v2 data\n");
-    return EXIT_FAILURE;
-  }
-
-  security::binexport::DumpBinExport2(proto);
-  return EXIT_SUCCESS;
+  return security::binexport::InvokeMainAndReportErrors(
+      security::binexport::BinExport2DumpMain, argc, argv);
 }

@@ -42,6 +42,9 @@ absl::StatusOr<int> SpawnProcessAndWait(const std::vector<std::string>& argv);
 // Like SpawnProcessAndWait, but does not wait for the child process to finish.
 absl::Status SpawnProcess(const std::vector<std::string>& argv);
 
+// Returns the full path of the currently running executable.
+absl::StatusOr<std::string> GetModuleFilename();
+
 // Returns the platform-specific application data directory, which is a
 // per-user, writable path. If the directory does not exists, the function tries
 // to create it.

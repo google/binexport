@@ -26,16 +26,20 @@
 #include <unistd.h>    // For getpid()
 #ifdef __APPLE__
 #include <crt_externs.h>
+#include <mach-o/dyld.h>  // For _NSGetExecutablePath()
 #include <sys/sysctl.h>
 #else
 #include <sys/sysinfo.h>
 #endif
 #include <sys/stat.h>
 #endif
-#include <algorithm>
+
+#include <algorithm>  // IWYU pragma: keep
 #include <cerrno>
+#include <codecvt>  // IWYU pragma: keep
 #include <cstdlib>
 #include <cstring>
+#include <locale>  // IWYU pragma: keep
 
 #include "third_party/absl/base/attributes.h"  // IWYU pragma: keep
 #include "third_party/absl/status/status.h"
@@ -184,6 +188,51 @@ absl::StatusOr<int> SpawnProcessAndWait(const std::vector<std::string>& argv) {
 
 absl::Status SpawnProcess(const std::vector<std::string>& argv) {
   return DoSpawnProcess(argv, /*wait=*/false).status();
+}
+
+absl::StatusOr<std::string> GetModuleFilename() {
+#ifdef _WIN32
+  std::wstring path(MAX_PATH, L'\0');
+  while (true) {
+    const DWORD len =
+        GetModuleFileNameW(nullptr, &path[0], static_cast<DWORD>(path.size()));
+    if (len == 0 && GetLastError() != ERROR_INSUFFICIENT_BUFFER) {
+      return absl::UnknownError(
+          absl::StrCat("Failed to get module path: ", GetLastOsError()));
+    }
+    if (len < path.size()) {
+      path.resize(len);
+      break;
+    }
+    path.resize(3 * path.size() / 2);
+  }
+  return std::wstring_convert<std::codecvt_utf8<wchar_t>>().to_bytes(path);
+#elif __APPLE__
+  std::string path(NAME_MAX, '\0');
+  uint32_t len = path.size();
+  if (_NSGetExecutablePath(&path[0], &len) != 0) {
+    path.resize(len);
+    if (_NSGetExecutablePath(&path[0], &len) != 0) {
+      return absl::ErrnoToStatus(errno, "Failed to get module path");
+    }
+  }
+  path.resize(strlen(&path[0]));
+  return path;
+#else
+  std::string path(NAME_MAX, '\0');
+  while (true) {
+    ssize_t len = readlink("/proc/self/exe", &path[0], path.size());
+    if (len < 0) {
+      return absl::ErrnoToStatus(errno, "Failed to get module path");
+    }
+    if (len < path.size()) {
+      path.resize(len);
+      break;
+    }
+    path.resize(3 * path.size() / 2);
+  }
+  return path;
+#endif
 }
 
 absl::StatusOr<std::string> GetOrCreateAppDataDirectory(
