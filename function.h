@@ -108,8 +108,8 @@ class Function {
   BasicBlock* GetMutableBasicBlockForAddress(Address address);
 
   using StringCache = absl::node_hash_set<std::string>;
-  static StringCache string_cache_;
-  static int instance_count_;
+  static thread_local StringCache string_cache_;
+  static thread_local int instance_count_;
 
   Address entry_point_;
   BasicBlocks basic_blocks_;

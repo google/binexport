@@ -33,8 +33,8 @@
 using security::binexport::FormatAddress;
 using security::binexport::FormatFunctionName;
 
-int Function::instance_count_ = 0;
-Function::StringCache Function::string_cache_;
+thread_local int Function::instance_count_ = 0;
+thread_local Function::StringCache Function::string_cache_;
 
 Function::Function(Address entry_point) : entry_point_(entry_point) {
   ++instance_count_;
