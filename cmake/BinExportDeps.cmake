@@ -89,11 +89,11 @@ if(BINEXPORT_ENABLE_BINARYNINJA)
   if(BINEXPORT_BINARYNINJA_CHANNEL STREQUAL "stable")
     set(_binexport_binaryninjacore_suffix "_stable")
     set(_binexport_binaryninja_git_tag
-        "5d3e98685591b2521f8dc3151d9a3c36095401b6") # 2023-05-01 v3.4.4271
+        "0d57172be4fda0b7015db697b5353a12d03932af") # 2023-09-19 v3.5.4526
   else()
     set(_binexport_binaryninjacore_suffix "")
     set(_binexport_binaryninja_git_tag
-        "1bd42a73e612f50c68d802acda674c21a30e980c") # 2023-05-18
+        "6e2b374dece03f6fb48a1615fa2bfee809ec2157") # 2023-09-24
   endif()
   FetchContent_Declare(binaryninjaapi
     GIT_REPOSITORY https://github.com/Vector35/binaryninja-api.git
@@ -105,7 +105,7 @@ if(BINEXPORT_ENABLE_BINARYNINJA)
     FetchContent_Populate(binaryninjaapi)  # For binaryninjaapi_SOURCE_DIR
   endif()
   add_library(binaryninjacore SHARED
-    third_party/binaryninja_api/binaryninjacore${_binexport_binaryninjacore_suffix}.cc
+    binaryninja/stubs/binaryninjacore${_binexport_binaryninjacore_suffix}.cc
   )
   set_target_properties(binaryninjacore PROPERTIES
     SOVERSION 1
