@@ -1,4 +1,4 @@
-// Copyright 2019-2021 Google LLC
+// Copyright 2019-2024 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.google.protobuf:protobuf-gradle-plugin:0.9.3'
+        classpath 'com.google.protobuf:protobuf-gradle-plugin:0.9.4'
     }
 }
 
@@ -43,14 +43,14 @@ configurations {
 }
 
 dependencies {
-    extraLibs 'com.google.protobuf:protobuf-java:3.23.0'
+    extraLibs 'com.google.protobuf:protobuf-java:3.25.1'
     configurations.implementation.extendsFrom(configurations.extraLibs)
 }
 
 protobuf {
     // Configure the protoc executable
     protoc {
-        artifact = 'com.google.protobuf:protoc:3.23.0'
+        artifact = 'com.google.protobuf:protoc:3.25.1'
     }
     // Make generator tasks visible in Eclipse.
     generateProtoTasks {
