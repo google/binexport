@@ -128,10 +128,12 @@ if(BINEXPORT_ENABLE_BINARYNINJA)
   add_library(BinaryNinja::API ALIAS binaryninjaapi)
 endif()
 
-# Boost (a subset that we ship)
+# Boost
 set(Boost_NO_SYSTEM_PATHS TRUE)
-set(BOOST_ROOT "${BINEXPORT_SOURCE_DIR}/third_party/boost_parts")
-find_package(Boost 1.71 REQUIRED)
+if(NOT BOOST_ROOT)
+  set(BOOST_ROOT "${BINEXPORT_SOURCE_DIR}/boost_parts")
+endif()
+find_package(Boost 1.83 REQUIRED)
 
 find_package(Git)
 if(BINEXPORT_ENABLE_IDAPRO)

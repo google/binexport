@@ -56,8 +56,9 @@
 #pragma warning(disable : 4267)
 #endif
 
-// Include standard header that is implicitly assumed to be included
+// Include standard headers that are implicitly assumed to be included
 // transitively by pro.h.
+#include <cstdint>
 #include <type_traits>
 
 // Now include the problematic header, end_idasdk.inc will clean up again.

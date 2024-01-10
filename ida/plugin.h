@@ -16,6 +16,7 @@
 #define IDA_PLUGIN_H_
 
 #include <cstddef>
+#include <cstdint>
 
 // clang-format off
 #include "third_party/zynamics/binexport/ida/begin_idasdk.inc"  // NOLINT
