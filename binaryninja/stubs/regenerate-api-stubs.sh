@@ -70,7 +70,7 @@ cd "${THIS_DIR}"
 // clang-format off
 #include "exceptions.h"  // NOLINT
 #define BINARYNINJACORE_LIBRARY
-#include "binaryninjaapi.h"  // NOLINT
+#include "binaryninjacore.h"  // NOLINT
 // clang-format on
 
 extern "C" {
