@@ -28,11 +28,6 @@
 #   IdaSdk_INCLUDE_DIRS - Include directories for the IDA Pro SDK.
 #   IdaSdk_PLATFORM     - IDA SDK platform, one of __LINUX__, __NT__ or
 #                         __MAC__.
-#   IdaSdk_LIB32        - Windows: full path to a suitable ida.lib for 32-bit
-#                                  address aware IDA.
-#                       - Linux/macOS: path to libida.dylib/libida.so
-#   IdaSdk_LIB64        - Windows: path to ida.lib for 64-bit address sizes
-#                       - Linux/macOS: path to libida64.dylib/libida64.so
 #
 # This module reads hints about search locations from variables:
 #
@@ -179,7 +174,7 @@ if(APPLE)
 elseif(UNIX)
   set(IdaSdk_PLATFORM __LINUX__)
 
-  find_library(IdaSdk_LIB64 ida64
+  find_path(IdaSdk_LIBPATH64 libida64.so
     PATHS "${IdaSdk_DIR}/lib"
     PATH_SUFFIXES x64_linux_gcc_64
                   # IDA SDK 8.3 and later
@@ -190,9 +185,11 @@ elseif(UNIX)
     REQUIRED
   )
   add_library(ida64 SHARED IMPORTED)
-  set_target_properties(ida64 PROPERTIES IMPORTED_LOCATION "${IdaSdk_LIB64}")
+  set_target_properties(ida64 PROPERTIES
+    IMPORTED_LOCATION "${IdaSdk_LIBPATH64}/libida64.so"
+  )
 
-  find_library(IdaSdk_LIB32 ida
+  find_path(IdaSdk_LIBPATH32 libida.so
     PATHS "${IdaSdk_DIR}/lib"
     PATH_SUFFIXES x64_linux_gcc_32
                   # IDA SDK 8.3 and later
@@ -203,7 +200,9 @@ elseif(UNIX)
     REQUIRED
   )
   add_library(ida32 SHARED IMPORTED)
-  set_target_properties(ida32 PROPERTIES IMPORTED_LOCATION "${IdaSdk_LIB32}")
+  set_target_properties(ida32 PROPERTIES
+    IMPORTED_LOCATION "${IdaSdk_LIBPATH32}/libida.so"
+  )
 elseif(WIN32)
   set(IdaSdk_PLATFORM __NT__)
 
