@@ -25,14 +25,11 @@ jobs:
     - name: Create Build Environment
       env:
         RUNNER_WORKSPACE: ${{ runner.workspace }}
-        IDASDK_SECRET: ${{ secrets.IDASDK_SECRET }}
       working-directory: ${{ github.workspace }}
       shell: bash
       run: |
         cmake -E make_directory "${RUNNER_WORKSPACE}/build"
         ./.github/scripts/decrypt_secret.sh
-        unzip -q "${RUNNER_WORKSPACE}/build/idasdk_teams80.zip" \
-          -d "${RUNNER_WORKSPACE}/build/"
 
     - name: Enable Developer Command Prompt (Windows)
       if: matrix.os == 'windows-2022'
@@ -48,7 +45,8 @@ jobs:
       run: |
         cmake "${GITHUB_WORKSPACE}" -G Ninja \
           "-DCMAKE_BUILD_TYPE=${BUILD_TYPE}" \
-          "-DIdaSdk_ROOT_DIR=${{ runner.workspace }}/build/idasdk_teams80"
+          "-DBINEXPORT_BINARYNINJA_CHANNEL=DEV" \
+          "-DBINEXPORT_ENABLE_IDAPRO=OFF"
 
     - name: Build
       working-directory: ${{ runner.workspace }}/build
@@ -66,5 +64,4 @@ jobs:
         name: BinExport-${{ runner.os }}
         path: |
           ${{ runner.workspace }}/build/binaryninja/binexport*
-          ${{ runner.workspace }}/build/ida/binexport*
           ${{ runner.workspace }}/build/tools/binexport2dump*
