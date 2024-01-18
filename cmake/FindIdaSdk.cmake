@@ -28,9 +28,6 @@
 #   IdaSdk_INCLUDE_DIRS - Include directories for the IDA Pro SDK.
 #   IdaSdk_PLATFORM     - IDA SDK platform, one of __LINUX__, __NT__ or
 #                         __MAC__.
-#   IdaSdk_LIB32        - Windows: full path to a suitable ida.lib for 32-bit
-#                                  address aware IDA.
-#   IdaSdk_LIB          - Windows: path to ida.lib for 64-bit address sizes
 #
 # This module reads hints about search locations from variables:
 #
@@ -70,12 +67,12 @@ include(CMakeParseArguments)
 include(FindPackageHandleStandardArgs)
 
 find_path(IdaSdk_DIR NAMES include/pro.h
-                     HINTS ${IdaSdk_ROOT_DIR} ENV IDASDK_ROOT
-                     PATHS ${CMAKE_CURRENT_LIST_DIR}/../third_party/idasdk
+                     HINTS "${IdaSdk_ROOT_DIR}" ENV IDASDK_ROOT
+                     PATHS "${CMAKE_CURRENT_LIST_DIR}/../third_party/idasdk"
                      PATH_SUFFIXES idasdk
                      DOC "Location of the IDA SDK"
                      NO_DEFAULT_PATH)
-set(IdaSdk_INCLUDE_DIRS ${IdaSdk_DIR}/include)
+set(IdaSdk_INCLUDE_DIRS "${IdaSdk_DIR}/include")
 
 find_package_handle_standard_args(
   IdaSdk FOUND_VAR IdaSdk_FOUND
@@ -84,46 +81,158 @@ find_package_handle_standard_args(
          FAIL_MESSAGE "IDA SDK not found, try setting IdaSdk_ROOT_DIR")
 
 # Define some platform specific variables for later use.
-set(_so ${CMAKE_SHARED_LIBRARY_SUFFIX})
-set(_so64 64${CMAKE_SHARED_LIBRARY_SUFFIX})  # An additional "64"
+set(_so "${CMAKE_SHARED_LIBRARY_SUFFIX}")
+set(_so64 "64${CMAKE_SHARED_LIBRARY_SUFFIX}")  # An additional "64"
 # _plx, _plx64, _llx, _llx64 are kept to stay compatible with older
 # CMakeLists.txt files.
-set(_plx ${CMAKE_SHARED_LIBRARY_SUFFIX})
-set(_plx64 64${CMAKE_SHARED_LIBRARY_SUFFIX})  # An additional "64"
-set(_llx ${CMAKE_SHARED_LIBRARY_SUFFIX})
-set(_llx64 64${CMAKE_SHARED_LIBRARY_SUFFIX})  # An additional "64"
+set(_plx "${CMAKE_SHARED_LIBRARY_SUFFIX}")
+set(_plx64 "64${CMAKE_SHARED_LIBRARY_SUFFIX}")  # An additional "64"
+set(_llx "${CMAKE_SHARED_LIBRARY_SUFFIX}")
+set(_llx64 "64${CMAKE_SHARED_LIBRARY_SUFFIX}")  # An additional "64"
+
 if(APPLE)
   set(IdaSdk_PLATFORM __MAC__)
+
+  # Not using find_library(), as static-lib search might be enforced in
+  # calling project.
+  set(_ida64_suffixes
+    x64_mac_clang_64
+    # IDA SDK 8.3 and later
+    x64_mac_clang_64_teams
+    x64_mac_clang_64_pro
+    x64_mac_clang_64_home
+  )
+  find_path(IdaSdk_LIBPATH64_X64 libida64.dylib
+    PATHS "${IdaSdk_DIR}/lib"
+    PATH_SUFFIXES ${_ida64_suffixes} NO_DEFAULT_PATH
+    REQUIRED
+  )
+  find_path(IdaSdk_LIBPATH64_ARM64 libida64.dylib
+    PATHS "${IdaSdk_DIR}/lib"
+    PATH_SUFFIXES ${_ida64_suffixes} NO_DEFAULT_PATH
+    REQUIRED
+  )
+  if(NOT TARGET ida64_universal)
+    set(_ida64_universal_lib
+      "${CMAKE_CURRENT_BINARY_DIR}/libida64_universal.dylib"
+      CACHE INTERNAL ""
+    )
+    # Create a new "universal" library to allow the linker to select the
+    # correct one per architecture. Ideally, Hex Rays would just compile
+    # libida64.dylib as a universal bundle.
+    add_custom_target(ida64_universal
+      DEPENDS "${IdaSdk_LIBPATH64_ARM64}/libida64.dylib"
+              "${IdaSdk_LIBPATH64_X64}/libida64.dylib"
+      BYPRODUCTS "${_ida64_universal_lib}"
+      COMMAND lipo -create "${IdaSdk_LIBPATH64_ARM64}/libida64.dylib"
+                           "${IdaSdk_LIBPATH64_X64}/libida64.dylib"
+                   -output "${_ida64_universal_lib}"
+    )
+  endif()
+  add_library(ida64 SHARED IMPORTED)
+  add_dependencies(ida64 ida64_universal)
+  set_target_properties(ida64 PROPERTIES
+    IMPORTED_LOCATION "${_ida64_universal_lib}"
+  )
+
+  set(_ida32_suffixes
+    x64_mac_clang_32
+    # IDA SDK 8.3 and later
+    x64_mac_clang_32_teams
+    x64_mac_clang_32_pro
+    x64_mac_clang_32_home
+  )
+  find_path(IdaSdk_LIBPATH32_X64 libida.dylib
+    PATHS "${IdaSdk_DIR}/lib"
+    PATH_SUFFIXES ${_ida32_suffixes} NO_DEFAULT_PATH
+    REQUIRED
+  )
+  find_path(IdaSdk_LIBPATH32_ARM64 libida.dylib
+    PATHS "${IdaSdk_DIR}/lib"
+    PATH_SUFFIXES ${_ida32_suffixes} NO_DEFAULT_PATH
+    REQUIRED
+  )
+  if(NOT TARGET ida32_universal)
+    set(_ida32_universal_lib
+      "${CMAKE_CURRENT_BINARY_DIR}/libida32_universal.dylib"
+      CACHE INTERNAL ""
+    )
+    add_custom_target(ida32_universal
+      DEPENDS "${IdaSdk_LIBPATH32_ARM64}/libida.dylib"
+              "${IdaSdk_LIBPATH32_X64}/libida.dylib"
+      BYPRODUCTS "${_ida32_universal_lib}"
+      COMMAND lipo -create "${IdaSdk_LIBPATH32_ARM64}/libida.dylib"
+                           "${IdaSdk_LIBPATH32_X64}/libida.dylib"
+                   -output "${_ida32_universal_lib}"
+    )
+  endif()
+  add_library(ida32 SHARED IMPORTED)
+  add_dependencies(ida32 ida32_universal)
+  set_target_properties(ida32 PROPERTIES
+    IMPORTED_LOCATION "${_ida32_universal_lib}"
+  )
 elseif(UNIX)
   set(IdaSdk_PLATFORM __LINUX__)
+
+  find_path(IdaSdk_LIBPATH64 libida64.so
+    PATHS "${IdaSdk_DIR}/lib"
+    PATH_SUFFIXES x64_linux_gcc_64
+                  # IDA SDK 8.3 and later
+                  x64_linux_gcc_64_teams
+                  x64_linux_gcc_64_pro
+                  x64_linux_gcc_64_home
+    NO_DEFAULT_PATH
+    REQUIRED
+  )
+  add_library(ida64 SHARED IMPORTED)
+  set_target_properties(ida64 PROPERTIES
+    IMPORTED_LOCATION "${IdaSdk_LIBPATH64}/libida64.so"
+  )
+
+  find_path(IdaSdk_LIBPATH32 libida.so
+    PATHS "${IdaSdk_DIR}/lib"
+    PATH_SUFFIXES x64_linux_gcc_32
+                  # IDA SDK 8.3 and later
+                  x64_linux_gcc_32_teams
+                  x64_linux_gcc_32_pro
+                  x64_linux_gcc_32_home
+    NO_DEFAULT_PATH
+    REQUIRED
+  )
+  add_library(ida32 SHARED IMPORTED)
+  set_target_properties(ida32 PROPERTIES
+    IMPORTED_LOCATION "${IdaSdk_LIBPATH32}/libida.so"
+  )
 elseif(WIN32)
   set(IdaSdk_PLATFORM __NT__)
-else()
-  message(FATAL_ERROR "Unsupported system type: ${CMAKE_SYSTEM_NAME}")
-endif()
 
-if(WIN32)
-  find_library(IdaSdk_LIB ida
-    PATHS ${IdaSdk_DIR}/lib
+  find_library(IdaSdk_LIB64 ida
+    PATHS "${IdaSdk_DIR}/lib"
     PATH_SUFFIXES x64_win_vc_64
                   # IDA SDK 8.3 and later
                   x64_win_vc_64_teams
                   x64_win_vc_64_pro
                   x64_win_vc_64_home
     NO_DEFAULT_PATH
+    REQUIRED
   )
+  add_library(ida64 SHARED IMPORTED)
+  set_target_properties(ida64 PROPERTIES IMPORTED_LOCATION "${IdaSdk_LIB64}")
+
   find_library(IdaSdk_LIB32 ida
-    PATHS ${IdaSdk_DIR}/lib
+    PATHS "${IdaSdk_DIR}/lib"
     PATH_SUFFIXES x64_win_vc_32
                   # IDA SDK 8.3 and later
                   x64_win_vc_32_teams
                   x64_win_vc_32_pro
                   x64_win_vc_32_home
     NO_DEFAULT_PATH
+    REQUIRED
   )
-  if(NOT IdaSdk_LIB OR NOT IdaSdk_LIB32)
-    message(FATAL_ERROR "Missing ida.lib from SDK lib dir")
-  endif()
+  add_library(ida32 SHARED IMPORTED)
+  set_target_properties(ida32 PROPERTIES IMPORTED_LOCATION "${IdaSdk_LIB32}")
+else()
+  message(FATAL_ERROR "Unsupported system type: ${CMAKE_SYSTEM_NAME}")
 endif()
 
 function(_ida_common_target_settings t ea64)
@@ -137,7 +246,7 @@ function(_ida_common_target_settings t ea64)
                                          __IDP__
                                          USE_DANGEROUS_FUNCTIONS
                                          USE_STANDARD_FILE_FUNCTIONS)
-  target_include_directories(${t} PUBLIC ${IdaSdk_INCLUDE_DIRS})
+  target_include_directories(${t} PUBLIC "${IdaSdk_INCLUDE_DIRS}")
 endfunction()
 
 macro(_ida_check_bitness)
@@ -170,17 +279,21 @@ function(_ida_plugin name ea64 link_script)  # ARGN contains sources
   _ida_common_target_settings(${t} ${ea64})
 
   set_target_properties(${t} PROPERTIES PREFIX "" SUFFIX "")
+  if(ea64)
+    target_link_libraries(${t} ida64)
+  else()
+    target_link_libraries(${t} ida32)
+  endif()
   if(UNIX)
-    target_compile_options(${t} PUBLIC ${_ida_compile_options})
     if(APPLE)
-      target_link_libraries(${t} ${_ida_compile_options}
-                                 -Wl,-flat_namespace
-                                 -Wl,-undefined,warning
-                                 -Wl,-exported_symbol,_PLUGIN)
+      target_link_libraries(${t}
+        -Wl,-flat_namespace
+        -Wl,-exported_symbol,_PLUGIN
+      )
     else()
       # Always use the linker script needed for IDA.
-      target_link_libraries(${t} ${_ida_compile_options}
-        -Wl,--version-script ${IdaSdk_DIR}/${link_script})
+      target_link_libraries(${t}
+        -Wl,--version-script "${IdaSdk_DIR}/${link_script}")
     endif()
 
     # For qrefcnt_obj_t in ida.hpp
@@ -189,12 +302,6 @@ function(_ida_plugin name ea64 link_script)  # ARGN contains sources
       -Wno-non-virtual-dtor
       -Wno-varargs
     )
-  elseif(WIN32)
-    if(ea64)
-      target_link_libraries(${t} ${IdaSdk_LIB})
-    else()
-      target_link_libraries(${t} ${IdaSdk_LIB32})
-    endif()
   endif()
 endfunction()
 
