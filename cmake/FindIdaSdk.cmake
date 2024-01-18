@@ -74,11 +74,12 @@ find_path(IdaSdk_DIR NAMES include/pro.h
                      NO_DEFAULT_PATH)
 set(IdaSdk_INCLUDE_DIRS "${IdaSdk_DIR}/include")
 
-find_package_handle_standard_args(
-  IdaSdk FOUND_VAR IdaSdk_FOUND
-         REQUIRED_VARS IdaSdk_DIR
-                       IdaSdk_INCLUDE_DIRS
-         FAIL_MESSAGE "IDA SDK not found, try setting IdaSdk_ROOT_DIR")
+find_package_handle_standard_args(IdaSdk
+  FOUND_VAR IdaSdk_FOUND
+  REQUIRED_VARS IdaSdk_DIR
+                IdaSdk_INCLUDE_DIRS
+  FAIL_MESSAGE "IDA SDK not found, try setting IdaSdk_ROOT_DIR"
+)
 
 # Define some platform specific variables for later use.
 set(_so "${CMAKE_SHARED_LIBRARY_SUFFIX}")
@@ -90,27 +91,28 @@ set(_plx64 "64${CMAKE_SHARED_LIBRARY_SUFFIX}")  # An additional "64"
 set(_llx "${CMAKE_SHARED_LIBRARY_SUFFIX}")
 set(_llx64 "64${CMAKE_SHARED_LIBRARY_SUFFIX}")  # An additional "64"
 
+function(_ida_get_libpath_suffixes var basename)
+  # IDA SDK 8.3 introduced lib path suffixes per edition
+  foreach(_suffix IN ITEMS "" "_teams" "_pro" "_home")
+    list(APPEND _suffixes "${basename}${_suffix}")
+  endforeach()
+  set("${var}" "${_suffixes}" PARENT_SCOPE)
+endfunction()
+
 if(APPLE)
   set(IdaSdk_PLATFORM __MAC__)
 
   # Not using find_library(), as static-lib search might be enforced in
   # calling project.
-  set(_ida64_suffixes
-    x64_mac_clang_64
-    # IDA SDK 8.3 and later
-    x64_mac_clang_64_teams
-    x64_mac_clang_64_pro
-    x64_mac_clang_64_home
-  )
+  _ida_get_libpath_suffixes(_ida64_x64_suffixes "x64_mac_clang_64")
   find_path(IdaSdk_LIBPATH64_X64 libida64.dylib
-    PATHS "${IdaSdk_DIR}/lib"
-    PATH_SUFFIXES ${_ida64_suffixes} NO_DEFAULT_PATH
-    REQUIRED
+    PATHS "${IdaSdk_DIR}/lib" PATH_SUFFIXES ${_ida64_x64_suffixes}
+    NO_DEFAULT_PATH REQUIRED
   )
+  _ida_get_libpath_suffixes(_ida64_arm64_suffixes "arm64_mac_clang_64")
   find_path(IdaSdk_LIBPATH64_ARM64 libida64.dylib
-    PATHS "${IdaSdk_DIR}/lib"
-    PATH_SUFFIXES ${_ida64_suffixes} NO_DEFAULT_PATH
-    REQUIRED
+    PATHS "${IdaSdk_DIR}/lib" PATH_SUFFIXES ${_ida64_arm64_suffixes}
+    NO_DEFAULT_PATH REQUIRED
   )
   if(NOT TARGET ida64_universal)
     set(_ida64_universal_lib
@@ -135,22 +137,15 @@ if(APPLE)
     IMPORTED_LOCATION "${_ida64_universal_lib}"
   )
 
-  set(_ida32_suffixes
-    x64_mac_clang_32
-    # IDA SDK 8.3 and later
-    x64_mac_clang_32_teams
-    x64_mac_clang_32_pro
-    x64_mac_clang_32_home
-  )
+  _ida_get_libpath_suffixes(_ida32_x64_suffixes "x64_mac_clang_32")
   find_path(IdaSdk_LIBPATH32_X64 libida.dylib
-    PATHS "${IdaSdk_DIR}/lib"
-    PATH_SUFFIXES ${_ida32_suffixes} NO_DEFAULT_PATH
-    REQUIRED
+    PATHS "${IdaSdk_DIR}/lib" PATH_SUFFIXES ${_ida32_x64_suffixes}
+    NO_DEFAULT_PATH REQUIRED
   )
+  _ida_get_libpath_suffixes(_ida32_arm64_suffixes "arm_mac_clang_32")
   find_path(IdaSdk_LIBPATH32_ARM64 libida.dylib
-    PATHS "${IdaSdk_DIR}/lib"
-    PATH_SUFFIXES ${_ida32_suffixes} NO_DEFAULT_PATH
-    REQUIRED
+    PATHS "${IdaSdk_DIR}/lib" PATH_SUFFIXES ${_ida32_arm64_suffixes}
+    NO_DEFAULT_PATH REQUIRED
   )
   if(NOT TARGET ida32_universal)
     set(_ida32_universal_lib
@@ -174,30 +169,20 @@ if(APPLE)
 elseif(UNIX)
   set(IdaSdk_PLATFORM __LINUX__)
 
+  _ida_get_libpath_suffixes(_ida64_suffixes "x64_linux_gcc_64")
   find_path(IdaSdk_LIBPATH64 libida64.so
-    PATHS "${IdaSdk_DIR}/lib"
-    PATH_SUFFIXES x64_linux_gcc_64
-                  # IDA SDK 8.3 and later
-                  x64_linux_gcc_64_teams
-                  x64_linux_gcc_64_pro
-                  x64_linux_gcc_64_home
-    NO_DEFAULT_PATH
-    REQUIRED
+    PATHS "${IdaSdk_DIR}/lib" PATH_SUFFIXES ${_ida64_suffixes}
+    NO_DEFAULT_PATH REQUIRED
   )
   add_library(ida64 SHARED IMPORTED)
   set_target_properties(ida64 PROPERTIES
     IMPORTED_LOCATION "${IdaSdk_LIBPATH64}/libida64.so"
   )
 
+  _ida_get_libpath_suffixes(_ida32_suffixes "x64_linux_gcc_32")
   find_path(IdaSdk_LIBPATH32 libida.so
-    PATHS "${IdaSdk_DIR}/lib"
-    PATH_SUFFIXES x64_linux_gcc_32
-                  # IDA SDK 8.3 and later
-                  x64_linux_gcc_32_teams
-                  x64_linux_gcc_32_pro
-                  x64_linux_gcc_32_home
-    NO_DEFAULT_PATH
-    REQUIRED
+    PATHS "${IdaSdk_DIR}/lib" PATH_SUFFIXES ${_ida32_suffixes}
+    NO_DEFAULT_PATH REQUIRED
   )
   add_library(ida32 SHARED IMPORTED)
   set_target_properties(ida32 PROPERTIES
@@ -206,28 +191,18 @@ elseif(UNIX)
 elseif(WIN32)
   set(IdaSdk_PLATFORM __NT__)
 
+  _ida_get_libpath_suffixes(_ida64_suffixes "x64_win_vc_64")
   find_library(IdaSdk_LIB64 ida
-    PATHS "${IdaSdk_DIR}/lib"
-    PATH_SUFFIXES x64_win_vc_64
-                  # IDA SDK 8.3 and later
-                  x64_win_vc_64_teams
-                  x64_win_vc_64_pro
-                  x64_win_vc_64_home
-    NO_DEFAULT_PATH
-    REQUIRED
+    PATHS "${IdaSdk_DIR}/lib" PATH_SUFFIXES ${_ida64_suffixes}
+    NO_DEFAULT_PATH REQUIRED
   )
   add_library(ida64 SHARED IMPORTED)
   set_target_properties(ida64 PROPERTIES IMPORTED_LOCATION "${IdaSdk_LIB64}")
 
+  _ida_get_libpath_suffixes(_ida32_suffixes "x64_win_vc_32")
   find_library(IdaSdk_LIB32 ida
-    PATHS "${IdaSdk_DIR}/lib"
-    PATH_SUFFIXES x64_win_vc_32
-                  # IDA SDK 8.3 and later
-                  x64_win_vc_32_teams
-                  x64_win_vc_32_pro
-                  x64_win_vc_32_home
-    NO_DEFAULT_PATH
-    REQUIRED
+    PATHS "${IdaSdk_DIR}/lib" PATH_SUFFIXES ${_ida32_suffixes}
+    NO_DEFAULT_PATH REQUIRED
   )
   add_library(ida32 SHARED IMPORTED)
   set_target_properties(ida32 PROPERTIES IMPORTED_LOCATION "${IdaSdk_LIB32}")
