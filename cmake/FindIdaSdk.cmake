@@ -142,7 +142,7 @@ if(APPLE)
     PATHS "${IdaSdk_DIR}/lib" PATH_SUFFIXES ${_ida32_x64_suffixes}
     NO_DEFAULT_PATH REQUIRED
   )
-  _ida_get_libpath_suffixes(_ida32_arm64_suffixes "arm_mac_clang_32")
+  _ida_get_libpath_suffixes(_ida32_arm64_suffixes "arm64_mac_clang_32")
   find_path(IdaSdk_LIBPATH32_ARM64 libida.dylib
     PATHS "${IdaSdk_DIR}/lib" PATH_SUFFIXES ${_ida32_arm64_suffixes}
     NO_DEFAULT_PATH REQUIRED
