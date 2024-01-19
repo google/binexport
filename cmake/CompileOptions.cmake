@@ -60,7 +60,12 @@ if(UNIX)
   add_compile_options(-Wno-deprecated)
   if(APPLE)
     add_compile_options(-gfull)
-    add_link_options(-dead_strip)
+    add_link_options(
+      -dead_strip
+      # Work around assertion failure with LTO symbols
+      # https://developer.apple.com/documentation/xcode-release-notes/xcode-15-release-notes#Linking
+      LINKER:-ld_classic
+    )
 
     # Suppress ranlib warnings "file has no symbols"
     set(CMAKE_C_ARCHIVE_CREATE
