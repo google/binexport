@@ -85,6 +85,8 @@ std::string GetExtendedRegisterName(const op_t& operand) {
       return absl::StrCat("ymm", operand.reg);
     case o_zmmreg:  // AVX-512 register
       return absl::StrCat("zmm", operand.reg);
+    case o_kreg:  // AVX-512 opmask register
+      return absl::StrCat("k", operand.reg);
     case o_fpreg:  // Floating point register
       return absl::StrCat("st(", operand.reg, ")");
     default:
@@ -131,8 +133,9 @@ std::string GetInstanceName(Address address) { return GetName(address, false); }
 void HandlePhraseExpression(Expressions* expressions, FlowGraph* flow_graph,
                             const insn_t& instruction, const op_t& operand,
                             uint8_t operand_num) {
-  std::string base, index;
-  if (ad16(instruction)) {  // https://zynamics.fogbugz.com/default.asp?2792
+  std::string base;
+  std::string index;
+  if (ad16(instruction)) {
     switch (operand.phrase) {
       case 0:
         base = "bx";
@@ -389,6 +392,7 @@ Operands ParseOperandsIdaMetaPc(const insn_t& instruction,
       case o_xmmreg:  // SSE register
       case o_ymmreg:  // AVX register
       case o_zmmreg:  // AVX-512 register
+      case o_kreg:    // AVX-512 opmask register
       case o_fpreg:   // Floating point register
         if (operand_size != 0) {
           expression =
@@ -482,7 +486,7 @@ Instruction ParseInstructionIdaMetaPc(const insn_t& instruction,
   if (!IsCode(instruction.ea)) {
     return Instruction(instruction.ea);
   }
-  std::string mnemonic(GetMnemonic(instruction.ea));
+  std::string mnemonic = GetMnemonic(instruction.ea);
   if (mnemonic.empty()) {
     return Instruction(instruction.ea);
   }
