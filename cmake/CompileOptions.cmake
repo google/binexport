@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+include(CheckLinkerFlag)
+
 # These affect ABI and linking, so set them globally, even for dependencies
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 set(CMAKE_CXX_STANDARD 17)
@@ -62,10 +64,14 @@ if(UNIX)
     add_compile_options(-gfull)
     add_link_options(
       -dead_strip
-      # Work around assertion failure with LTO symbols
-      # https://developer.apple.com/documentation/xcode-release-notes/xcode-15-release-notes#Linking
-      LINKER:-ld_classic
     )
+
+    # Work around assertion failure with LTO symbols
+    # https://developer.apple.com/documentation/xcode-release-notes/xcode-15-release-notes#Linking
+    check_linker_flag(CXX "LINKER:-ld_classic" _binexport_ld_classic_supported)
+    if(_binexport_ld_classic_supported)
+      add_link_options(LINKER:-ld_classic)
+    endif()
 
     # Suppress ranlib warnings "file has no symbols"
     set(CMAKE_C_ARCHIVE_CREATE
