@@ -24,8 +24,8 @@ include(FetchContent)
 
 # Abseil
 FetchContent_Declare(absl
-  URL https://github.com/abseil/abseil-cpp/archive/ae87791869cacbc125aa708108c4721e51ff703d.zip  # 2023-06-08
-  URL_HASH SHA256=fbe050daabadda2297cea9ace55ccde48e3994887bc0b1e6c7330f1a97ee071b
+  URL https://github.com/abseil/abseil-cpp/archive/42624b3d9d56ae6fd5c48b28715044667942b9d8.zip  # 2024-01-25
+  URL_HASH SHA256=87e5f2a702c7b1bb496438d155cc44419c05bab9523ec7dba73842e566f41446
 )
 set(ABSL_CXX_STANDARD ${CMAKE_CXX_STANDARD} CACHE STRING "" FORCE)
 set(ABSL_PROPAGATE_CXX_STD ON CACHE BOOL "" FORCE)
@@ -38,8 +38,8 @@ binexport_check_target(absl::core_headers)
 if(BUILD_TESTING AND BINEXPORT_BUILD_TESTING)
   # Googletest (needs to come after Abseil due to C++ standard propagation)
   FetchContent_Declare(googletest
-    URL https://github.com/google/googletest/archive/334704df263b480a3e9e7441ed3292a5e30a37ec.zip  # 2023-06-06
-    URL_HASH SHA256=a217118c2c36a3632b594af7ff98111a65bb2b980b726a7fa62305e02a998440
+    URL https://github.com/google/googletest/archive/b3a9ba2b8e975550799838332803d468797ae2e1.zip  # 2023-12-04
+    URL_HASH SHA256=93b52882cff4e8fb344070106facee0df5e61be91b1948a69c8581b3bcbe0c61
   )
   FetchContent_MakeAvailable(googletest)
   binexport_check_target(gtest)
@@ -49,8 +49,8 @@ if(BUILD_TESTING AND BINEXPORT_BUILD_TESTING)
   if(BINEXPORT_BUILD_BENCHMARK)
     # Benchmark
     FetchContent_Declare(benchmark
-      URL https://github.com/google/benchmark/archive/604f6fd3f4b34a84ec4eb4db81d842fa4db829cd.zip  # 2023-05-30
-      URL_HASH SHA256=342705876335bf894147e052d0dac141fe15962034b41bef5aa59c4b279ca89c
+      URL https://github.com/google/benchmark/archive/ea71a14891474943fc1f34d359f9e0e82476ffe1.zip  # 2024-01-09
+      URL_HASH SHA256=d5b0b5471c42e8e431f08ccc52db4acff609d927286bde04e2ac93aff3699ca1
     )
     set(BENCHMARK_CXX_STANDARD ${CMAKE_CXX_STANDARD} CACHE STRING "" FORCE)
     set(BENCHMARK_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
@@ -64,7 +64,7 @@ endif()
 # Protocol Buffers
 FetchContent_Declare(protobuf
   GIT_REPOSITORY https://github.com/protocolbuffers/protobuf.git
-  GIT_TAG        v23.4 # 2023-07-05 (must be a branch for GIT_SHALLOW to work)
+  GIT_TAG        v25.2 # 2023-07-05 (must be a branch for GIT_SHALLOW to work)
   GIT_SUBMODULES third_party/jsoncpp
   GIT_SHALLOW    TRUE
 )

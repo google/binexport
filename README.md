@@ -210,8 +210,7 @@ to the [BinExport for Ghidra](/java) instructions.
 
 There are quite a few dependencies to satisfy:
 
-*   Boost 1.71.0 or higher (a partial copy of 1.71.0 ships in
-    `third_party/boost_parts`)
+*   Boost 1.83.0 or higher (a partial copy of 1.83.0 ships in `boost_parts`)
 *   [CMake](https://cmake.org/download/) 3.14 or higher
 *   Suggested: [Ninja](https://ninja-build.org/) for speedy builds
 *   GCC 9 or a recent version of Clang on Linux/macOS. On Windows, use the
@@ -219,7 +218,7 @@ There are quite a few dependencies to satisfy:
 *   Git 1.8 or higher
 *   IDA Pro only: IDA SDK 8.0 or higher (unpack into `third_party/idasdk`)
 *   Dependencies that will be downloaded:
-    *   Abseil, GoogleTest and Protocol Buffers (3.21)
+    *   Abseil, GoogleTest and Protocol Buffers (25.2)
     *   Binary Ninja SDK
 
 ### Linux
@@ -295,7 +294,7 @@ as `binexport12_binaryninja.so` (for Binary Ninja).
 #### Prerequisites
 
 The preferred build environment is macOS 13 "Ventura" using Xcode
-14.1. Using macOS 12 "Monterey" should also work.
+15.1. Using macOS 12 "Monterey" should also work.
 
 After installing the Developer Tools, make sure to install the command-line
 tools as well:

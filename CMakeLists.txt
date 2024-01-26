@@ -12,17 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-cmake_minimum_required(VERSION 3.14..3.24)
+cmake_minimum_required(VERSION 3.14..3.27)
 
 cmake_policy(VERSION 3.14)
 
-if(POLICY CMP0091)
-  cmake_policy(SET CMP0091 NEW)  # Enable MSVC runtime library setting
-endif()
-
-if(POLICY CMP0135)
-  cmake_policy(SET CMP0135 NEW)  # Set download timestamp to current time
-endif()
+foreach(_binexport_policy IN ITEMS
+  CMP0091  # Enable MSVC runtime library setting
+  CMP0135  # Set download timestamp to current time
+  CMP0144  # Use upper-case <PACKAGENAME>_ROOT variables
+)
+  cmake_policy(SET ${_binexport_policy} NEW)
+endforeach()
 
 project(binexport VERSION 12)  # Only major version is used
 
