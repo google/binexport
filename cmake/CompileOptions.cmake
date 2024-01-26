@@ -38,22 +38,7 @@ elseif(MSVC)  # Visual Studio
     /wd4267  # 'initializing' conversion, possible loss of data
   )
   # Use the static runtime
-  if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.15.0")
-    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-  else()
-    foreach(flag_var CMAKE_C_FLAGS CMAKE_CXX_FLAGS
-                     CMAKE_C_FLAGS_DEBUG CMAKE_CXX_FLAGS_DEBUG
-                     CMAKE_C_FLAGS_RELEASE CMAKE_CXX_FLAGS_RELEASE
-                     CMAKE_C_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_MINSIZEREL
-                     CMAKE_C_FLAGS_RELWITHDEBINFO CMAKE_CXX_FLAGS_RELWITHDEBINFO)
-      if(${flag_var} MATCHES "/MD")
-        string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
-      endif()
-      if(${flag_var} MATCHES "/MDd")
-        string(REGEX REPLACE "/MDd" "/MTd" ${flag_var} "${${flag_var}}")
-      endif()
-    endforeach(flag_var)
-  endif()
+  set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 else()
   message(FATAL_ERROR "Unsupported compiler")
 endif()

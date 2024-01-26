@@ -17,22 +17,21 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Install ninja-build tool
       uses: turtlesec-no/get-ninja@1.1.0
 
     - name: Create Build Environment
       env:
-        RUNNER_WORKSPACE: ${{ runner.workspace }}
         IDASDK_SECRET: ${{ secrets.IDASDK_SECRET }}
       working-directory: ${{ github.workspace }}
       shell: bash
       run: |
-        cmake -E make_directory "${RUNNER_WORKSPACE}/build"
+        mkdir -p "${{ runner.workspace }}/build"
         ./.github/scripts/decrypt_secret.sh
-        unzip -q "${RUNNER_WORKSPACE}/build/idasdk_teams80.zip" \
-          -d "${RUNNER_WORKSPACE}/build/"
+        unzip -q "${{ runner.workspace }}/build/idasdk_teams80.zip" \
+              -d "${{ runner.workspace }}/build/"
 
     - name: Enable Developer Command Prompt (Windows)
       if: matrix.os == 'windows-2022'
@@ -46,7 +45,7 @@ jobs:
       working-directory: ${{ runner.workspace }}/build
       shell: bash
       run: |
-        cmake "${GITHUB_WORKSPACE}" -G Ninja \
+        cmake "${{ github.workspace }}" -G Ninja \
           "-DCMAKE_BUILD_TYPE=${BUILD_TYPE}" \
           "-DIdaSdk_ROOT_DIR=${{ runner.workspace }}/build/idasdk_teams80"
 
