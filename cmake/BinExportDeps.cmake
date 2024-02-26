@@ -89,7 +89,7 @@ if(BINEXPORT_ENABLE_BINARYNINJA)
   if(BINEXPORT_BINARYNINJA_CHANNEL STREQUAL "stable")
     set(_binexport_binaryninjacore_suffix "_stable")
     set(_binexport_binaryninja_git_tag
-        "0d57172be4fda0b7015db697b5353a12d03932af") # 2023-09-19 v3.5.4526
+        "59e569906828e91e4884670c2bba448702f5a31d") # 2023-09-19 v3.5.4526
   else()
     set(_binexport_binaryninjacore_suffix "")
     set(_binexport_binaryninja_git_tag
