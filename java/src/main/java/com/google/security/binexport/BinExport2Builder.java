@@ -89,6 +89,10 @@ public class BinExport2Builder {
     return this;
   }
 
+  private Address getAddressFromLong(long offset) {
+    return program.getAddressFactory().getDefaultAddressSpace().getAddress(offset);
+  }
+
   private long getMappedAddress(Address address) {
     return address.getOffset() - addressOffset;
   }
@@ -407,6 +411,26 @@ public class BinExport2Builder {
     }
   }
 
+  private void buildDataReferences(Map<Long, Integer> instructionIndices) {
+    monitor.setMessage("Exporting data references");
+    monitor.setMaximum(instructionIndices.size());
+
+    int i = 0;
+    for (Map.Entry<Long, Integer> insnIndex : instructionIndices.entrySet()) {
+      monitor.setProgress(i++);
+
+      Address addr = getAddressFromLong(insnIndex.getKey());
+      for (Reference ref : program.getReferenceManager().getReferencesFrom(addr)) {
+        if (ref.isMemoryReference() && ref.getReferenceType().isData()) {
+          builder
+              .addDataReferenceBuilder()
+              .setInstructionIndex(insnIndex.getValue())
+              .setAddress(ref.getToAddress().getOffset());
+        }
+      }
+    }
+  }
+
   private void buildSections() {
     monitor.setMessage("Exporting sections");
     monitor.setIndeterminate(false);
@@ -532,7 +556,7 @@ public class BinExport2Builder {
     // TODO(cblichmann): Implement these:
     // buildComments()
     // buildStrings();
-    // buildDataReferences()
+    buildDataReferences(instructionIndices);
     monitor.setMessage("Exporting flow graphs");
     buildFlowGraphs(basicBlockIndices);
     monitor.setMessage("Exporting call graph");
