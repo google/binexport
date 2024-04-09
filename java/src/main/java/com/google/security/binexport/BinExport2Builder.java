@@ -17,6 +17,7 @@ package com.google.security.binexport;
 import com.google.protobuf.ByteString;
 import com.google.security.zynamics.BinExport.BinExport2;
 import com.google.security.zynamics.BinExport.BinExport2.Builder;
+import ghidra.app.nav.NavigationUtils;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.block.BasicBlockModel;
 import ghidra.program.model.block.CodeBlock;
@@ -67,6 +68,7 @@ public class BinExport2Builder {
   private MnemonicMapper mnemonicMapper = new IdentityMnemonicMapper();
   private long addressOffset = 0;
   private boolean prependNamespace = false;
+  private final Map<Address, Address> externalLinkageAddressMapping = new HashMap<>();
 
   public BinExport2Builder(Program ghidraProgram) {
     program = ghidraProgram;
@@ -99,6 +101,16 @@ public class BinExport2Builder {
 
   private long getMappedAddress(Instruction instr) {
     return getMappedAddress(instr.getAddress());
+  }
+
+  private Address getExternalLinkageAddress(Address extAddr) {
+    return externalLinkageAddressMapping.computeIfAbsent(
+        extAddr,
+        address -> {
+          // https://github.com/NationalSecurityAgency/ghidra/discussions/6080
+          Address[] linkAddrs = NavigationUtils.getExternalLinkageAddresses(program, address);
+          return linkAddrs.length != 0 ? linkAddrs[0] : null;
+        });
   }
 
   private void buildMetaInformation() {
@@ -213,12 +225,18 @@ public class BinExport2Builder {
       }
 
       // Export call targets.
-      for (Reference ref : instr.getReferenceIteratorTo()) {
-        RefType refType = ref.getReferenceType();
-        if (!refType.isCall()) {
+      for (Reference refFrom : instr.getReferencesFrom()) {
+        if (!refFrom.getReferenceType().isCall()) {
           continue;
         }
-        instrBuilder.addCallTarget(getMappedAddress(ref.getToAddress()));
+        Address toAddr = refFrom.getToAddress();
+        if (toAddr.isExternalAddress()) {
+          toAddr = getExternalLinkageAddress(toAddr);
+          if (toAddr == null) {
+            continue;
+          }
+        }
+        instrBuilder.addCallTarget(getMappedAddress(toAddr));
       }
 
       prevInstr = instr;
@@ -338,33 +356,51 @@ public class BinExport2Builder {
       assert flowGraph.getEntryBasicBlockIndex() > 0;
     }
   }
-  
+
   private void buildCallGraph() throws CancelledException {
     var callGraph = builder.getCallGraphBuilder();
     FunctionManager funcManager = program.getFunctionManager();
     monitor.setIndeterminate(false);
-    monitor.setMaximum(funcManager.getFunctionCount() * 2L);
+    monitor.setMaximum(funcManager.getFunctionCount() * 3L);
     int i = 0;
     int id = 0;
+    TreeMap<Address, Function> orderedFunctions = new TreeMap<>();
     Map<Long, Integer> vertexIndices = new HashMap<>();
 
-    // First round, gather vertex indices for all functions.
-    // TODO(cblichmann): Handle imports using getExternalFunctions()
+    // First round, create ordered function mapping because Ghidra does not guarantee the order of
+    // external (imported) functions and BinExport requires ordered vertices
     for (Function func : funcManager.getFunctions(true)) {
       monitor.setProgress(i++);
-      Address entryPoint = func.getEntryPoint();
-      if (entryPoint.isNonLoadedMemoryAddress()) {
+      orderedFunctions.put(func.getEntryPoint(), func);
+    }
+    for (Function extFunc : funcManager.getExternalFunctions()) {
+      monitor.setProgress(i++);
+      // External addresses exist in the EXTERNAL address space e.g. EXTERNAL:00000001
+      // We must map these to the linkage address referenced by instructions
+      Address linkAddr = getExternalLinkageAddress(extFunc.getEntryPoint());
+      if (linkAddr != null) {
+        orderedFunctions.put(linkAddr, extFunc);
+      }
+    }
+
+    // Second round, gather vertex indices for all functions
+    for (Map.Entry<Address, Function> entry : orderedFunctions.entrySet()) {
+      monitor.setProgress(i++);
+      Address funcEntryAddr = entry.getKey();
+      Function func = entry.getValue();
+      if (funcEntryAddr.isNonLoadedMemoryAddress()) {
         continue;
       }
-      long mappedEntryPoint = getMappedAddress(entryPoint);
+      long mappedFuncEntryAddr = getMappedAddress(funcEntryAddr);
 
-      var vertex = callGraph.addVertexBuilder().setAddress(mappedEntryPoint);
+      var vertex = callGraph.addVertexBuilder().setAddress(mappedFuncEntryAddr);
       if (func.isThunk()) {
-        // Only store type if different from default value (NORMAL)
         vertex.setType(BinExport2.CallGraph.Vertex.Type.THUNK);
       }
-
-      if (!func.getName().equals(SymbolUtilities.getDefaultFunctionName(entryPoint))) {
+      if (func.isExternal()) {
+        vertex.setType(BinExport2.CallGraph.Vertex.Type.IMPORTED);
+      }
+      if (!func.getName().equals(SymbolUtilities.getDefaultFunctionName(func.getEntryPoint()))) {
         // Ghidra does not seem to provide both mangled and demangled names
         // (like IDA). Once the Demangle analyzer or DemangleAllScript has run,
         // function names will always appear demangled. Short of running the
@@ -375,10 +411,11 @@ public class BinExport2Builder {
         // Mangled name is the default, optionally prefixed with namespace.
         vertex.setMangledName(getFunctionName(func));
       }
-      vertexIndices.put(mappedEntryPoint, id++);
+      vertexIndices.put(mappedFuncEntryAddr, id++);
     }
 
-    // Second round, insert all call graph edges.
+    // Third round, insert all call graph edges
+    // Ignore external functions as we don't expect outgoing references
     for (Function func : funcManager.getFunctions(true)) {
       monitor.setProgress(i++);
       Address entryPoint = func.getEntryPoint();
@@ -402,7 +439,17 @@ public class BinExport2Builder {
             continue;
           }
 
-          var targetId = vertexIndices.get(getMappedAddress(bbRef.getDestinationAddress()));
+          Address destAddr = bbRef.getDestinationAddress();
+          if (destAddr.isExternalAddress()) {
+            // External addresses exist in the EXTERNAL address space e.g. EXTERNAL:00000001
+            // We must map these to the linkage address referenced by instructions
+            destAddr = getExternalLinkageAddress(destAddr);
+            if (destAddr == null) {
+              continue;
+            }
+          }
+
+          var targetId = vertexIndices.get(getMappedAddress(destAddr));
           if (targetId != null) {
             callGraph.addEdgeBuilder().setSourceVertexIndex(id).setTargetVertexIndex(targetId);
           }
@@ -425,7 +472,7 @@ public class BinExport2Builder {
           builder
               .addDataReferenceBuilder()
               .setInstructionIndex(insnIndex.getValue())
-              .setAddress(ref.getToAddress().getOffset());
+              .setAddress(getMappedAddress(ref.getToAddress()));
         }
       }
     }
