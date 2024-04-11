@@ -81,11 +81,15 @@ public class BinExportExporter extends Exporter {
       log.appendMsg("Unsupported type: " + domainObj.getClass().getName());
       return false;
     }
-    final var program = (Program) domainObj;
+    var program = (Program) domainObj;
+
+    if (addrSet == null) {
+      addrSet = program.getMemory();
+    }
 
     monitor.setCancelEnabled(true);
     try {
-      final var builder = new BinExport2Builder(program);
+      var builder = new BinExport2Builder(program, addrSet);
       if (remapMnemonics) {
         builder
             .setMnemonicMapper(new IdaProMnemonicMapper(program.getLanguage()));
@@ -99,10 +103,10 @@ public class BinExportExporter extends Exporter {
       final BinExport2 proto = builder.build(monitor);
 
       monitor.setMessage("Writing BinExport2 file");
-      try (final var outputStream = new FileOutputStream(file)) {
+      try (var outputStream = new FileOutputStream(file)) {
         proto.writeTo(outputStream);
       }
-    } catch (final CancelledException e) {
+    } catch (CancelledException e) {
       return false;
     }
     return true;

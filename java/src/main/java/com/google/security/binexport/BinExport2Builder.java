@@ -14,17 +14,23 @@
 
 package com.google.security.binexport;
 
+import com.google.common.collect.ImmutableList;
 import com.google.protobuf.ByteString;
 import com.google.security.zynamics.BinExport.BinExport2;
 import com.google.security.zynamics.BinExport.BinExport2.Builder;
 import ghidra.app.nav.NavigationUtils;
 import ghidra.program.model.address.Address;
+import ghidra.program.model.address.AddressSetView;
 import ghidra.program.model.block.BasicBlockModel;
 import ghidra.program.model.block.CodeBlock;
 import ghidra.program.model.block.CodeBlockReference;
+import ghidra.program.model.data.StringDataInstance;
 import ghidra.program.model.lang.Register;
+import ghidra.program.model.listing.CodeUnit;
 import ghidra.program.model.listing.CodeUnitFormat;
 import ghidra.program.model.listing.CodeUnitFormatOptions;
+import ghidra.program.model.listing.CodeUnitIterator;
+import ghidra.program.model.listing.Data;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.FunctionManager;
 import ghidra.program.model.listing.Instruction;
@@ -39,20 +45,22 @@ import ghidra.program.model.symbol.RefType;
 import ghidra.program.model.symbol.Reference;
 import ghidra.program.model.symbol.Symbol;
 import ghidra.program.model.symbol.SymbolUtilities;
+import ghidra.program.util.DefinedDataIterator;
 import ghidra.util.exception.CancelledException;
 import ghidra.util.task.TaskMonitor;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 import java.util.function.ToIntFunction;
+import util.CollectionUtils;
 
 /**
- * Java implementation of the BinExport2 writer class for Ghidra using a builder
- * pattern.
+ * Java implementation of the BinExport2 writer class for Ghidra using a builder pattern.
  *
  * @author Christian Blichmann
  */
@@ -62,6 +70,7 @@ public class BinExport2Builder {
   private TaskMonitor monitor;
 
   private final Program program;
+  private final AddressSetView addrSet;
   private final Listing listing;
   private final BasicBlockModel bbModel;
 
@@ -70,8 +79,9 @@ public class BinExport2Builder {
   private boolean prependNamespace = false;
   private final Map<Address, Address> externalLinkageAddressMapping = new HashMap<>();
 
-  public BinExport2Builder(Program ghidraProgram) {
+  public BinExport2Builder(Program ghidraProgram, AddressSetView ghidraAddrSet) {
     program = ghidraProgram;
+    addrSet = ghidraAddrSet;
     listing = program.getListing();
     bbModel = new BasicBlockModel(program, true);
   }
@@ -123,7 +133,8 @@ public class BinExport2Builder {
     // TODO(cblichmann): Canonicalize architecture names
     String arch = quad[0] + "-" + quad[2];
 
-    builder.getMetaInformationBuilder()
+    builder
+        .getMetaInformationBuilder()
         .setExecutableName(new File(program.getExecutablePath()).getName())
         .setExecutableId(program.getExecutableSHA256())
         .setArchitectureName(arch)
@@ -140,8 +151,7 @@ public class BinExport2Builder {
           continue;
         }
         id++;
-        builder.addExpressionBuilder()
-            .setType(BinExport2.Expression.Type.SYMBOL).setSymbol(opRep);
+        builder.addExpressionBuilder().setType(BinExport2.Expression.Type.SYMBOL).setSymbol(opRep);
       }
     }
   }
@@ -159,13 +169,13 @@ public class BinExport2Builder {
     monitor.setMessage("Computing mnemonic histogram");
     var mnemonicHist = new HashMap<String, Integer>();
     for (Instruction instr : listing.getInstructions(true)) {
-      mnemonicHist.merge(mnemonicMapper.getInstructionMnemonic(instr), 1,
-          Integer::sum);
+      mnemonicHist.merge(mnemonicMapper.getInstructionMnemonic(instr), 1, Integer::sum);
     }
     var mnemonicList = new ArrayList<>(mnemonicHist.entrySet());
-    mnemonicList.sort(Comparator
-        .comparingInt((ToIntFunction<Entry<String, Integer>>) Entry::getValue)
-        .reversed().thenComparing(Entry::getKey));
+    mnemonicList.sort(
+        Comparator.comparingInt((ToIntFunction<Entry<String, Integer>>) Entry::getValue)
+            .reversed()
+            .thenComparing(Entry::getKey));
     int id = 0;
     for (var entry : mnemonicList) {
       builder.addMnemonicBuilder().setName(entry.getKey());
@@ -173,7 +183,8 @@ public class BinExport2Builder {
     }
   }
 
-  private void buildInstructions(Map<String, Integer> mnemonics,
+  private void buildInstructions(
+      Map<String, Integer> mnemonics,
       Map<String, Integer> expressionIndices,
       Map<Long, Integer> instructionIndices) {
     monitor.setIndeterminate(false);
@@ -194,7 +205,8 @@ public class BinExport2Builder {
       // - the previous instruction doesn't have code flow into the current one
       // - the previous instruction overlaps the current one
       // - the current instruction is a function entry point
-      if (prevInstr == null || !prevInstr.hasFallthrough()
+      if (prevInstr == null
+          || !prevInstr.hasFallthrough()
           || prevAddress + prevSize != address
           || listing.getFunctionAt(instr.getAddress()) != null) {
         instrBuilder.setAddress(address);
@@ -206,8 +218,7 @@ public class BinExport2Builder {
       } catch (MemoryAccessException e) {
         // Leave raw bytes empty
       }
-      int mnemonicIndex =
-          mnemonics.get(mnemonicMapper.getInstructionMnemonic(instr));
+      int mnemonicIndex = mnemonics.get(mnemonicMapper.getInstructionMnemonic(instr));
       if (mnemonicIndex != 0) {
         // Only store if different from default value
         instrBuilder.setMnemonicIndex(mnemonicIndex);
@@ -216,8 +227,7 @@ public class BinExport2Builder {
 
       // TODO(cblichmann): One expression per operand for now
       for (int i = 0; i < instr.getNumOperands(); i++) {
-        var lookup =
-            expressionIndices.get(cuf.getOperandRepresentationString(instr, i));
+        var lookup = expressionIndices.get(cuf.getOperandRepresentationString(instr, i));
         if (lookup == null) {
           continue;
         }
@@ -245,8 +255,9 @@ public class BinExport2Builder {
     }
   }
 
-  private void buildBasicBlocks(Map<Long, Integer> instructionIndices,
-      Map<Long, Integer> basicBlockIndices) throws CancelledException {
+  private void buildBasicBlocks(
+      Map<Long, Integer> instructionIndices, Map<Long, Integer> basicBlockIndices)
+      throws CancelledException {
     int id = 0;
     for (var bbIter = bbModel.getCodeBlocks(monitor); bbIter.hasNext(); ) {
       CodeBlock bb = bbIter.next();
@@ -284,8 +295,7 @@ public class BinExport2Builder {
     }
   }
 
-  private void buildFlowGraphs(Map<Long, Integer> basicBlockIndices)
-      throws CancelledException {
+  private void buildFlowGraphs(Map<Long, Integer> basicBlockIndices) throws CancelledException {
     FunctionManager funcManager = program.getFunctionManager();
     monitor.setIndeterminate(false);
     monitor.setMaximum(funcManager.getFunctionCount());
@@ -327,10 +337,11 @@ public class BinExport2Builder {
           var targetId = basicBlockIndices.get(getMappedAddress(bbRef.getDestinationAddress()));
           FlowType flow = bbRef.getFlowType();
           if (flow.isConditional() || lastFlow.isConditional()) {
-            edge.setType(flow.isConditional()
-                ? BinExport2.FlowGraph.Edge.Type.CONDITION_TRUE
-                : BinExport2.FlowGraph.Edge.Type.CONDITION_FALSE);
-            edge.setSourceBasicBlockIndex(id);
+            edge.setType(
+                    flow.isConditional()
+                        ? BinExport2.FlowGraph.Edge.Type.CONDITION_TRUE
+                        : BinExport2.FlowGraph.Edge.Type.CONDITION_FALSE)
+                .setSourceBasicBlockIndex(id);
             if (targetId != null) {
               edge.setTargetBasicBlockIndex(targetId);
             }
@@ -478,6 +489,82 @@ public class BinExport2Builder {
     }
   }
 
+  private void buildStrings(Map<Long, Integer> instructionIndices) {
+    monitor.setMessage("Exporting strings");
+    monitor.setIndeterminate(true);
+    var strToInstr = new ArrayList<Map.Entry<Integer, Integer>>();
+
+    for (Data data : CollectionUtils.asIterable(DefinedDataIterator.definedStrings(program))) {
+      if (monitor.isCancelled()) {
+        return;
+      }
+
+      var str = StringDataInstance.getStringDataInstance(data).getStringValue();
+      if (str == null || str.isEmpty()) {
+        continue;
+      }
+
+      builder.addStringTable(str);
+      int strIdx = builder.getStringTableCount();
+
+      for (Reference refTo : data.getReferenceIteratorTo()) {
+        Instruction insn = listing.getInstructionAt(refTo.getFromAddress());
+        if (insn == null) {
+          continue;
+        }
+
+        long address = getMappedAddress(insn.getMinAddress());
+        Integer instrIdx = instructionIndices.get(address);
+        if (instrIdx == null) {
+          continue;
+        }
+
+        strToInstr.add(Map.entry(strIdx, instrIdx));
+      }
+    }
+    for (var entry : strToInstr) {
+      builder
+          .addStringReferenceBuilder()
+          .setInstructionIndex(entry.getValue())
+          .setStringTableIndex(entry.getKey());
+    }
+  }
+
+  private void buildComments(Map<Long, Integer> instructionIndices) {
+    monitor.setMessage("Exporting comments");
+    monitor.setIndeterminate(true);
+
+    var comments = new HashSet<String>();
+    for (int commentType : ImmutableList.of(CodeUnit.EOL_COMMENT)) {
+      for (CodeUnitIterator codeIt = listing.getCommentCodeUnitIterator(commentType, addrSet);
+          codeIt.hasNext() && !monitor.isCancelled(); ) {
+        CodeUnit code = codeIt.next();
+        long address = getMappedAddress(code.getMinAddress());
+        Integer instrIdx = instructionIndices.get(address);
+        if (instrIdx == null) {
+          continue;
+        }
+
+        var str = code.getComment(commentType);
+        if (str == null || !comments.add(str)) {
+          continue;
+        }
+        builder.addStringTable(str);
+        int strIdx = builder.getStringTableCount();
+
+        builder
+            .addCommentBuilder()
+            .setInstructionIndex(instrIdx)
+            .setStringTableIndex(strIdx)
+            .setRepeatable(false)
+            .setType(BinExport2.Comment.Type.DEFAULT);
+        int commentIdx = builder.getCommentCount();
+
+        builder.getInstructionBuilder(instrIdx).addCommentIndex(commentIdx);
+      }
+    }
+  }
+
   private void buildSections() {
     monitor.setMessage("Exporting sections");
     monitor.setIndeterminate(false);
@@ -485,16 +572,19 @@ public class BinExport2Builder {
     monitor.setMaximum(blocks.length);
     for (int i = 0; i < blocks.length; i++) {
       var block = blocks[i];
-      builder.addSectionBuilder().setAddress(block.getStart().getOffset())
-          .setSize(block.getSize()).setFlagR(block.isRead())
-          .setFlagW(block.isWrite()).setFlagX(block.isExecute());
+      builder
+          .addSectionBuilder()
+          .setAddress(block.getStart().getOffset())
+          .setSize(block.getSize())
+          .setFlagR(block.isRead())
+          .setFlagW(block.isWrite())
+          .setFlagX(block.isExecute());
       monitor.setProgress(i);
     }
   }
 
   /**
-   * Parses a Ghidra instruction and outputs its components on stdout.
-   * Experimental.
+   * Parses a Ghidra instruction and outputs its components on stdout. Experimental.
    *
    * @param instr the instruction to parse.
    */
@@ -507,9 +597,12 @@ public class BinExport2Builder {
     var funMgr = program.getFunctionManager();
     var refMgr = program.getReferenceManager();
 
-    System.out.printf("%08X: %s (%s) ops:#%d{\n",
-        instr.getAddress().getOffset(), instr.getMnemonicString(),
-        instr.getLabel(), instr.getNumOperands());
+    System.out.printf(
+        "%08X: %s (%s) ops:#%d{\n",
+        instr.getAddress().getOffset(),
+        instr.getMnemonicString(),
+        instr.getLabel(),
+        instr.getNumOperands());
 
     Function fun = funMgr.getFunctionContaining(instr.getAddress());
     var params =
@@ -600,10 +693,11 @@ public class BinExport2Builder {
     monitor.setMessage("Exporting basic block structure");
     var basicBlockIndices = new HashMap<Long, Integer>();
     buildBasicBlocks(instructionIndices, basicBlockIndices);
-    // TODO(cblichmann): Implement these:
-    // buildComments()
-    // buildStrings();
+
+    buildComments(instructionIndices);
+    buildStrings(instructionIndices);
     buildDataReferences(instructionIndices);
+
     monitor.setMessage("Exporting flow graphs");
     buildFlowGraphs(basicBlockIndices);
     monitor.setMessage("Exporting call graph");
