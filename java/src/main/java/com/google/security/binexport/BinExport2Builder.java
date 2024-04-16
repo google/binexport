@@ -505,7 +505,7 @@ public class BinExport2Builder {
       }
 
       builder.addStringTable(str);
-      int strIdx = builder.getStringTableCount();
+      int strIdx = builder.getStringTableCount() - 1;
 
       for (Reference refTo : data.getReferenceIteratorTo()) {
         Instruction insn = listing.getInstructionAt(refTo.getFromAddress());
@@ -550,7 +550,7 @@ public class BinExport2Builder {
           continue;
         }
         builder.addStringTable(str);
-        int strIdx = builder.getStringTableCount();
+        int strIdx = builder.getStringTableCount() - 1;
 
         builder
             .addCommentBuilder()
@@ -558,7 +558,7 @@ public class BinExport2Builder {
             .setStringTableIndex(strIdx)
             .setRepeatable(false)
             .setType(BinExport2.Comment.Type.DEFAULT);
-        int commentIdx = builder.getCommentCount();
+        int commentIdx = builder.getCommentCount() - 1;
 
         builder.getInstructionBuilder(instrIdx).addCommentIndex(commentIdx);
       }
