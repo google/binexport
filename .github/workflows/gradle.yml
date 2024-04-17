@@ -1,0 +1,41 @@
+name: gradle-build
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - ghidra: 11.0.3
+    runs-on: ubuntu-22.04
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: zulu
+        java-version: "17"
+    - name: Setup Ghidra
+      uses: er28-0652/setup-ghidra@b53614dada0a16e3c342277caae905b96d803109
+      with:
+        version: ${{ matrix.ghidra }}
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v3
+      with:
+        gradle-version: 8.7
+
+    - name: Build
+      working-directory: ${{ github.workspace }}/java
+      run: |
+        gradle buildExtension -PGHIDRA_INSTALL_DIR=${{ env.GHIDRA_INSTALL_DIR }}
+
+    - name: Upload Build Artifacts
+      uses: actions/upload-artifact@v3.1.2
+      with:
+        name: BinExport_Ghidra-Java
+        path: |
+          ${{ github.workspace }}/java/dist/*
