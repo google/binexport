@@ -12,7 +12,7 @@ fi
 binexport_release=12
 
 # Set Xcode version to well-known value
-export DEVELOPER_DIR=/Applications/Xcode_15.1.app/Contents/Developer
+export DEVELOPER_DIR=/Applications/Xcode_15.3.app/Contents/Developer
 
 build_dir=${PWD}/build
 mkdir -p "${build_dir}"
