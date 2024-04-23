@@ -34,6 +34,7 @@ import ghidra.program.model.listing.Data;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.FunctionManager;
 import ghidra.program.model.listing.Instruction;
+import ghidra.program.model.listing.Library;
 import ghidra.program.model.listing.Listing;
 import ghidra.program.model.listing.Parameter;
 import ghidra.program.model.listing.Program;
@@ -368,7 +369,7 @@ public class BinExport2Builder {
     }
   }
 
-  private void buildCallGraph() throws CancelledException {
+  private void buildCallGraphAndModuleList() throws CancelledException {
     var callGraph = builder.getCallGraphBuilder();
     FunctionManager funcManager = program.getFunctionManager();
     monitor.setIndeterminate(false);
@@ -377,6 +378,7 @@ public class BinExport2Builder {
     int id = 0;
     TreeMap<Address, Function> orderedFunctions = new TreeMap<>();
     Map<Long, Integer> vertexIndices = new HashMap<>();
+    Map<String, Integer> moduleIndices = new HashMap<>();
 
     // First round, create ordered function mapping because Ghidra does not guarantee the order of
     // external (imported) functions and BinExport requires ordered vertices
@@ -410,6 +412,21 @@ public class BinExport2Builder {
       }
       if (func.isExternal()) {
         vertex.setType(BinExport2.CallGraph.Vertex.Type.IMPORTED);
+        // Add module mapping
+        String moduleName = func.getParentNamespace().getName();
+        if (!moduleName.equals(Library.UNKNOWN)) {
+          if (moduleName.contains(".")) {
+            moduleName = moduleName.substring(0, moduleName.lastIndexOf('.'));
+          }
+          Integer moduleId =
+              moduleIndices.computeIfAbsent(
+                  moduleName,
+                  (String k) -> {
+                    builder.addModuleBuilder().setName(k);
+                    return builder.getModuleCount() - 1;
+                  });
+          vertex.setModuleIndex(moduleId);
+        }
       }
       if (!func.getName().equals(SymbolUtilities.getDefaultFunctionName(func.getEntryPoint()))) {
         // Ghidra does not seem to provide both mangled and demangled names
@@ -701,7 +718,7 @@ public class BinExport2Builder {
     monitor.setMessage("Exporting flow graphs");
     buildFlowGraphs(basicBlockIndices);
     monitor.setMessage("Exporting call graph");
-    buildCallGraph();
+    buildCallGraphAndModuleList();
     buildSections();
 
     return builder.build();
