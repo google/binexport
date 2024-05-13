@@ -144,27 +144,46 @@ public class BinExport2Builder {
         .setTimestamp(System.currentTimeMillis() / 1000);
   }
 
-  private void buildExpressions(Map<String, Integer> expressionIndices) {
-    var cuf = new CodeUnitFormat(new CodeUnitFormatOptions());
-    int id = 0;
-    for (Instruction instr : listing.getInstructions(true)) {
-      for (int i = 0; i < instr.getNumOperands(); i++) {
-        String opRep = cuf.getOperandRepresentationString(instr, i);
-        if (expressionIndices.putIfAbsent(opRep, id) != null) {
-          continue;
-        }
-        id++;
-        builder.addExpressionBuilder().setType(BinExport2.Expression.Type.SYMBOL).setSymbol(opRep);
+  private ImmutableList<Integer> buildInstructionOperands(
+      Instruction instr,
+      CodeUnitFormat cuf,
+      Map<BinExport2.Expression, Integer> expressionIndices,
+      Map<BinExport2.Operand, Integer> operandIndices) {
+    int operandId = builder.getOperandCount();
+    int exprId = builder.getExpressionCount();
+    var opIndices = new ArrayList<Integer>();
+    for (int i = 0; i < instr.getNumOperands(); i++) {
+      var exprIndices = new ArrayList<Integer>();
+      // TODO(larchchen): Implement full expression trees. For now, each
+      //                  expression corresponds to exactly one operand. Those
+      //                  consist of Ghidra's string representation and are of
+      //                  type SYMBOL.
+      BinExport2.Expression expr =
+          BinExport2.Expression.newBuilder()
+              .setType(BinExport2.Expression.Type.SYMBOL)
+              .setSymbol(cuf.getOperandRepresentationString(instr, i))
+              .build();
+      var exprIndex = expressionIndices.putIfAbsent(expr, exprId);
+      if (exprIndex == null) {
+        exprIndices.add(exprId);
+        exprId++;
+        builder.addExpression(expr);
+      } else {
+        exprIndices.add(exprIndex);
+      }
+
+      BinExport2.Operand operand =
+          BinExport2.Operand.newBuilder().addAllExpressionIndex(exprIndices).build();
+      var opIndex = operandIndices.putIfAbsent(operand, operandId);
+      if (opIndex == null) {
+        opIndices.add(operandId);
+        operandId++;
+        builder.addOperand(operand);
+      } else {
+        opIndices.add(opIndex);
       }
     }
-  }
-
-  private void buildOperands(Map<String, Integer> expressionIndices) {
-    var entries = new ArrayList<>(expressionIndices.entrySet());
-    entries.sort(Entry.comparingByValue());
-    for (var entry : entries) {
-      builder.addOperandBuilder().addExpressionIndex(entry.getValue());
-    }
+    return ImmutableList.copyOf(opIndices);
   }
 
   private void buildMnemonics(Map<String, Integer> mnemonicIndices) {
@@ -188,17 +207,18 @@ public class BinExport2Builder {
 
   private void buildInstructions(
       Map<String, Integer> mnemonics,
-      Map<String, Integer> expressionIndices,
+      Map<BinExport2.Expression, Integer> expressionIndices,
+      Map<BinExport2.Operand, Integer> operandIndices,
       Map<Long, Integer> instructionIndices) {
     monitor.setIndeterminate(false);
     monitor.setMessage("Exporting instructions");
     monitor.setMaximum(listing.getNumInstructions());
+    var cuf = new CodeUnitFormat(new CodeUnitFormatOptions());
     int progress = 0;
     Instruction prevInstr = null;
     long prevAddress = 0;
     int prevSize = 0;
     int id = 0;
-    var cuf = new CodeUnitFormat(new CodeUnitFormatOptions());
     for (Instruction instr : listing.getInstructions(true)) {
       long address = getMappedAddress(instr);
 
@@ -228,14 +248,8 @@ public class BinExport2Builder {
       }
       instructionIndices.put(address, id++);
 
-      // TODO(cblichmann): One expression per operand for now
-      for (int i = 0; i < instr.getNumOperands(); i++) {
-        var lookup = expressionIndices.get(cuf.getOperandRepresentationString(instr, i));
-        if (lookup == null) {
-          continue;
-        }
-        instrBuilder.addOperandIndex(lookup);
-      }
+      instrBuilder.addAllOperandIndex(
+          buildInstructionOperands(instr, cuf, expressionIndices, operandIndices));
 
       Function parentFunc = listing.getFunctionContaining(instr.getAddress());
       Address thunkedAddr =
@@ -721,18 +735,13 @@ public class BinExport2Builder {
 
     buildMetaInformation();
 
-    // TODO(cblichmann): Implement full expression trees. For now, each
-    //                   expression corresponds to exactly one operand. Those
-    //                   consist of Ghidra's string representation and are of
-    //                   type SYMBOL.
-    var expressionIndices = new HashMap<String, Integer>();
-    buildExpressions(expressionIndices);
-    buildOperands(expressionIndices);
+    var expressionIndices = new HashMap<BinExport2.Expression, Integer>();
+    var operandIndices = new HashMap<BinExport2.Operand, Integer>();
 
     var mnemonics = new TreeMap<String, Integer>();
     buildMnemonics(mnemonics);
     var instructionIndices = new TreeMap<Long, Integer>();
-    buildInstructions(mnemonics, expressionIndices, instructionIndices);
+    buildInstructions(mnemonics, expressionIndices, operandIndices, instructionIndices);
     monitor.setMessage("Exporting basic block structure");
     var basicBlockIndices = new HashMap<Long, Integer>();
     buildBasicBlocks(instructionIndices, basicBlockIndices);
