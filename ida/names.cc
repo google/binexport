@@ -15,10 +15,12 @@
 #include "third_party/zynamics/binexport/ida/names.h"
 
 #include <cinttypes>
+#include <cstddef>
+#include <cstring>
 #include <iomanip>
-#include <sstream>
 #include <string>
 #include <tuple>
+#include <vector>
 
 // clang-format off
 #include "third_party/zynamics/binexport/ida/begin_idasdk.inc"  // NOLINT
@@ -82,6 +84,8 @@ Architecture GetArchitecture() {
   return kGeneric;
 }
 
+int GetArchitectureBitness() { return inf_get_app_bitness(); }
+
 absl::optional<std::string> GetArchitectureName() {
   std::string architecture;
   switch (GetArchitecture()) {
@@ -107,7 +111,7 @@ absl::optional<std::string> GetArchitectureName() {
       return {};
   }
 
-  switch (size_t address_size = inf_get_app_bitness(); address_size) {
+  switch (size_t address_size = GetArchitectureBitness(); address_size) {
     case 64:
       absl::StrAppend(&architecture, "-64");
       break;
@@ -118,18 +122,16 @@ absl::optional<std::string> GetArchitectureName() {
       absl::StrAppend(&architecture, "-16");
       break;
     default:
-      LOG(WARNING) << "Unexpected address size " << address_size
-                   << " for architecture \"" << architecture
-                   << "\", export may be incorrect";
-      LOG_IF(WARNING, architecture != "GENERIC")
+      LOG_FIRST_N(WARNING, 1) << "Unexpected address size " << address_size
+                              << " for architecture \"" << architecture
+                              << "\", export may be incorrect";
+      LOG_IF_FIRST_N(WARNING, architecture != "GENERIC", 1)
           << "If you're not using a custom processor module, you may want to "
              "file a bug";
       break;
   }
   return architecture;
 }
-
-int GetArchitectureBitness() { return inf_is_64bit() ? 64 : 32; }
 
 std::string GetModuleName() {
   std::string path(QMAXPATH, '\0');

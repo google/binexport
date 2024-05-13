@@ -14,6 +14,10 @@
 
 #include "third_party/zynamics/binexport/ida/main_plugin.h"
 
+#include <cstddef>
+#include <fstream>
+#include <string>
+
 // clang-format off
 #include "third_party/zynamics/binexport/ida/begin_idasdk.inc"  // NOLINT
 #include <auto.hpp>                                             // NOLINT
@@ -294,7 +298,7 @@ bool Plugin::Init() {
   alsologtostderr_ =
       absl::AsciiStrToUpper(GetArgument("AlsoLogToStdErr")) == "TRUE";
   log_filename_ = GetArgument("LogFile");
-  if (auto status = InitLogging(LoggingOptions{}
+  if (auto status = InitLogging(LoggingOptions()
                                     .set_alsologtostderr(alsologtostderr_)
                                     .set_log_filename(log_filename_),
                                 absl::make_unique<IdaLogSink>());

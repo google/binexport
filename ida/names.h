@@ -75,10 +75,9 @@ enum Architecture {
   kDalvik,
 };
 
+int GetArchitectureBitness();
 Architecture GetArchitecture();
 absl::optional<std::string> GetArchitectureName();
-
-int GetArchitectureBitness();
 
 std::string GetSizePrefix(size_t size_in_bytes);
 
