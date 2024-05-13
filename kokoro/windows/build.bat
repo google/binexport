@@ -20,7 +20,9 @@ xcopy /q /s /e ^
   "%KOKORO_PIPER_DIR%\google3\third_party\binaryninja_api\third_party\jsoncpp\"
 
 :: Help debug build issues
+set CMAKE_MAKE_PROGRAM=C:\ProgramData\chocolatey\bin\ninja.exe
 set
+dir %CMAKE_MAKE_PROGRAM%
 ninja --help
 
 pushd "%OUT_DIR%"
