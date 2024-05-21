@@ -19,11 +19,8 @@ xcopy /q /s /e ^
   "%KOKORO_PIPER_DIR%\google3\third_party\jsoncpp" ^
   "%KOKORO_PIPER_DIR%\google3\third_party\binaryninja_api\third_party\jsoncpp\"
 
-:: Help debug build issues
-set CMAKE_MAKE_PROGRAM=C:\ProgramData\chocolatey\bin\ninja.exe
-set
-dir %CMAKE_MAKE_PROGRAM%
-ninja --help
+:: Set up Visual Studio
+call C:\VS\VC\Auxiliary\Build\vcvarsall.bat x64
 
 pushd "%OUT_DIR%"
 cmake "%SRC_DIR%/binexport" ^
