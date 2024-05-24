@@ -24,8 +24,8 @@ include(FetchContent)
 
 # Abseil
 FetchContent_Declare(absl
-  URL https://github.com/abseil/abseil-cpp/archive/eef325b1d102aa4cbf1dbd865493ea0757222f3f.zip  # 2024-02-23
-  URL_HASH SHA256=10135dc9ec13fca31474a84e3a5dd0b5ef17524c3f9914ea6ec1c3daef8ce398
+  URL https://github.com/abseil/abseil-cpp/archive/1343b6d0d634397c33220e90fc469738f56b07c1.zip  # 2024-05-24
+  URL_HASH SHA256=9e08e607b57abc1dad24d8b6ff1e8bc87ae028b860f7b3bc7755a360dc44a069
 )
 set(ABSL_CXX_STANDARD ${CMAKE_CXX_STANDARD} CACHE STRING "" FORCE)
 set(ABSL_PROPAGATE_CXX_STD ON CACHE BOOL "" FORCE)
@@ -64,7 +64,7 @@ endif()
 # Protocol Buffers
 FetchContent_Declare(protobuf
   GIT_REPOSITORY https://github.com/protocolbuffers/protobuf.git
-  GIT_TAG        v25.3 # 2024-02-16 (must be a branch for GIT_SHALLOW to work)
+  GIT_TAG        v27.0 # 2024-05-23 (must be a branch for GIT_SHALLOW to work)
   GIT_SUBMODULES third_party/jsoncpp
   GIT_SHALLOW    TRUE
 )
