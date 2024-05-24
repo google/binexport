@@ -24,7 +24,6 @@ call C:\VS\VC\Auxiliary\Build\vcvarsall.bat x64
 
 pushd "%OUT_DIR%"
 cmake "%SRC_DIR%/binexport" ^
-  --debug-output --debug-trycompile ^
   -G "Ninja" ^
   -DFETCHCONTENT_FULLY_DISCONNECTED=ON ^
   "-DFETCHCONTENT_SOURCE_DIR_ABSL=%KOKORO_ARTIFACTS_DIR%\git\absl" ^
@@ -40,4 +39,3 @@ cmake --build . --config Release || exit /b
 ctest --build-config Release --output-on-failure -R "^[A-Z]" || exit /b
 cmake --install . --config Release --strip || exit /b
 popd
-
