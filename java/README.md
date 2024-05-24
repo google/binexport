@@ -27,15 +27,15 @@ experimental version for the open source software reverse engineering suite
 In order to build, the following software needs to be installed on the
 development machine:
 
-*   OpenJDK 11 or later
-*   Ghidra 9.2.3 (https://ghidra-sre.org/releaseNotes_9.2.3.html)
-*   Gradle 5.6 or later
-    (https://services.gradle.org/distributions/gradle-5.6.3-all.zip)
+*   OpenJDK 21 or later
+*   Ghidra 11.0.3 (https://github.com/NationalSecurityAgency/ghidra/releases/tag/Ghidra_11.0.3_build)
+*   Gradle 8.7 or later
+    (https://services.gradle.org/distributions/gradle-8.7-all.zip)
 
 The Gradle build tool will addtionally download these dependencies:
 
 *   Gradle plugin for protobuf
-*   Protobuf 3.13.0 for Java
+*   Protobuf 3.25.0 for Java
 
 For development, a recent version of Eclipse and the Ghidra development plugin
 are recommended (see [below](#development-using-eclipse))
@@ -50,13 +50,13 @@ gradle
 
 After downloading the addtional dependencies and compiling the Java sources, the
 extension is available as a .zip file under
-`dist/ghidra_9.2.3_PUBLIC_YYYYMMDD_BinExport.zip`, where `YYYYMMDD` stands for
+`dist/ghidra_11.0.3_PUBLIC_YYYYMMDD_BinExport.zip`, where `YYYYMMDD` stands for
 the current date.
 
 ### Development using Eclipse
 
-For development Eclipse 2020-12 or higher is recommended
-(https://www.eclipse.org/downloads/packages/release/2020-12/r/eclipse-ide-java-developers).
+For development Eclipse 2023-12 or higher is recommended
+(https://www.eclipse.org/downloads/packages/release/2023-12/r/eclipse-ide-java-developers).
 
 The Gradle build tool can automatically create an Eclipse project. From the
 command-line, run
