@@ -21,6 +21,12 @@ apply plugin: 'com.google.protobuf'
 apply plugin: 'eclipse'
 apply plugin: 'idea'
 
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
 repositories {
     mavenCentral()
 }
@@ -61,17 +67,13 @@ protobuf {
 }
 
 // Required for IDEs to find the generated sources.
-sourceSets {
-    generated {
-        java.srcDirs 'build/generated/source/proto/main/java'
-    }
-}
 eclipse {
     classpath {
         file {
             whenMerged {
                 def source = entries.find {
-                    it.path == 'build/generated/source/proto/main/java'
+                    it.path == 'build/generated/source/proto/main/java' ||
+                    it.path == 'build/extracted-include-protos/main'
                 }
                 source.entryAttributes['ignore_optional_problems'] = 'true'
             }
@@ -106,5 +108,10 @@ else {
 //----------------------END "DO NOT MODIFY" SECTION-------------------------------
 
 // Fix for newer Gradle versions that do not allow undeclared dependencies
-tasks.named("extractIncludeProto").configure { dependsOn("copyDependencies") }
+tasks.named("extractIncludeProto").configure {
+    dependsOn("copyDependencies")
+}
+tasks.named("extractIncludeTestProto").configure {
+    dependsOn("copyDependencies")
+}
 
