@@ -40,6 +40,8 @@
 #include <cstdlib>
 #include <cstring>
 #include <locale>  // IWYU pragma: keep
+#include <string>
+#include <vector>
 
 #include "third_party/absl/base/attributes.h"  // IWYU pragma: keep
 #include "third_party/absl/status/status.h"
@@ -283,6 +285,21 @@ absl::StatusOr<std::string> GetCommonAppDataDirectory(
         absl::StrCat("Configuration directory not found: ", path));
   }
   return path;
+}
+
+absl::StatusOr<std::string> GetProgramFilesDirectory() {
+#if defined(_WIN32)
+  char buffer[MAX_PATH] = {0};
+  if (SHGetFolderPath(/*hwndOwner=*/0, CSIDL_PROGRAM_FILES, /*hToken=*/0,
+                      /*dwFlags=*/0, buffer) != S_OK) {
+    return absl::UnknownError(GetLastOsError());
+  }
+  return std::string(buffer);
+#elif defined(__APPLE__)
+  return "/Applications";
+#else
+  return "/opt";
+#endif
 }
 
 }  // namespace security::binexport

@@ -54,7 +54,7 @@ absl::StatusOr<std::string> GetModuleFilename();
 //   Windows  C:\Users\<User>\AppData\Roaming\BinDiff
 //            %AppData%\BinDiff
 //   Linux    /home/<User>/.bindiff
-//   macOS    /Users/<User>/Library/Application Supprt/BinDiff
+//   macOS    /Users/<User>/Library/Application Support/BinDiff
 absl::StatusOr<std::string> GetOrCreateAppDataDirectory(
     absl::string_view product_name);
 
@@ -69,6 +69,16 @@ absl::StatusOr<std::string> GetOrCreateAppDataDirectory(
 //   macOS    /Library/Application Support/BinDiff
 absl::StatusOr<std::string> GetCommonAppDataDirectory(
     absl::string_view product_name);
+
+// Returns the platform-specific per-machine directory for application packages.
+// Returns one of these paths:
+//   OS       Typical value
+//   ------------------------------------------------------
+//   Windows  C:\Program Files
+//            %ProgramFiles%
+//   Linux    /opt
+//   macOS    /Applications
+absl::StatusOr<std::string> GetProgramFilesDirectory();
 
 }  // namespace security::binexport
 
