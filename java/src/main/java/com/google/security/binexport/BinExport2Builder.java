@@ -438,27 +438,25 @@ public class BinExport2Builder {
       instrBuilder.addAllOperandIndex(
           buildInstructionOperands(instr, cuf, expressionIndices, operandIndices));
 
-      Function parentFunc = listing.getFunctionContaining(instr.getAddress());
-      Address thunkedAddr =
-          parentFunc != null && parentFunc.isThunk()
-              ? parentFunc.getThunkedFunction(false).getEntryPoint()
-              : null;
-
       // Export call targets.
       for (Reference refFrom : instr.getReferencesFrom()) {
-        Address toAddr = refFrom.getToAddress();
         RefType refType = refFrom.getReferenceType();
-
-        // Skip non-call targets and non-thunked jumps
-        if (!refType.isCall() && !(refType.isJump() && toAddr.equals(thunkedAddr))) {
+        if (!refType.isCall() && !refType.isJump()) {
           continue;
         }
+
+        Address toAddr = refFrom.getToAddress();
+        if (listing.getFunctionAt(toAddr) == null) {
+          continue;
+        }
+
         if (toAddr.isExternalAddress()) {
           toAddr = getExternalLinkageAddress(toAddr);
           if (toAddr == null) {
             continue;
           }
         }
+
         instrBuilder.addCallTarget(getMappedAddress(toAddr));
       }
 
@@ -660,50 +658,21 @@ public class BinExport2Builder {
       if (entryPoint.isNonLoadedMemoryAddress()) {
         continue;
       }
-      id = vertexIndices.get(getMappedAddress(func.getEntryPoint()));
+      id = vertexIndices.get(getMappedAddress(entryPoint));
 
-      if (func.isThunk()) {
-        Address thunkedAddr = func.getThunkedFunction(false).getEntryPoint();
-        if (thunkedAddr.isExternalAddress()) {
-          thunkedAddr = getExternalLinkageAddress(thunkedAddr);
-          if (thunkedAddr == null) {
+      for (Function calledFunc : func.getCalledFunctions(monitor)) {
+        Address calledFuncAddr = calledFunc.getEntryPoint();
+
+        if (calledFuncAddr.isExternalAddress()) {
+          calledFuncAddr = getExternalLinkageAddress(calledFuncAddr);
+          if (calledFuncAddr == null) {
             continue;
           }
         }
 
-        var targetId = vertexIndices.get(getMappedAddress(thunkedAddr));
+        var targetId = vertexIndices.get(getMappedAddress(calledFuncAddr));
         if (targetId != null) {
           callGraph.addEdgeBuilder().setSourceVertexIndex(id).setTargetVertexIndex(targetId);
-        }
-      } else {
-        var bbIter = bbModel.getCodeBlocksContaining(func.getBody(), monitor);
-        if (!bbIter.hasNext()) {
-          continue; // Skip empty flow graphs, they only exist as call graph nodes
-        }
-
-        while (bbIter.hasNext()) {
-          CodeBlock bb = bbIter.next();
-
-          for (var bbDestIter = bb.getDestinations(monitor); bbDestIter.hasNext(); ) {
-            CodeBlockReference bbRef = bbDestIter.next();
-            FlowType flow = bbRef.getFlowType();
-            if (!flow.isCall()) {
-              continue;
-            }
-
-            Address destAddr = bbRef.getDestinationAddress();
-            if (destAddr.isExternalAddress()) {
-              destAddr = getExternalLinkageAddress(destAddr);
-              if (destAddr == null) {
-                continue;
-              }
-            }
-
-            var targetId = vertexIndices.get(getMappedAddress(destAddr));
-            if (targetId != null) {
-              callGraph.addEdgeBuilder().setSourceVertexIndex(id).setTargetVertexIndex(targetId);
-            }
-          }
         }
       }
     }
