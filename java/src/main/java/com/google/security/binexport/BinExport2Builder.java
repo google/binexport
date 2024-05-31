@@ -15,6 +15,8 @@
 package com.google.security.binexport;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.protobuf.ByteString;
 import com.google.security.zynamics.BinExport.BinExport2;
 import com.google.security.zynamics.BinExport.BinExport2.Builder;
@@ -144,33 +146,218 @@ public class BinExport2Builder {
         .setTimestamp(System.currentTimeMillis() / 1000);
   }
 
+  static final ImmutableMap<String, Integer> OPERAND_SIZE_PREFIX_MAP =
+      ImmutableMap.of(
+          "byte ptr ", 1,
+          "word ptr ", 2,
+          "dword ptr ", 4,
+          "qword ptr ", 8,
+          "tword ptr ", 10,
+          "xmmword ptr ", 16);
+
+  // Ghidra separates operands of an instruction already for us.
+  // The separators and brackets don't and are difficult to represent any semantically meanings.
+  // Instead, it only helps to determine the priorities of expression tree nodes.
+  static final ImmutableSet<Character> OPERAND_SEPARATORS = ImmutableSet.of('+', ',', ':', '*');
+  static final ImmutableList<Character> OPERAND_OPEN_BRACKETS = ImmutableList.of('{', '[');
+  static final ImmutableList<Character> OPERAND_CLOSE_BRACKETS = ImmutableList.of('}', ']');
+
+  private Integer getOrAddExpression(
+      BinExport2.Expression expr, Map<BinExport2.Expression, Integer> expressionIndices) {
+    int exprId = builder.getExpressionCount();
+    var exprIndex = expressionIndices.putIfAbsent(expr, exprId);
+    if (exprIndex == null) {
+      builder.addExpression(expr);
+      return exprId;
+    }
+    return exprIndex;
+  }
+
+  private ImmutableList<Integer> buildOperandExpressions(
+      ImmutableList<? extends Object> operandList,
+      Integer parentId,
+      Map<BinExport2.Expression, Integer> expressionIndices) {
+    if (operandList.isEmpty()) {
+      return ImmutableList.of();
+    }
+
+    var exprIndices = new ArrayList<Integer>();
+    var exprBuilder = BinExport2.Expression.newBuilder();
+    if (parentId != null) {
+      exprBuilder.setParentIndex(parentId);
+    }
+    // Find first non-enclosing separator
+    var openClosure = 0;
+    for (var i = 0; i < operandList.size(); i++) {
+      var token = operandList.get(i);
+
+      if (!(token instanceof Character)) {
+        continue;
+      }
+      if (OPERAND_OPEN_BRACKETS.contains(token)) {
+        openClosure++;
+        continue;
+      }
+      if (OPERAND_CLOSE_BRACKETS.contains(token)) {
+        openClosure--;
+        continue;
+      }
+      if (openClosure == 0 && OPERAND_SEPARATORS.contains(token)) {
+        var expr =
+            exprBuilder
+                .setType(BinExport2.Expression.Type.OPERATOR)
+                .setSymbol(token.toString())
+                .build();
+        var separatorId = getOrAddExpression(expr, expressionIndices);
+        exprIndices.add(separatorId);
+        exprIndices.addAll(
+            buildOperandExpressions(operandList.subList(0, i), separatorId, expressionIndices));
+        exprIndices.addAll(
+            buildOperandExpressions(
+                operandList.subList(i + 1, operandList.size()), separatorId, expressionIndices));
+        return ImmutableList.copyOf(exprIndices);
+      }
+    }
+    // Strips trailing whitespaces
+    // Adds operator for trailing "!"
+    var lastToken = operandList.get(operandList.size() - 1);
+    if (lastToken instanceof Character) {
+      var ch = (Character) lastToken;
+      if (Character.isWhitespace(ch.charValue()) || ch.charValue() == '!') {
+        var nextParentId = parentId;
+        if (ch.charValue() == '!') {
+          var expr =
+              exprBuilder.setType(BinExport2.Expression.Type.OPERATOR).setSymbol("!").build();
+          nextParentId = getOrAddExpression(expr, expressionIndices);
+          exprIndices.add(nextParentId);
+        }
+        exprIndices.addAll(
+            buildOperandExpressions(
+                operandList.subList(0, operandList.size() - 1), nextParentId, expressionIndices));
+        return ImmutableList.copyOf(exprIndices);
+      }
+    }
+    // Adds other operands sequentially.
+    var firstToken = operandList.get(0);
+    var nextParentId = parentId;
+    if (firstToken instanceof Character) {
+      var ch = (Character) firstToken;
+
+      // Add brackets enclosed expressions
+      var bracketIndex = OPERAND_OPEN_BRACKETS.indexOf(ch);
+      if (bracketIndex >= 0) {
+        var matchedClosure = 0;
+        for (var i = 0; i < operandList.size(); i++) {
+          var token = operandList.get(i);
+          if (!(token instanceof Character)) {
+            continue;
+          }
+          if (OPERAND_OPEN_BRACKETS.get(bracketIndex).equals(token)) {
+            matchedClosure++;
+          }
+          if (OPERAND_CLOSE_BRACKETS.get(bracketIndex).equals(token)) {
+            matchedClosure--;
+          }
+          if (matchedClosure == 0) {
+            var expr =
+                exprBuilder
+                    .setType(BinExport2.Expression.Type.DEREFERENCE)
+                    .setSymbol(ch.toString())
+                    .build();
+            nextParentId = getOrAddExpression(expr, expressionIndices);
+            exprIndices.add(nextParentId);
+            exprIndices.addAll(
+                buildOperandExpressions(
+                    operandList.subList(1, i), nextParentId, expressionIndices));
+            exprIndices.addAll(
+                buildOperandExpressions(
+                    operandList.subList(i + 1, operandList.size()), parentId, expressionIndices));
+            return ImmutableList.copyOf(exprIndices);
+          }
+        }
+      }
+
+      if (ch.charValue() == '-') {
+        var expr = exprBuilder.setType(BinExport2.Expression.Type.OPERATOR).setSymbol("*").build();
+        nextParentId = getOrAddExpression(expr, expressionIndices);
+        exprIndices.add(nextParentId);
+        var negationExpr =
+            BinExport2.Expression.newBuilder()
+                .setParentIndex(nextParentId)
+                .setType(BinExport2.Expression.Type.IMMEDIATE_INT)
+                .setImmediate(-1)
+                .build();
+        exprIndices.add(getOrAddExpression(negationExpr, expressionIndices));
+      } else if (!Character.isWhitespace(ch.charValue()) && ch.charValue() != '#') {
+        var expr =
+            exprBuilder.setType(BinExport2.Expression.Type.SYMBOL).setSymbol(ch.toString()).build();
+        nextParentId = getOrAddExpression(expr, expressionIndices);
+        exprIndices.add(nextParentId);
+      }
+    } else if (firstToken instanceof Register) {
+      var expr =
+          exprBuilder
+              .setType(BinExport2.Expression.Type.REGISTER)
+              .setSymbol(firstToken.toString())
+              .build();
+      nextParentId = getOrAddExpression(expr, expressionIndices);
+      exprIndices.add(nextParentId);
+    } else if (firstToken instanceof Scalar) {
+      var expr =
+          exprBuilder
+              .setType(BinExport2.Expression.Type.IMMEDIATE_INT)
+              .setImmediate(((Scalar) firstToken).getValue())
+              .build();
+      nextParentId = getOrAddExpression(expr, expressionIndices);
+      exprIndices.add(nextParentId);
+    } else {
+      // String, VariableOffset, Address, List, LabelString etc.
+      var expr =
+          exprBuilder
+              .setType(BinExport2.Expression.Type.SYMBOL)
+              .setSymbol(firstToken.toString())
+              .build();
+      nextParentId = getOrAddExpression(expr, expressionIndices);
+      exprIndices.add(nextParentId);
+    }
+    exprIndices.addAll(
+        buildOperandExpressions(
+            operandList.subList(1, operandList.size()), nextParentId, expressionIndices));
+    return ImmutableList.copyOf(exprIndices);
+  }
+
   private ImmutableList<Integer> buildInstructionOperands(
       Instruction instr,
       CodeUnitFormat cuf,
       Map<BinExport2.Expression, Integer> expressionIndices,
       Map<BinExport2.Operand, Integer> operandIndices) {
     int operandId = builder.getOperandCount();
-    int exprId = builder.getExpressionCount();
     var opIndices = new ArrayList<Integer>();
     for (int i = 0; i < instr.getNumOperands(); i++) {
+      var operandString = cuf.getOperandRepresentationString(instr, i);
+      var operandList = ImmutableList.copyOf(cuf.getOperandRepresentationList(instr, i));
+
       var exprIndices = new ArrayList<Integer>();
-      // TODO(larchchen): Implement full expression trees. For now, each
-      //                  expression corresponds to exactly one operand. Those
-      //                  consist of Ghidra's string representation and are of
-      //                  type SYMBOL.
-      BinExport2.Expression expr =
-          BinExport2.Expression.newBuilder()
-              .setType(BinExport2.Expression.Type.SYMBOL)
-              .setSymbol(cuf.getOperandRepresentationString(instr, i))
-              .build();
-      var exprIndex = expressionIndices.putIfAbsent(expr, exprId);
-      if (exprIndex == null) {
-        exprIndices.add(exprId);
-        exprId++;
-        builder.addExpression(expr);
-      } else {
-        exprIndices.add(exprIndex);
+      Integer parentId = null;
+
+      // Add size prefix if applicable
+      // Ghidra uses {@code java.lang.Character} to store each char of
+      // the size prefixes like "q", "w", "o", "r", "d", " ", "p", "t", "r", " "
+      for (var entry : OPERAND_SIZE_PREFIX_MAP.entrySet()) {
+        if (!operandString.startsWith(entry.getKey())) {
+          continue;
+        }
+        var expr =
+            BinExport2.Expression.newBuilder()
+                .setType(BinExport2.Expression.Type.SIZE_PREFIX)
+                .setSymbol("b" + entry.getValue())
+                .build();
+        parentId = getOrAddExpression(expr, expressionIndices);
+        exprIndices.add(parentId);
+        operandList = operandList.subList(entry.getKey().length(), operandList.size());
+        break;
       }
+      exprIndices.addAll(buildOperandExpressions(operandList, parentId, expressionIndices));
 
       BinExport2.Operand operand =
           BinExport2.Operand.newBuilder().addAllExpressionIndex(exprIndices).build();
