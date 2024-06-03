@@ -216,7 +216,7 @@ There are quite a few dependencies to satisfy:
 *   GCC 9 or a recent version of Clang on Linux/macOS. On Windows, use the
     Visual Studio 2019 compiler and the Windows SDK for Windows 10.
 *   Git 1.8 or higher
-*   IDA Pro only: IDA SDK 8.0 or higher (unpack into `third_party/idasdk`)
+*   IDA Pro only: IDA SDK 8.2 or higher (unpack into `third_party/idasdk`)
 *   Dependencies that will be downloaded:
     *   Abseil, GoogleTest and Protocol Buffers (25.2)
     *   Binary Ninja SDK
@@ -249,12 +249,12 @@ of the cloned repository.
 #### IDA SDK
 
 Unzip the contents of the IDA SDK into `third_party/idasdk`. Shown commands are
-for IDA 8.0:
+for IDA Pro 8.2:
 
 ```bash
-unzip PATH/TO/idasdk_pro80.zip -d third_party/idasdk
-mv third_party/idasdk/idasdk_pro80/* third_party/idasdk
-rmdir third_party/idasdk/idasdk_pro80
+unzip PATH/TO/idasdk_pro82.zip -d third_party/idasdk
+mv third_party/idasdk/idasdk_pro82/* third_party/idasdk
+rmdir third_party/idasdk/idasdk_pro82
 ```
 
 #### Build BinExport
@@ -331,12 +331,12 @@ The last command makes CMake available in the system path.
 #### IDA SDK
 
 Unzip the contents of the IDA SDK into `third_party/idasdk`. Shown commands are
-for IDA Pro 8.0:
+for IDA Pro 8.2:
 
 ```bash
-unzip PATH/TO/idasdk_pro80.zip -d third_party/idasdk
-mv third_party/idasdk/idasdk_pro80/* third_party/idasdk
-rmdir third_party/idasdk/idasdk_pro80
+unzip PATH/TO/idasdk_pro82.zip -d third_party/idasdk
+mv third_party/idasdk/idasdk_pro82/* third_party/idasdk
+rmdir third_party/idasdk/idasdk_pro82
 ```
 
 #### Build BinExport
@@ -404,11 +404,12 @@ cd binexport
 #### IDA SDK
 
 Unzip the contents of the IDA SDK into `third_party/idasdk`. Shown commands are
-for IDA 8.0, assuming that Git was installed into the default directory first:
+for IDA Pro 8.2, assuming that Git was installed into the default directory
+first:
 
 ```bat
-"%ProgramFiles%\Git\usr\bin\unzip" PATH\TO\idasdk_pro80.zip -d third_party
-rename third_party\idasdk_pro80 idasdk
+"%ProgramFiles%\Git\usr\bin\unzip" PATH\TO\idasdk_pro82.zip -d third_party
+rename third_party\idasdk_pro82 idasdk
 ```
 
 #### Build BinExport

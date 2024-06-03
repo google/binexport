@@ -30,7 +30,7 @@ jobs:
       run: |
         mkdir -p "${{ runner.workspace }}/build"
         ./.github/scripts/decrypt_secret.sh
-        unzip -q "${{ runner.workspace }}/build/idasdk_teams80.zip" \
+        unzip -q "${{ runner.workspace }}/build/idasdk_teams82.zip" \
               -d "${{ runner.workspace }}/build/"
 
     - name: Enable Developer Command Prompt (Windows)
