@@ -336,8 +336,8 @@ message BinExport2 {
     optional int32 instruction_operand_index = 2 [default = 0];
 
     // Index into the expression array local to an operand, like in Reference.
-    // This is not currently used, but allows to implement expression
-    // substitutions.
+    // This expression comment (if present) annotates the expression with
+    // a markup string, and is better rendered instead of its raw value.
     optional int32 operand_expression_index = 3 [default = 0];
 
     // Index into the global string table.

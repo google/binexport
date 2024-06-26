@@ -39,12 +39,16 @@
 namespace security::binexport {
 namespace {
 
-void RenderExpression(const BinExport2& proto,
-                      const BinExport2::Operand& operand, int index,
-                      std::string* output) {
+void RenderExpression(
+    const BinExport2& proto, const BinExport2::Operand& operand, int index,
+    const absl::flat_hash_map<int, std::string>& operand_comments,
+    std::string* output) {
   const int expression_index = operand.expression_index(index);
   const auto& expression = proto.expression(expression_index);
-  const auto& expression_symbol = expression.symbol();
+  const auto& expression_comment = operand_comments.find(index);
+  const auto& expression_symbol = expression_comment != operand_comments.end()
+                                      ? expression_comment->second
+                                      : expression.symbol();
   const bool long_mode =
       absl::EndsWith(proto.meta_information().architecture_name(), "64");
   switch (expression.type()) {
@@ -62,7 +66,8 @@ void RenderExpression(const BinExport2& proto,
       if (expression_symbol == "{") {  // ARM Register lists
         absl::StrAppend(output, "{");
         for (int i = 0; i < num_children; ++i) {
-          RenderExpression(proto, operand, children[i], output);
+          RenderExpression(proto, operand, children[i], operand_comments,
+                           output);
           if (i != num_children - 1) {
             absl::StrAppend(output, ",");
           }
@@ -72,11 +77,12 @@ void RenderExpression(const BinExport2& proto,
         // Only a single child, treat expression as prefix operator (like
         // 'ss:').
         absl::StrAppend(output, expression_symbol);
-        RenderExpression(proto, operand, children[0], output);
+        RenderExpression(proto, operand, children[0], operand_comments, output);
       } else if (num_children > 1) {
         // Multiple children, treat expression as infix operator ('+' or '*').
         for (int i = 0; i < num_children; ++i) {
-          RenderExpression(proto, operand, children[i], output);
+          RenderExpression(proto, operand, children[i], operand_comments,
+                           output);
           if (i != num_children - 1) {
             const auto& child_expression =
                 proto.expression(operand.expression_index(children[i + 1]));
@@ -111,13 +117,13 @@ void RenderExpression(const BinExport2& proto,
           (!long_mode && expression_symbol != "b4")) {
         absl::StrAppend(output, expression_symbol, " ");
       }
-      RenderExpression(proto, operand, index + 1, output);
+      RenderExpression(proto, operand, index + 1, operand_comments, output);
       break;
     }
     case BinExport2::Expression::DEREFERENCE:
       absl::StrAppend(output, "[");
       if (index + 1 < operand.expression_index_size()) {
-        RenderExpression(proto, operand, index + 1, output);
+        RenderExpression(proto, operand, index + 1, operand_comments, output);
       }
       absl::StrAppend(output, "]");
       break;
@@ -221,11 +227,28 @@ void DumpBinExport2(const BinExport2& proto) {
               proto.mnemonic(instruction.mnemonic_index()).name(), " ");
           for (int i = 0; i < instruction.operand_index_size(); i++) {
             const auto& operand = proto.operand(instruction.operand_index(i));
+
+            // Expression comments of this operand.
+            absl::flat_hash_map<int, std::string> operand_comments;
+            for (int comment_index : instruction.comment_index()) {
+              const BinExport2::Comment& comment = proto.comment(comment_index);
+              if (!comment.has_instruction_operand_index() ||
+                  !comment.has_operand_expression_index()) {
+                continue;
+              }
+              if (comment.instruction_operand_index() != i) {
+                continue;
+              }
+              operand_comments[comment.operand_expression_index()] =
+                  proto.string_table(comment.string_table_index());
+            }
+
             for (int j = 0; j < operand.expression_index_size(); j++) {
               const auto& expression =
                   proto.expression(operand.expression_index(j));
               if (!expression.has_parent_index()) {
-                RenderExpression(proto, operand, j, &disassembly);
+                RenderExpression(proto, operand, j, operand_comments,
+                                 &disassembly);
               }
             }
             if (i != instruction.operand_index_size() - 1) {
@@ -241,13 +264,15 @@ void DumpBinExport2(const BinExport2& proto) {
             for (int i = 0; i < instruction.comment_index_size(); ++i) {
               int comment_index = instruction.comment_index(i);
               const auto& proto_comment = proto.comment(comment_index);
-              comment_index = proto_comment.string_table_index();
-              absl::PrintF("%*s%s\n", (i > 0 ? indent : 0) + 3, " ; ",
-                           proto.string_table(comment_index));
+              // Expression comments are rendered in-place.
+              if (!proto_comment.has_operand_expression_index()) {
+                comment_index = proto_comment.string_table_index();
+                absl::PrintF("%*s%s", (i > 0 ? indent : 0) + 3, " ; ",
+                             proto.string_table(comment_index));
+              }
             }
-          } else {
-            absl::PrintF("\n");
           }
+          absl::PrintF("\n");
 
           const auto& raw_bytes = instruction.raw_bytes();
           computed_instruction_address = instruction_address + raw_bytes.size();
