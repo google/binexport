@@ -47,7 +47,7 @@ jobs:
       run: |
         cmake "${{ github.workspace }}" -G Ninja \
           "-DCMAKE_BUILD_TYPE=${BUILD_TYPE}" \
-          "-DIdaSdk_ROOT_DIR=${{ runner.workspace }}/build/idasdk_teams80"
+          "-DIdaSdk_ROOT_DIR=${{ runner.workspace }}/build/idasdk_teams82"
 
     - name: Build
       working-directory: ${{ runner.workspace }}/build
