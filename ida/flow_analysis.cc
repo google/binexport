@@ -25,7 +25,7 @@
 #include <segment.hpp>                                          // NOLINT
 #include <typeinf.hpp>                                          // NOLINT
 #include <ua.hpp>                                               // NOLINT
-#ifdef IDP_INTERFACE_VERSION >= 900
+#if IDP_INTERFACE_VERSION >= 900
 #define ph PH
 #else
 #include <enum.hpp>                                             // NOLINT

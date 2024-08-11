@@ -26,7 +26,7 @@
 #include <idp.hpp>                                              // NOLINT
 #include <kernwin.hpp>                                          // NOLINT
 #include <loader.hpp>                                           // NOLINT
-#ifdef IDP_INTERFACE_VERSION >= 900
+#if IDP_INTERFACE_VERSION >= 900
 #define ph PH
 #endif
 #include "third_party/zynamics/binexport/ida/end_idasdk.inc"    // NOLINT

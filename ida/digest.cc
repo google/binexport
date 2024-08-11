@@ -33,7 +33,7 @@ absl::StatusOr<std::string> GetInputFileSha256() {
   std::string hash(kNumSha256Bytes, '\0');
   auto* hash_uchar = reinterpret_cast<uchar*>(&hash[0]);
   if (!retrieve_input_file_sha256(hash_uchar) &&
-#ifdef IDP_INTERFACE_VERSION >= 900
+#if IDP_INTERFACE_VERSION >= 900
       (netnode_supval(0, RIDX_SHA256, hash_uchar, kNumSha256Bytes,'S') !=
 #else
       // b/186782665: IDA 7.5 and lower use the root_node instead.
@@ -50,7 +50,7 @@ absl::StatusOr<std::string> GetInputFileMd5() {
   std::string hash(kNumMd5Bytes, '\0');
   auto* hash_uchar = reinterpret_cast<uchar*>(&hash[0]);
   if (!retrieve_input_file_md5(hash_uchar) &&
-#ifdef IDP_INTERFACE_VERSION >= 900
+#if IDP_INTERFACE_VERSION >= 900
       (netnode_supval(0, RIDX_MD5, hash_uchar, kNumMd5Bytes, 'S') != kNumMd5Bytes)) {
 #else
       // b/186782665: IDA 7.5 and lower use the root_node instead.

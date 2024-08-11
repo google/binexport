@@ -36,7 +36,7 @@
 #include <typeinf.hpp>                                          // NOLINT
 #include <ua.hpp>                                               // NOLINT
 
-#ifdef IDP_INTERFACE_VERSION >= 900
+#if IDP_INTERFACE_VERSION >= 900
 #define ph PH
 #else
 #include <enum.hpp>                                             // NOLINT
@@ -142,7 +142,7 @@ absl::optional<std::string> GetArchitectureName() {
 std::string GetModuleName() {
   std::string path(QMAXPATH, '\0');
   if (get_input_file_path(&path[0], QMAXPATH) == 0) {
-#ifdef IDP_INTERFACE_VERSION >= 900
+#if IDP_INTERFACE_VERSION >= 900
     netnode_valstr(0, &path[0], QMAXPATH);
 #else
     // b/186782665: IDA 7.5 and lower use the root_node instead.
@@ -284,7 +284,7 @@ std::string GetVariableName(const insn_t& instruction, uint8_t operand_num) {
     return "";
   }
   
-#ifdef IDP_INTERFACE_VERSION >= 900
+#if IDP_INTERFACE_VERSION >= 900
   func_t* function = get_func(instruction.ea);
   if (!function) {
     return "";
@@ -410,7 +410,7 @@ std::string GetGlobalStructureName(Address address, Address instance_address,
                                    uint8_t operand_num) {
   std::string instance_name;
   
-#ifdef IDP_INTERFACE_VERSION >= 900
+#if IDP_INTERFACE_VERSION >= 900
   tid_t id[MAXSTRUCPATH];
   memset(id, 0, sizeof(id));
   adiff_t disp = 0;
@@ -576,7 +576,7 @@ void GetRegularComments(Address address, Comments* comments) {
 void GetEnumComments(Address address,
                      Comments* comments) {  // @bug: there is an get_enum_cmt
                                             // function in IDA as well!
-#ifdef IDP_INTERFACE_VERSION >= 900
+#if IDP_INTERFACE_VERSION >= 900
   if (is_enum0(get_flags(address)) || is_enum1(get_flags(address))) {
     tinfo_t tif;
     if (get_tinfo(&tif, address) && tif.is_enum()) {
@@ -698,7 +698,7 @@ struct FunctionCache {
     if (!function) {
       return;
     }
-#ifdef IDP_INTERFACE_VERSION >= 900
+#if IDP_INTERFACE_VERSION >= 900
     tinfo_t frame_tif;
     if (!get_func_frame(&frame_tif, function)) {
       return;
