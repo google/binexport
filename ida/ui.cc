@@ -62,7 +62,7 @@ void WaitBox::ReplaceText(absl::string_view message) const {
     ReplaceWaitBoxRequest(const WaitBox& wait_box, absl::string_view message)
         : wait_box(wait_box), message(message) {}
 
-    int idaapi execute() override {
+    ssize_t idaapi execute() override {
       replace_wait_box("%s",
                        FormatMessage(message, wait_box.cancellable_).c_str());
       return 0;

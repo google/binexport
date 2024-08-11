@@ -26,7 +26,6 @@
 #include "third_party/zynamics/binexport/ida/begin_idasdk.inc"  // NOLINT
 #include <idp.hpp>                                              // NOLINT
 #include <allins.hpp>                                           // NOLINT
-#include <enum.hpp>                                             // NOLINT
 #include <frame.hpp>                                            // NOLINT
 #include <ida.hpp>                                              // NOLINT
 #include <lines.hpp>                                            // NOLINT
@@ -34,9 +33,16 @@
 #include <nalt.hpp>                                             // NOLINT
 #include <netnode.hpp>                                          // NOLINT
 #include <segment.hpp>                                          // NOLINT
-#include <struct.hpp>                                           // NOLINT
 #include <typeinf.hpp>                                          // NOLINT
 #include <ua.hpp>                                               // NOLINT
+
+#ifdef IDP_INTERFACE_VERSION >= 900
+#define ph PH
+#else
+#include <enum.hpp>                                             // NOLINT
+#include <struct.hpp>                                           // NOLINT
+#endif
+
 #include "third_party/zynamics/binexport/ida/end_idasdk.inc"    // NOLINT
 // clang-format on
 
@@ -136,8 +142,12 @@ absl::optional<std::string> GetArchitectureName() {
 std::string GetModuleName() {
   std::string path(QMAXPATH, '\0');
   if (get_input_file_path(&path[0], QMAXPATH) == 0) {
+#ifdef IDP_INTERFACE_VERSION >= 900
+    netnode_valstr(0, &path[0], QMAXPATH);
+#else
     // b/186782665: IDA 7.5 and lower use the root_node instead.
     root_node.valstr(&path[0], QMAXPATH);
+#endif
   }
   path.resize(std::strlen(path.data()));
   return Basename(path);
@@ -273,7 +283,62 @@ std::string GetVariableName(const insn_t& instruction, uint8_t operand_num) {
   if (!IsStackVariable(instruction.ea, operand_num)) {
     return "";
   }
+  
+#ifdef IDP_INTERFACE_VERSION >= 900
+  func_t* function = get_func(instruction.ea);
+  if (!function) {
+    return "";
+  }
 
+  tinfo_t frame;
+  if (!get_func_frame(&frame, function)) {
+    return "";
+  }
+
+  ea_t offset = calc_stkvar_struc_offset(function, instruction, operand_num);
+
+  udt_type_data_t udt_data;
+  if (!frame.get_udt_details(&udt_data)) {
+    return "";
+  }
+  // Find the base member (variable or structure)
+  const udm_t* base_member = nullptr;
+  for (const auto& member : udt_data) {
+    if (member.offset / 8 <= offset && 
+        (member.offset / 8 + member.size / 8) > offset) {
+      base_member = &member;
+      break;
+    }
+  }
+  
+  if (base_member) {
+    std::string result = ToString(base_member->name);
+    ea_t member_offset = offset - (base_member->offset / 8);
+    
+    if (member_offset > 0) {
+      // Handle nested structures
+      if (base_member->type.is_struct()) {
+        udt_type_data_t nested_udt_data;
+        if (base_member->type.get_udt_details(&nested_udt_data)) {
+          for (const auto& nested_member : nested_udt_data) {
+            if (nested_member.offset / 8 == member_offset) {
+              return absl::StrCat(result, ".", ToString(nested_member.name));
+            }
+          }
+        }
+      }
+      
+      // If it's not a nested structure or we couldn't find the exact member,
+      // append the offset
+      absl::StrAppend(&result, "+", IdaHexify(member_offset));
+    }
+    
+    return result;
+  }
+  
+  // If we couldn't find a matching member, return a generic name with the offset
+  return absl::StrCat("var_", IdaHexify(offset));
+#else
   const member_t* stack_variable =
       get_stkvar(0, instruction, instruction.ops[operand_num],
                  instruction.ops[operand_num].addr);
@@ -338,11 +403,14 @@ std::string GetVariableName(const insn_t& instruction, uint8_t operand_num) {
     return result;
   }
   return "";
+#endif
 }
 
 std::string GetGlobalStructureName(Address address, Address instance_address,
                                    uint8_t operand_num) {
   std::string instance_name;
+  
+#ifdef IDP_INTERFACE_VERSION >= 900
   tid_t id[MAXSTRUCPATH];
   memset(id, 0, sizeof(id));
   adiff_t disp = 0;
@@ -350,11 +418,47 @@ std::string GetGlobalStructureName(Address address, Address instance_address,
 
   int num_structs = get_struct_operand(&disp, &delta, id, address, operand_num);
   if (num_structs > 0) {
-    // Special case for the first index - this may be an instance name instead
+    tinfo_t tif;
+    if (get_tinfo(&tif, id[0])) {
+      qstring ida_name;
+      if (get_name(&ida_name, instance_address - disp) ||
+          tif.get_type_name(&ida_name)) {
+        instance_name = ToString(ida_name);
+      }
+
+      udt_type_data_t udt_data;
+      if (tif.get_udt_details(&udt_data)) {
+        for (const auto& udm : udt_data) {
+          if (udm.offset >= disp) {
+            absl::StrAppend(&instance_name, ".", ToString(udm.name));
+            disp -= udm.size;
+
+            if (udm.type.is_struct()) {
+              tif = udm.type;
+              if (!tif.get_udt_details(&udt_data)) {
+                break;
+              }
+            } else {
+              break;
+            }
+          }
+        }
+      }
+    }
+  }
+#else
+  tid_t id[MAXSTRUCPATH];
+  memset(id, 0, sizeof(id));
+  adiff_t disp = 0;
+  adiff_t delta = 0;
+
+  int num_structs = get_struct_operand(&disp, &delta, id, address, operand_num);
+  if (num_structs > 0) {
+// Special case for the first index - this may be an instance name instead
     // of a type name.
     const struc_t* structure = get_struc(id[0]);
     if (structure) {
-      // First try to get a global variable instance name.
+// First try to get a global variable instance name.
       // Second, fall back to just the structure type name.
       qstring ida_name;
       if (get_name(&ida_name, instance_address - disp) ||
@@ -363,7 +467,7 @@ std::string GetGlobalStructureName(Address address, Address instance_address,
       }
     }
 
-    // TODO(cblichmann): Array members won't be resolved properly. disp will
+// TODO(cblichmann): Array members won't be resolved properly. disp will
     //                   point into the array, making get_member calls fail.
     for (const member_t* member = get_member(structure, disp);
          member != nullptr;
@@ -373,6 +477,7 @@ std::string GetGlobalStructureName(Address address, Address instance_address,
       structure = get_sptr(member);
     }
   }
+#endif
   return instance_name;
 }
 
@@ -471,6 +576,20 @@ void GetRegularComments(Address address, Comments* comments) {
 void GetEnumComments(Address address,
                      Comments* comments) {  // @bug: there is an get_enum_cmt
                                             // function in IDA as well!
+#ifdef IDP_INTERFACE_VERSION >= 900
+  if (is_enum0(get_flags(address)) || is_enum1(get_flags(address))) {
+    tinfo_t tif;
+    if (get_tinfo(&tif, address) && tif.is_enum()) {
+      qstring enum_name;
+      if (tif.get_type_name(&enum_name)) {
+        comments->emplace_back(
+            address, is_enum0(get_flags(address)) ? 0 : 1,
+            CallGraph::CacheString(ToString(enum_name)),
+            Comment::ENUM, false);
+      }
+    }
+  }
+#else
   uint8_t serial;
   if (is_enum0(get_flags(address))) {
     int id = get_enum_id(&serial, address, 0);
@@ -488,6 +607,7 @@ void GetEnumComments(Address address,
           Comment::ENUM, false);
     }
   }
+#endif
 }
 
 bool GetLineComment(Address address, int n, std::string* output) {
@@ -578,12 +698,41 @@ struct FunctionCache {
     if (!function) {
       return;
     }
+#ifdef IDP_INTERFACE_VERSION >= 900
+    tinfo_t frame_tif;
+    if (!get_func_frame(&frame_tif, function)) {
+      return;
+    }
+
+    udt_type_data_t udt_data;
+    if (!frame_tif.get_udt_details(&udt_data)) {
+      return;
+    }
+
+    const size_t maxOffset = std::min(frame_tif.get_size(), size_t(1024 * 64));
+    size_t lastSuccess = 0;
+
+    for (const auto& member : udt_data) {
+      if (member.offset >= maxOffset || lastSuccess - member.offset >= 1024) {
+        break;
+      }
+
+      if (member.is_special_member()) {
+        continue;
+      }
+
+      if (!member.name.empty()) {
+        local_vars[member.offset] = ToString(member.name);
+        lastSuccess = member.offset + member.size;
+      }
+    }
+#else
     struc_t* frame = get_frame(function);
     if (!frame) {
       return;
     }
 
-    // @bug: IDA sometimes returns excessively large offsets (billions)
+// @bug: IDA sometimes returns excessively large offsets (billions)
     //       we must prevent looping forever in those cases
     size_t lastSuccess = 0;
     const size_t maxOffset =
@@ -601,13 +750,14 @@ struct FunctionCache {
       if (!ida_name.empty()) {
         i += std::max(static_cast<asize_t>(1), get_member_size(member));
         lastSuccess = i;
-        continue;
+continue;
       }
 
       local_vars[offset] = ToString(ida_name);
       i += std::max(static_cast<asize_t>(1), get_member_size(member));
       lastSuccess = i;
     }
+#endif
   }
 
   func_t* function;
