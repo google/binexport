@@ -454,11 +454,11 @@ std::string GetGlobalStructureName(Address address, Address instance_address,
 
   int num_structs = get_struct_operand(&disp, &delta, id, address, operand_num);
   if (num_structs > 0) {
-// Special case for the first index - this may be an instance name instead
+    // Special case for the first index - this may be an instance name instead
     // of a type name.
     const struc_t* structure = get_struc(id[0]);
     if (structure) {
-// First try to get a global variable instance name.
+      // First try to get a global variable instance name.
       // Second, fall back to just the structure type name.
       qstring ida_name;
       if (get_name(&ida_name, instance_address - disp) ||
@@ -467,7 +467,7 @@ std::string GetGlobalStructureName(Address address, Address instance_address,
       }
     }
 
-// TODO(cblichmann): Array members won't be resolved properly. disp will
+    // TODO(cblichmann): Array members won't be resolved properly. disp will
     //                   point into the array, making get_member calls fail.
     for (const member_t* member = get_member(structure, disp);
          member != nullptr;
@@ -732,7 +732,7 @@ struct FunctionCache {
       return;
     }
 
-// @bug: IDA sometimes returns excessively large offsets (billions)
+    // @bug: IDA sometimes returns excessively large offsets (billions)
     //       we must prevent looping forever in those cases
     size_t lastSuccess = 0;
     const size_t maxOffset =
@@ -750,7 +750,7 @@ struct FunctionCache {
       if (!ida_name.empty()) {
         i += std::max(static_cast<asize_t>(1), get_member_size(member));
         lastSuccess = i;
-continue;
+        continue;
       }
 
       local_vars[offset] = ToString(ida_name);
