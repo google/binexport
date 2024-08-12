@@ -19,12 +19,14 @@
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "third_party/absl/status/status_matchers.h"
 #include "third_party/absl/strings/str_cat.h"
-#include "third_party/zynamics/binexport/util/status_matchers.h"
+#include "third_party/zynamics/binexport/util/status_macros.h"
 
 namespace security::binexport {
 namespace {
 
+using ::absl_testing::IsOk;
 using ::testing::IsEmpty;
 using ::testing::IsFalse;
 using ::testing::IsTrue;
@@ -100,9 +102,9 @@ TEST(FileSystemTest, CreateAndRemoveDirectories) {
                           GetOrCreateTempDirectory("test"));
 
   const std::string test_path = JoinPath(temp_dir, "sub", "dir", "s2");
-  EXPECT_THAT(CreateDirectories(test_path).ok(), IsTrue());
+  EXPECT_THAT(CreateDirectories(test_path), IsOk());
 
-  EXPECT_THAT(RemoveAll(test_path).ok(), IsTrue());
+  EXPECT_THAT(RemoveAll(test_path), IsOk());
   EXPECT_THAT(IsDirectory(test_path), IsFalse());
 }
 
@@ -117,7 +119,7 @@ TEST(FileSystemTest, LinkingFiles) {
     ASSERT_THAT(out.good(), IsTrue());
   }
 
-  EXPECT_THAT(CreateOrUpdateLinkWithFallback(target, link_path).ok(), IsTrue());
+  EXPECT_THAT(CreateOrUpdateLinkWithFallback(target, link_path), IsOk());
 }
 
 }  // namespace

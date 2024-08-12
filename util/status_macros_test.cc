@@ -20,12 +20,14 @@
 #include "gtest/gtest.h"
 #include "third_party/absl/memory/memory.h"
 #include "third_party/absl/status/status.h"
+#include "third_party/absl/status/status_matchers.h"
 #include "third_party/absl/status/statusor.h"
 #include "third_party/absl/strings/str_cat.h"
-#include "third_party/zynamics/binexport/util/status_matchers.h"
 
 namespace not_absl {
 namespace {
+
+using ::absl_testing::StatusIs;
 
 TEST(ReturnIfError, ReturnsOnErrorStatus) {
   auto func = []() -> absl::Status {

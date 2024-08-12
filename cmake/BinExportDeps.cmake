@@ -22,24 +22,11 @@ endfunction()
 
 include(FetchContent)
 
-# Abseil
-FetchContent_Declare(absl
-  URL https://github.com/abseil/abseil-cpp/archive/1343b6d0d634397c33220e90fc469738f56b07c1.zip  # 2024-05-24
-  URL_HASH SHA256=9e08e607b57abc1dad24d8b6ff1e8bc87ae028b860f7b3bc7755a360dc44a069
-)
-set(ABSL_CXX_STANDARD ${CMAKE_CXX_STANDARD} CACHE STRING "" FORCE)
-set(ABSL_PROPAGATE_CXX_STD ON CACHE BOOL "" FORCE)
-set(ABSL_USE_EXTERNAL_GOOGLETEST ON CACHE BOOL "" FORCE)
-FetchContent_MakeAvailable(absl)
-# Protobuf's utf8_range fork insists on this being set
-set(ABSL_ROOT_DIR "${absl_SOURCE_DIR}" CACHE STRING "" FORCE)
-binexport_check_target(absl::core_headers)
-
 if(BUILD_TESTING AND BINEXPORT_BUILD_TESTING)
   # Googletest (needs to come after Abseil due to C++ standard propagation)
   FetchContent_Declare(googletest
-    URL https://github.com/google/googletest/archive/b3a9ba2b8e975550799838332803d468797ae2e1.zip  # 2023-12-04
-    URL_HASH SHA256=93b52882cff4e8fb344070106facee0df5e61be91b1948a69c8581b3bcbe0c61
+    URL https://github.com/google/googletest/archive/5bcb2d78a16edd7110e72ef694d229815aa29542.zip  # 2024-07-24
+    URL_HASH SHA256=55d80e3e4b3ae63c4b377895babc2ecd17834aedfc0e6cb8aedb5c7adb97defd
   )
   FetchContent_MakeAvailable(googletest)
   binexport_check_target(gtest)
@@ -61,10 +48,30 @@ if(BUILD_TESTING AND BINEXPORT_BUILD_TESTING)
   endif()
 endif()
 
+# Abseil
+FetchContent_Declare(absl
+  URL https://github.com/abseil/abseil-cpp/archive/7e5c339b1aa790ae03cc614a8d7626d5b4831891.zip  # 2024-07-25 (RC2)
+  URL_HASH SHA256=2ad33d08a720fa3a67ec12bd8cf9846da7ed53045163d69047856cc671a0cbe5
+)
+set(ABSL_CXX_STANDARD ${CMAKE_CXX_STANDARD} CACHE STRING "" FORCE)
+set(ABSL_PROPAGATE_CXX_STD ON CACHE BOOL "" FORCE)
+set(ABSL_USE_EXTERNAL_GOOGLETEST ON CACHE BOOL "" FORCE)
+set(ABSL_FIND_GOOGLETEST OFF CACHE BOOL "" FORCE)
+if(BUILD_TESTING AND BINEXPORT_BUILD_TESTING)
+  # Need this for absl::status_matchers to be available
+  set(ABSL_BUILD_TESTING ON CACHE BOOL "" FORCE)
+endif()
+FetchContent_MakeAvailable(absl)
+binexport_check_target(absl::core_headers)
+if(BUILD_TESTING AND BINEXPORT_BUILD_TESTING)
+  # Fix a bug in Abseil's CMake build files
+  target_link_libraries(absl_no_destructor_test PUBLIC gmock)
+endif()
+
 # Protocol Buffers
 FetchContent_Declare(protobuf
   GIT_REPOSITORY https://github.com/protocolbuffers/protobuf.git
-  GIT_TAG        v27.0 # 2024-05-23 (must be a branch for GIT_SHALLOW to work)
+  GIT_TAG        v27.2 # 2024-05-25 (must be a branch for GIT_SHALLOW to work)
   GIT_SUBMODULES third_party/jsoncpp
   GIT_SHALLOW    TRUE
 )
@@ -138,3 +145,6 @@ find_package(Git)
 if(BINEXPORT_ENABLE_IDAPRO)
   find_package(IdaSdk REQUIRED)
 endif()
+
+#set(BUILD_TESTING ${BINEXPORT_SAVE_BUILD_TESTING})
+

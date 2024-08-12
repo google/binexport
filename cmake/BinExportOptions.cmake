@@ -12,8 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+  set(BINEXPORT_TOP_LEVEL TRUE)
+endif()
+
+# If unset, force a default value for this standard option
+if(NOT BUILD_TESTING)
+  set(BUILD_TESTING OFF)
+endif()
+
 option(BINEXPORT_BUILD_TESTING
-       "If ON, this will build all of BinExport's own tests" ON)
+  "If ON, this will build all of BinExport's own tests" ${BINEXPORT_TOP_LEVEL})
 option(BINEXPORT_BUILD_BENCHMARK
        "If this and BINEXPORT_BUILD_TESTING is ON, build benchmark tests" OFF)
 

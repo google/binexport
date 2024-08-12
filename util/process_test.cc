@@ -19,33 +19,33 @@
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "third_party/absl/status/status_matchers.h"
 #include "third_party/absl/strings/str_cat.h"
-#include "third_party/zynamics/binexport/util/status_matchers.h"
+#include "third_party/zynamics/binexport/util/status_macros.h"
 
 namespace security::binexport {
 namespace {
 
-using ::not_absl::IsOk;
+using ::absl_testing::IsOk;
 using ::testing::Eq;
 using ::testing::IsEmpty;
-using ::testing::IsFalse;
 using ::testing::Not;
 
 TEST(UtilityTest, SpawnProcessEmptyArgs) {
   auto exit_code_or = SpawnProcessAndWait({});
-  EXPECT_THAT(exit_code_or.ok(), IsFalse());
+  EXPECT_THAT(exit_code_or, Not(IsOk()));
   EXPECT_THAT(exit_code_or.status().message(), Not(IsEmpty()));
 }
 
 TEST(UtilityTest, SpawnProcessNonExistingWait) {
   auto exit_code_or = SpawnProcessAndWait({"not.an.executable"});
-  EXPECT_THAT(exit_code_or.ok(), IsFalse());
+  EXPECT_THAT(exit_code_or, Not(IsOk()));
   EXPECT_THAT(exit_code_or.status().message(), Not(IsEmpty()));
 }
 
 TEST(UtilityTest, SpawnProcessNonExistingNoWait) {
   auto status = SpawnProcess({"not.an.executable"});
-  EXPECT_THAT(status.ok(), IsFalse());
+  EXPECT_THAT(status, Not(IsOk()));
   EXPECT_THAT(status.message(), Not(IsEmpty()));
 }
 

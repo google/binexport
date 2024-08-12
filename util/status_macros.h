@@ -45,4 +45,13 @@
   }                                                    \
   lhs = std::move(statusor).value();
 
+#define NA_ASSERT_OK_AND_ASSIGN(lhs, rexpr) \
+  NA_ASSERT_OK_AND_ASSIGN_IMPL(             \
+      NA_MACROS_IMPL_CONCAT(_sapi_statusor, __LINE__), lhs, rexpr)
+
+#define NA_ASSERT_OK_AND_ASSIGN_IMPL(statusor, lhs, rexpr) \
+  auto statusor = (rexpr);                                 \
+  ASSERT_THAT(statusor.status(), ::absl_testing::IsOk());  \
+  lhs = std::move(statusor).value();
+
 #endif  // UTIL_STATUS_MACROS_H_

@@ -41,10 +41,9 @@ include(Util)
 include(BinExportOptions)
 include(BinExportDeps)
 
-include(CTest)
 if(BUILD_TESTING AND BINEXPORT_BUILD_TESTING)
+  include(CTest)
   include(GoogleTest)
-  enable_testing()
 endif()
 
 # Make Google-style includes work
@@ -169,12 +168,12 @@ if(BUILD_TESTING AND BINEXPORT_BUILD_TESTING)
     util/format_test.cc
     util/process_test.cc
     util/status_macros_test.cc
-    util/status_matchers.h
     util/timer_test.cc
   )
   target_link_libraries(binexport_shared_test PUBLIC
     binexport_test_base
     binexport_shared
+    absl::status_matchers
   )
   gtest_discover_tests(binexport_shared_test)
 endif()

@@ -20,13 +20,14 @@
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "third_party/absl/status/status_matchers.h"
 #include "third_party/zynamics/binexport/util/filesystem.h"
-#include "third_party/zynamics/binexport/util/status_matchers.h"
+#include "third_party/zynamics/binexport/util/status_macros.h"
 
 namespace security::binexport {
 namespace {
 
-using ::not_absl::IsOk;
+using ::absl_testing::IsOk;
 using ::testing::AnyOf;
 using ::testing::IsFalse;
 using ::testing::Not;
