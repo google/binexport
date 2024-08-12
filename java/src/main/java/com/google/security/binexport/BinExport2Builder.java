@@ -21,6 +21,7 @@ import com.google.protobuf.ByteString;
 import com.google.security.zynamics.BinExport.BinExport2;
 import com.google.security.zynamics.BinExport.BinExport2.Builder;
 import ghidra.app.nav.NavigationUtils;
+import ghidra.program.database.symbol.EquateDB;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressSetView;
 import ghidra.program.model.block.BasicBlockModel;
@@ -39,6 +40,7 @@ import ghidra.program.model.listing.Instruction;
 import ghidra.program.model.listing.LabelString;
 import ghidra.program.model.listing.Library;
 import ghidra.program.model.listing.Listing;
+import ghidra.program.model.listing.OperandRepresentationList;
 import ghidra.program.model.listing.Parameter;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.listing.VariableOffset;
@@ -203,6 +205,10 @@ public class BinExport2Builder {
     BinExport2.Comment.Type commentType;
     if (markupToken instanceof VariableOffset) {
       commentType = BinExport2.Comment.Type.LOCAL_REFERENCE;
+    } else if (markupToken instanceof OperandRepresentationList) {
+      commentType = BinExport2.Comment.Type.DEFAULT;
+    } else if (markupToken instanceof EquateDB) {
+      commentType = BinExport2.Comment.Type.DEFAULT;
     } else if (markupToken instanceof LabelString) {
       var labelType = ((LabelString) markupToken).getLabelType();
       if (labelType == LabelString.CODE_LABEL) {
