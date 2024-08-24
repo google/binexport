@@ -45,6 +45,8 @@ fi
 
 if [ "$2" = "stable" ]; then
   SUFFIX="_stable"
+elif [ "$2" = "latest" ]; then
+  SUFFIX="_latest"
 else
   SUFFIX=""
 fi
