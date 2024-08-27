@@ -14,6 +14,8 @@
 
 package com.google.security.binexport;
 
+import static java.util.stream.Collectors.joining;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -28,6 +30,7 @@ import ghidra.program.model.block.BasicBlockModel;
 import ghidra.program.model.block.CodeBlock;
 import ghidra.program.model.block.CodeBlockReference;
 import ghidra.program.model.data.StringDataInstance;
+import ghidra.program.model.lang.OperandType;
 import ghidra.program.model.lang.Register;
 import ghidra.program.model.listing.CodeUnit;
 import ghidra.program.model.listing.CodeUnitFormat;
@@ -61,6 +64,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
@@ -165,6 +169,12 @@ public class BinExport2Builder {
           "tword ptr ", 10,
           "xmmword ptr ", 16);
 
+  static final ImmutableSet<String> OPERAND_SHIFT_SYMBOLS =
+      ImmutableSet.of("asr", "lsl", "lsr", "ror", "rrx");
+  static final ImmutableSet<String> OPERAND_CONDITION_SYMBOLS =
+      ImmutableSet.of(
+          "eq", "ne", "cs", "hs", "cc", "lo", "mi", "pl", "vs", "vc", "hi", "ls", "ge", "lt", "gt",
+          "le", "al");
   // Ghidra separates operands of an instruction already for us.
   // The separators and brackets don't and are difficult to represent any semantically meanings.
   // Instead, it only helps to determine the priorities of expression tree nodes.
@@ -259,6 +269,7 @@ public class BinExport2Builder {
   private void buildOperandExpressions(
       Integer startOffset,
       Integer endOffset,
+      Integer operandType,
       ImmutableList<? extends Object> operandList,
       ImmutableList<? extends Object> operandMarkupList,
       Integer parentId,
@@ -273,6 +284,58 @@ public class BinExport2Builder {
     if (parentId != null) {
       exprBuilder.setParentIndex(parentId);
     }
+
+    // Find shift keywords
+    var operandSubstring =
+        operandMarkupList.subList(startOffset, endOffset).stream()
+            .map(Object::toString)
+            .collect(joining(""))
+            .toLowerCase(Locale.getDefault());
+
+    for (var symbol : OPERAND_SHIFT_SYMBOLS) {
+      if (!operandSubstring.startsWith(symbol)) {
+        continue;
+      }
+      var expr = exprBuilder.setType(BinExport2.Expression.Type.OPERATOR).setSymbol(symbol).build();
+      var nextParentId = getOrAddExpression(expr);
+      opExprIndices.add(nextParentId);
+      buildOperandExpressions(
+          startOffset + symbol.length(),
+          endOffset,
+          operandType,
+          operandList,
+          operandMarkupList,
+          nextParentId,
+          opExprIndices,
+          addComment,
+          comments);
+      return;
+    }
+
+    // Find Condition keywords
+    if (OperandType.isFlag(operandType)) {
+      for (var symbol : OPERAND_CONDITION_SYMBOLS) {
+        if (!operandSubstring.startsWith(symbol)) {
+          continue;
+        }
+        var expr =
+            exprBuilder.setType(BinExport2.Expression.Type.OPERATOR).setSymbol(symbol).build();
+        var nextParentId = getOrAddExpression(expr);
+        opExprIndices.add(nextParentId);
+        buildOperandExpressions(
+            startOffset + symbol.length(),
+            endOffset,
+            operandType,
+            operandList,
+            operandMarkupList,
+            nextParentId,
+            opExprIndices,
+            addComment,
+            comments);
+        return;
+      }
+    }
+
     // Find first non-enclosing separator
     var openClosure = 0;
     for (var i = startOffset; i < endOffset; i++) {
@@ -300,6 +363,7 @@ public class BinExport2Builder {
         buildOperandExpressions(
             startOffset,
             i,
+            operandType,
             operandList,
             operandMarkupList,
             separatorId,
@@ -309,6 +373,7 @@ public class BinExport2Builder {
         buildOperandExpressions(
             i + 1,
             endOffset,
+            operandType,
             operandList,
             operandMarkupList,
             separatorId,
@@ -334,6 +399,7 @@ public class BinExport2Builder {
         buildOperandExpressions(
             startOffset,
             endOffset - 1,
+            operandType,
             operandList,
             operandMarkupList,
             nextParentId,
@@ -375,6 +441,7 @@ public class BinExport2Builder {
             buildOperandExpressions(
                 startOffset + 1,
                 j,
+                operandType,
                 operandList,
                 operandMarkupList,
                 nextParentId,
@@ -384,6 +451,7 @@ public class BinExport2Builder {
             buildOperandExpressions(
                 j + 1,
                 endOffset,
+                operandType,
                 operandList,
                 operandMarkupList,
                 parentId,
@@ -464,6 +532,7 @@ public class BinExport2Builder {
     buildOperandExpressions(
         startOffset + 1,
         endOffset,
+        operandType,
         operandList,
         operandMarkupList,
         nextParentId,
@@ -484,6 +553,7 @@ public class BinExport2Builder {
       Boolean addComment = operandMarkupList.size() == operandList.size();
 
       Integer parentId = null;
+      Integer startOffset = 0;
       var opExprIndices = new ArrayList<Integer>();
 
       // Add size prefix if applicable
@@ -500,14 +570,13 @@ public class BinExport2Builder {
                 .build();
         parentId = getOrAddExpression(expr);
         opExprIndices.add(parentId);
-        operandMarkupList =
-            operandMarkupList.subList(entry.getKey().length(), operandMarkupList.size());
-        operandList = operandList.subList(entry.getKey().length(), operandList.size());
+        startOffset += entry.getKey().length();
         break;
       }
       buildOperandExpressions(
-          0,
+          startOffset,
           operandMarkupList.size(),
+          instr.getOperandType(i),
           operandList,
           operandMarkupList,
           parentId,
