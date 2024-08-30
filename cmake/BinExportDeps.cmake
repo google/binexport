@@ -122,13 +122,21 @@ if(BINEXPORT_ENABLE_BINARYNINJA)
     FetchContent_Populate(binaryninjaapi)  # For binaryninjaapi_SOURCE_DIR
   endif()
   if(BINEXPORT_BINARYNINJA_LATEST)
-    execute_process(
-            COMMAND "${BINEXPORT_SOURCE_DIR}/binaryninja/stubs/regenerate-api-stubs.sh"
-            "${binaryninjaapi_SOURCE_DIR}" latest
+    if(WIN32)
+      find_program(POWERSHELL_PATH NAMES powershell pwsh)
+      set(_stub_command "${POWERSHELL_PATH} ${BINEXPORT_SOURCE_DIR}/binaryninja/stubs/regenerate-api-stubs.ps1")
+    else()
+      set(_stub_command "${BINEXPORT_SOURCE_DIR}/binaryninja/stubs/regenerate-api-stubs.sh")
+    endif()
+    add_custom_command(
+      OUTPUT ${BINEXPORT_SOURCE_DIR}/binaryninja/stubs/binaryninjacore${_binexport_binaryninjacore_suffix}.cc
+      COMMAND ${_stub_command} ${binaryninjaapi_SOURCE_DIR} latest
+      DEPENDS ${binaryninjaapi_SOURCE_DIR}/binaryninjacore.h
+      COMMENT "Updating stubs"
     )
   endif()
   add_library(binaryninjacore SHARED
-    binaryninja/stubs/binaryninjacore${_binexport_binaryninjacore_suffix}.cc
+    ${BINEXPORT_SOURCE_DIR}/binaryninja/stubs/binaryninjacore${_binexport_binaryninjacore_suffix}.cc
   )
   set_target_properties(binaryninjacore PROPERTIES
     SOVERSION 1
