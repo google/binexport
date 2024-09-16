@@ -1,14 +1,23 @@
 name: gradle-build
 
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      ghidra_version:
+        description: 'Specify the Ghidra version(s) you want to build for (e.g. "latest", "11.0")'
+        required: true
+        default: '"latest"'
+  schedule:
+    - cron: '0 0 1 * *' # Monthly
 
 jobs:
   build:
     strategy:
       fail-fast: false
       matrix:
-        include:
-        - ghidra: 11.0.3
+        ghidra: ${{ fromJSON(format('[{0}]', inputs.ghidra_version || '"latest","11.1.2","11.1.1","11.1","11.0.3","11.0.2","11.0.1","11.0"')) }}
     runs-on: ubuntu-22.04
 
     steps:
@@ -35,9 +44,9 @@ jobs:
       run: |
         gradle buildExtension -PGHIDRA_INSTALL_DIR=${{ env.GHIDRA_INSTALL_DIR }}
 
-    - name: Upload Build Artifacts
-      uses: actions/upload-artifact@v3.1.2
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
       with:
-        name: BinExport_Ghidra-Java
+        name: BinExport_Ghidra_${{ matrix.ghidra }}
         path: |
           ${{ github.workspace }}/java/dist/*
