@@ -1,6 +1,11 @@
 name: gradle-build
 
-on: [push, pull_request, workflow_dispatch]
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 1 * *' # Monthly
 
 jobs:
   build:
