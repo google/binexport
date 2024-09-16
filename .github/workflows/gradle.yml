@@ -12,8 +12,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-        - ghidra: 11.0.3
+        ghidra:
+        - "latest"
+        - "11.1.2"
+        - "11.1.1"
+        - "11.1"
+        - "11.0.3"
+        - "11.0.2"
+        - "11.0.1"
+        - "11.0"
     runs-on: ubuntu-22.04
 
     steps:
