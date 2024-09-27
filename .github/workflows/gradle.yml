@@ -27,7 +27,7 @@ jobs:
       uses: actions/setup-java@v4
       with:
         distribution: zulu
-        java-version: "17"
+        java-version: "21"
 
     - name: Setup Ghidra
       uses: antoniovazquezblanco/setup-ghidra@v2.0.3
