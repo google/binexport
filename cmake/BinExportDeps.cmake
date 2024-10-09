@@ -93,14 +93,19 @@ find_package(Protobuf 3.14 REQUIRED) # Make protobuf_generate_cpp available
 
 # Binary Ninja API
 if(BINEXPORT_ENABLE_BINARYNINJA)
-  if(BINEXPORT_BINARYNINJA_CHANNEL STREQUAL "stable")
-    set(_binexport_binaryninjacore_suffix "_stable")
-    set(_binexport_binaryninja_git_tag
-        "59e569906828e91e4884670c2bba448702f5a31d") # 2023-09-19 v3.5.4526
+  if(BINEXPORT_BINARYNINJA_LATEST)
+    set(_binexport_binaryninjacore_suffix "_latest")
+    set(_binexport_binaryninja_git_tag "dev")
   else()
-    set(_binexport_binaryninjacore_suffix "")
-    set(_binexport_binaryninja_git_tag
-        "6e2b374dece03f6fb48a1615fa2bfee809ec2157") # 2023-09-24
+    if(BINEXPORT_BINARYNINJA_CHANNEL STREQUAL "stable")
+      set(_binexport_binaryninjacore_suffix "_stable")
+      set(_binexport_binaryninja_git_tag
+          "967ffc9bd705f6820c4dbfe97f301d52facb1417") # 2024-08-14 v4.1.5902
+    else()
+      set(_binexport_binaryninjacore_suffix "")
+      set(_binexport_binaryninja_git_tag
+          "de23abd02ab27b6623656ed04e9b62d4dc1361b7") # 2024-08-24
+    endif()
   endif()
   FetchContent_Declare(binaryninjaapi
     GIT_REPOSITORY https://github.com/Vector35/binaryninja-api.git
@@ -110,8 +115,22 @@ if(BINEXPORT_ENABLE_BINARYNINJA)
   if(NOT binaryninjaapi_POPULATED)
     FetchContent_Populate(binaryninjaapi)  # For binaryninjaapi_SOURCE_DIR
   endif()
+  if(BINEXPORT_BINARYNINJA_LATEST)
+    if(WIN32)
+      find_program(POWERSHELL_PATH NAMES powershell pwsh)
+      set(_stub_command "${POWERSHELL_PATH} ${BINEXPORT_SOURCE_DIR}/binaryninja/stubs/regenerate-api-stubs.ps1")
+    else()
+      set(_stub_command "${BINEXPORT_SOURCE_DIR}/binaryninja/stubs/regenerate-api-stubs.sh")
+    endif()
+    add_custom_command(
+      OUTPUT ${BINEXPORT_SOURCE_DIR}/binaryninja/stubs/binaryninjacore${_binexport_binaryninjacore_suffix}.cc
+      COMMAND ${_stub_command} ${binaryninjaapi_SOURCE_DIR} latest
+      DEPENDS ${binaryninjaapi_SOURCE_DIR}/binaryninjacore.h
+      COMMENT "Updating stubs"
+    )
+  endif()
   add_library(binaryninjacore SHARED
-    binaryninja/stubs/binaryninjacore${_binexport_binaryninjacore_suffix}.cc
+    ${BINEXPORT_SOURCE_DIR}/binaryninja/stubs/binaryninjacore${_binexport_binaryninjacore_suffix}.cc
   )
   set_target_properties(binaryninjacore PROPERTIES
     SOVERSION 1
