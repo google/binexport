@@ -18,15 +18,19 @@
 #include "third_party/zynamics/binexport/ida/begin_idasdk.inc"  // NOLINT
 #include <idp.hpp>                                              // NOLINT
 #include <allins.hpp>                                           // NOLINT
-#include <enum.hpp>                                             // NOLINT
 #include <frame.hpp>                                            // NOLINT
 #include <ida.hpp>                                              // NOLINT
 #include <lines.hpp>                                            // NOLINT
 #include <name.hpp>                                             // NOLINT
 #include <segment.hpp>                                          // NOLINT
-#include <struct.hpp>                                           // NOLINT
 #include <typeinf.hpp>                                          // NOLINT
 #include <ua.hpp>                                               // NOLINT
+#if IDP_INTERFACE_VERSION >= 900
+#define ph PH
+#else
+#include <enum.hpp>                                             // NOLINT
+#include <struct.hpp>                                           // NOLINT
+#endif
 #include "third_party/zynamics/binexport/ida/end_idasdk.inc"    // NOLINT
 // clang-format on
 

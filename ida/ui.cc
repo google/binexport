@@ -25,6 +25,7 @@
 
 // clang-format off
 #include "third_party/zynamics/binexport/ida/begin_idasdk.inc"  // NOLINT
+#include <idp.hpp>                                              // NOLINT
 #include <expr.hpp>                                             // NOLINT
 #include <kernwin.hpp>                                          // NOLINT
 #include "third_party/zynamics/binexport/ida/end_idasdk.inc"    // NOLINT
@@ -62,7 +63,11 @@ void WaitBox::ReplaceText(absl::string_view message) const {
     ReplaceWaitBoxRequest(const WaitBox& wait_box, absl::string_view message)
         : wait_box(wait_box), message(message) {}
 
+#if IDP_INTERFACE_VERSION >= 900
+    ssize_t idaapi execute() override {
+#else
     int idaapi execute() override {
+#endif
       replace_wait_box("%s",
                        FormatMessage(message, wait_box.cancellable_).c_str());
       return 0;

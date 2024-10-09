@@ -26,6 +26,9 @@
 #include <idp.hpp>                                              // NOLINT
 #include <kernwin.hpp>                                          // NOLINT
 #include <loader.hpp>                                           // NOLINT
+#if IDP_INTERFACE_VERSION >= 900
+#define ph PH
+#endif
 #include "third_party/zynamics/binexport/ida/end_idasdk.inc"    // NOLINT
 // clang-format on
 
