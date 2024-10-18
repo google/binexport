@@ -57,6 +57,10 @@ set(ABSL_CXX_STANDARD ${CMAKE_CXX_STANDARD} CACHE STRING "" FORCE)
 set(ABSL_PROPAGATE_CXX_STD ON CACHE BOOL "" FORCE)
 set(ABSL_USE_EXTERNAL_GOOGLETEST ON CACHE BOOL "" FORCE)
 set(ABSL_FIND_GOOGLETEST OFF CACHE BOOL "" FORCE)
+if(MSVC)
+  # Link MSVCRT statically for abseil
+  set(ABSL_MSVC_STATIC_RUNTIME ON CACHE BOOL "" FORCE)
+endif()
 if(BUILD_TESTING AND BINEXPORT_BUILD_TESTING)
   # Need this for absl::status_matchers to be available
   set(ABSL_BUILD_TESTING ON CACHE BOOL "" FORCE)
@@ -80,6 +84,10 @@ set(protobuf_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(protobuf_BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 set(protobuf_INSTALL OFF CACHE BOOL "" FORCE)
 set(protobuf_WITH_ZLIB OFF CACHE BOOL "" FORCE)
+if(MSVC)
+  # Link MSVCRT statically for protoc
+  set(protobuf_MSVC_STATIC_RUNTIME ON CACHE BOOL "" FORCE)
+endif()
 FetchContent_MakeAvailable(protobuf)
 binexport_check_target(protobuf::libprotobuf)
 binexport_check_target(protobuf::protoc)
@@ -147,4 +155,3 @@ if(BINEXPORT_ENABLE_IDAPRO)
 endif()
 
 #set(BUILD_TESTING ${BINEXPORT_SAVE_BUILD_TESTING})
-
