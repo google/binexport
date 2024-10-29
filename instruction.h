@@ -15,6 +15,8 @@
 #ifndef INSTRUCTION_H_
 #define INSTRUCTION_H_
 
+#include <cstdint>
+#include <functional>
 #include <ostream>
 #include <string>
 #include <vector>
@@ -22,6 +24,7 @@
 #include "third_party/absl/container/node_hash_set.h"
 #include "third_party/zynamics/binexport/operand.h"
 #include "third_party/zynamics/binexport/util/range.h"
+#include "third_party/zynamics/binexport/util/types.h"
 
 class FlowGraph;
 class AddressSpace;
@@ -120,6 +123,7 @@ class Instruction {
   bool HasFlag(uint8_t flag) const;
 
  private:
+
   static thread_local int instance_count_;
   static thread_local StringCache string_cache_;
   static thread_local Operands operands_;

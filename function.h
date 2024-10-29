@@ -17,10 +17,12 @@
 
 #include <cstdint>
 #include <ostream>
+#include <string>
 #include <vector>
 
 #include "third_party/absl/container/btree_map.h"
 #include "third_party/absl/container/node_hash_set.h"
+#include "third_party/absl/log/check.h"
 #include "third_party/zynamics/binexport/basic_block.h"
 #include "third_party/zynamics/binexport/edge.h"
 #include "third_party/zynamics/binexport/util/types.h"
