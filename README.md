@@ -190,8 +190,6 @@ directory.
 
 ### Ghidra
 
-There is only minimal integration into the Ghidra UI at this time.
-
 1.  Open or create a project. For new projects, import a file first using `File`|`Import File...`
 2.  Right-click a file in the current project list and select `Export...` from the context menu.
 3.  In the "Export" dialog, under "Format", choose "Binary Export (v2) for BinDiff".
@@ -199,6 +197,34 @@ There is only minimal integration into the Ghidra UI at this time.
     `.BinExport` will be appended automatically.
 5.  Optional: click "Options..." to set additional export options.
 6.  Click "OK", then click "OK" again to dismiss the "Export Results Summary" dialog.
+
+#### Scripting
+
+The `BinExport.java` Ghidra script can be run in both headless and GUI mode. In GUI mode, it is available under the `BinExport` category in the Script Manager. For headless mode, a `BinExport.properties` file with the following content (or similar, depending on the options you want to use) can be used:
+
+```
+Choose export file Export = test.BinExport
+Choose options IDA Pro Compatibility = "Subtract Imagebase;Remap mnemonics;Prepend Namespace to Function Names"
+```
+
+##### Example usage in headless mode
+
+Create a project, import and analyze a binary:
+
+```
+$ ./analyzeHeadless <project_location> <project_name> -import <file>
+```
+Run `BinExport.java` which will generate the `.BinExport` file specified in `BinExport.properties`:
+
+```
+$ ./analyzeHeadless <project_location> <project_name> -process <file> -propertiesPath <path> -preScript BinExport.java -noanalysis
+```
+
+Alternatively, use command-line arguments instead of `BinExport.properties`:
+
+```
+$ ./analyzeHeadless <project_location> <project_name> -process <file> -preScript BinExport.java test.BinExport "Prepend Namespace to Function Names" -noanalysis
+```
 
 ## How to build
 
