@@ -16,14 +16,21 @@
 
 #include <algorithm>
 #include <boost/graph/graph_traits.hpp>  // NOLINT
+#include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "third_party/absl/log/check.h"
 #include "third_party/absl/log/log.h"
 #include "third_party/absl/memory/memory.h"
+#include "third_party/absl/strings/ascii.h"
+#include "third_party/absl/types/optional.h"
+#include "third_party/zynamics/binexport/architectures.h"
 #include "third_party/zynamics/binexport/reader/graph_utility.h"
+#include "third_party/zynamics/binexport/reader/instruction.h"
 #include "third_party/zynamics/binexport/util/types.h"
 
 namespace security::binexport {
