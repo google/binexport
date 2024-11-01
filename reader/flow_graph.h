@@ -20,12 +20,15 @@
 
 #include <boost/graph/adjacency_list.hpp>               //NOLINT
 #include <boost/graph/compressed_sparse_row_graph.hpp>  // NOLINT
+#include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <memory>
+#include <tuple>
 #include <utility>
 #include <vector>
 
-#include "third_party/absl/base/macros.h"
+#include "third_party/absl/base/attributes.h"
 #include "third_party/absl/types/optional.h"
 #include "third_party/zynamics/binexport/architectures.h"
 #include "third_party/zynamics/binexport/binexport2.pb.h"
@@ -85,6 +88,11 @@ class FlowGraph {
                             VertexProperty, EdgeProperty>;
 
   // Factory method to read and initialize a flow graph (BinExport2).
+  static absl::StatusOr<std::unique_ptr<FlowGraph>> FromBinExport2(
+      const BinExport2& proto, const BinExport2::FlowGraph& flow_graph_proto,
+      const std::vector<uint64_t>& instruction_addresses);
+
+  ABSL_DEPRECATED("Use FromBinExport2Proto that returns a StatusOr instead.")
   static std::unique_ptr<FlowGraph> FromBinExport2Proto(
       const BinExport2& proto, const BinExport2::FlowGraph& flow_graph_proto,
       const std::vector<uint64_t>& instruction_addresses);
