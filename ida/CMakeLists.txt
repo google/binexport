@@ -51,7 +51,6 @@ add_ida_plugin(${binexport_ida_plugin_name}
   ppc.h
 )
 ida_target_link_libraries(${binexport_ida_plugin_name}
-  absl::bad_optional_access
   absl::flat_hash_map
   absl::flat_hash_set
   absl::hash

@@ -50,8 +50,8 @@ endif()
 
 # Abseil
 FetchContent_Declare(absl
-  URL https://github.com/abseil/abseil-cpp/archive/7e5c339b1aa790ae03cc614a8d7626d5b4831891.zip  # 2024-07-25 (RC2)
-  URL_HASH SHA256=2ad33d08a720fa3a67ec12bd8cf9846da7ed53045163d69047856cc671a0cbe5
+  URL https://github.com/abseil/abseil-cpp/archive/9f3d4d7c70db545ce6c69d92796f5ed811510b78.zip  # 2025-02-20
+  URL_HASH SHA256=77dd525ec246a5b5100ea0db138caca0e9857f5f1dfa8761f972ad834e24d679
 )
 set(ABSL_CXX_STANDARD ${CMAKE_CXX_STANDARD} CACHE STRING "" FORCE)
 set(ABSL_PROPAGATE_CXX_STD ON CACHE BOOL "" FORCE)
@@ -75,9 +75,7 @@ endif()
 # Protocol Buffers
 FetchContent_Declare(protobuf
   GIT_REPOSITORY https://github.com/protocolbuffers/protobuf.git
-  GIT_TAG        v27.2 # 2024-05-25 (must be a branch for GIT_SHALLOW to work)
-  GIT_SUBMODULES third_party/jsoncpp
-  GIT_SHALLOW    TRUE
+  GIT_TAG        e390402c5e372de349af88ae0197c67529cf9360 # 2025-02-22
 )
 set(protobuf_ABSL_PROVIDER "package" CACHE STRING "" FORCE)
 set(protobuf_BUILD_TESTS OFF CACHE BOOL "" FORCE)
