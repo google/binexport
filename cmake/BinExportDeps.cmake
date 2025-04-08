@@ -75,7 +75,7 @@ endif()
 # Protocol Buffers
 FetchContent_Declare(protobuf
   GIT_REPOSITORY https://github.com/protocolbuffers/protobuf.git
-  GIT_TAG        e390402c5e372de349af88ae0197c67529cf9360 # 2025-02-22
+  GIT_TAG        5c9406bc1cf11192c5223d99e095b99b31bf076a # 2025-04-08
 )
 set(protobuf_ABSL_PROVIDER "package" CACHE STRING "" FORCE)
 set(protobuf_BUILD_TESTS OFF CACHE BOOL "" FORCE)
@@ -92,6 +92,9 @@ binexport_check_target(protobuf::protoc)
 target_include_directories(utf8_validity PUBLIC
   "${BINEXPORT_BINARY_DIR}/src_include"
   "${protobuf_SOURCE_DIR}"
+)
+target_include_directories(libprotobuf PUBLIC
+  "${protobuf_SOURCE_DIR}/third_party/utf8_range"
 )
 set(Protobuf_INCLUDE_DIR "${protobuf_SOURCE_DIR}/src" CACHE INTERNAL "")
 set(Protobuf_LIBRARIES protobuf::libprotobuf CACHE INTERNAL "")
