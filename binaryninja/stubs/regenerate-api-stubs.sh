@@ -38,8 +38,17 @@ THIS=$(basename "$0")
 THIS_DIR=$(dirname "$(canonical_path "$0")")
 
 if [ -z "$1" ]; then
-  echo "usage: ${THIS} PATH_TO_BINARYNINJA_API" 2>&1
+  echo "usage: ${THIS} PATH_TO_BINARYNINJA_API [stable]" 2>&1
+  echo "set 'stable' to update the stable stubs" 2>&1
   exit 1
+fi
+
+if [ "$2" = "stable" ]; then
+  SUFFIX="_stable"
+elif [ "$2" = "latest" ]; then
+  SUFFIX="_latest"
+else
+  SUFFIX=""
 fi
 
 BINARYNINJA_API_SRC=$(canonical_path "$1")
@@ -98,4 +107,4 @@ cat <<EOF
 }  // extern "C"
 EOF
 ) | \
-  clang-format --style=Google > binaryninjacore.cc
+  clang-format --style=Google > "binaryninjacore${SUFFIX}.cc"
