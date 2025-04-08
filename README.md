@@ -265,7 +265,7 @@ Install the latest stable version of CMake:
 ```bash
 wget https://github.com/Kitware/CMake/releases/download/v3.25.1/cmake-3.25.1-linux-x86_64.sh
 mkdir ${HOME}/cmake
-sh cmake-3.25.1-Linux-x86_64.sh --prefix=${HOME}/cmake --exclude-subdir
+sh cmake-3.25.1-linux-x86_64.sh --prefix=${HOME}/cmake --exclude-subdir
 export PATH=${HOME}/cmake/bin:${PATH}
 ```
 
