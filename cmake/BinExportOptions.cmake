@@ -31,3 +31,5 @@ option(BINEXPORT_ENABLE_BINARYNINJA "Build the Binary Ninja plugin" ON)
 
 set(BINEXPORT_BINARYNINJA_CHANNEL "stable" CACHE
     STRING "Binary Ninja channel, either 'stable' or 'dev'")
+
+option(BINEXPORT_BINARYNINJA_LATEST "Use the latest Binary Ninja API from GitHub" OFF)

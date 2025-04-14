@@ -12,15 +12,28 @@ jobs:
       matrix:
         include:
         - os: ubuntu-22.04
-        - os: macos-12
+          boost_platform_version: 22.04
+          boost_toolset: gcc
+          boost_arch: x86
+        - os: macos-13
+          boost_platform_version: 13
+          boost_toolset: clang
+          boost_arch: x86
+        - os: macos-14
+          boost_platform_version: 14
+          boost_toolset: clang
+          boost_arch: aarch64
         - os: windows-2022
+          boost_platform_version: 2022
+          boost_toolset: msvc
+          boost_arch: x86
     runs-on: ${{ matrix.os }}
 
     steps:
     - uses: actions/checkout@v4
 
     - name: Install ninja-build tool
-      uses: turtlesec-no/get-ninja@1.1.0
+      uses: seanmiddleditch/gha-setup-ninja@v6
 
     - name: Create Build Environment
       env:
@@ -37,6 +50,15 @@ jobs:
       if: matrix.os == 'windows-2022'
       uses: ilammy/msvc-dev-cmd@v1.12.1
 
+    - name: Install Boost
+      uses: MarkusJx/install-boost@v2
+      id: install-boost
+      with:
+        arch: ${{ matrix.boost_arch }}
+        boost_version: 1.83.0
+        platform_version: ${{ matrix.boost_platform_version }}
+        toolset: ${{ matrix.boost_toolset }}
+
     - name: Enable mold linker (Linux)
       if: matrix.os == 'ubuntu-22.04'
       uses: rui314/setup-mold@v1
@@ -47,7 +69,12 @@ jobs:
       run: |
         cmake "${{ github.workspace }}" -G Ninja \
           "-DCMAKE_BUILD_TYPE=${BUILD_TYPE}" \
-          "-DIdaSdk_ROOT_DIR=${{ runner.workspace }}/build/idasdk_teams82"
+          "-DIdaSdk_ROOT_DIR=${{ runner.workspace }}/build/idasdk_teams82" \
+          "-DBINEXPORT_ENABLE_BINARYNINJA=ON" \
+          "-DBINEXPORT_BINARYNINJA_CHANNEL=stable" \
+          "-DBoost_INCLUDE_DIR=${{steps.install-boost.outputs.BOOST_ROOT}}/include"
+      env:
+          BOOST_ROOT: ${{steps.install-boost.outputs.BOOST_ROOT}}
 
     - name: Build
       working-directory: ${{ runner.workspace }}/build
@@ -60,9 +87,9 @@ jobs:
       run: ctest --build-config "${BUILD_TYPE}" --output-on-failure -R '^[A-Z]'
 
     - name: Upload Build Artifacts
-      uses: actions/upload-artifact@v3.1.2
+      uses: actions/upload-artifact@v4
       with:
-        name: BinExport-${{ runner.os }}
+        name: BinExport-${{ runner.os }}-${{ runner.arch }}
         path: |
           ${{ runner.workspace }}/build/binaryninja/binexport*
           ${{ runner.workspace }}/build/ida/binexport*

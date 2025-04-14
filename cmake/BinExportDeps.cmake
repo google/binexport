@@ -102,37 +102,25 @@ find_package(Protobuf 3.14 REQUIRED) # Make protobuf_generate_cpp available
 
 # Binary Ninja API
 if(BINEXPORT_ENABLE_BINARYNINJA)
-  if(BINEXPORT_BINARYNINJA_CHANNEL STREQUAL "stable")
-    set(_binexport_binaryninjacore_suffix "_stable")
-    set(_binexport_binaryninja_git_tag
-        "59e569906828e91e4884670c2bba448702f5a31d") # 2023-09-19 v3.5.4526
+  if(BINEXPORT_BINARYNINJA_LATEST)
+    set(_binexport_binaryninja_git_tag "origin/dev")
   else()
-    set(_binexport_binaryninjacore_suffix "")
-    set(_binexport_binaryninja_git_tag
-        "6e2b374dece03f6fb48a1615fa2bfee809ec2157") # 2023-09-24
+      if(BINEXPORT_BINARYNINJA_CHANNEL STREQUAL "stable")
+        set(_binexport_binaryninja_git_tag "9229ebde590febc9635d824ae9284ae170dee9da") # 2024-11-20 v4.2.6455
+      else()
+        set(_binexport_binaryninja_git_tag BINEXPORT_BINARYNINJA_CHANNEL)
+      endif()
   endif()
   FetchContent_Declare(binaryninjaapi
     GIT_REPOSITORY https://github.com/Vector35/binaryninja-api.git
     GIT_TAG        ${_binexport_binaryninja_git_tag}
+    GIT_SUBMODULES_RECURSE ON
   )
   FetchContent_GetProperties(binaryninjaapi)
   if(NOT binaryninjaapi_POPULATED)
-    FetchContent_Populate(binaryninjaapi)  # For binaryninjaapi_SOURCE_DIR
-  endif()
-  add_library(binaryninjacore SHARED
-    binaryninja/stubs/binaryninjacore${_binexport_binaryninjacore_suffix}.cc
-  )
-  set_target_properties(binaryninjacore PROPERTIES
-    SOVERSION 1
-  )
-  target_include_directories(binaryninjacore PRIVATE
-    "${binaryninjaapi_SOURCE_DIR}"
-  )
-  set(CORE_LIBRARY binaryninjacore)
-  set(BN_CORE_LIBRARY "${CORE_LIBRARY}")
   set(HEADLESS TRUE)
-  if(binaryninjaapi_POPULATED)
-    add_subdirectory("${binaryninjaapi_SOURCE_DIR}" "${binaryninjaapi_BINARY_DIR}")
+    set(ENV{BN_API_PATH} "${binaryninjaapi_SOURCE_DIR}")
+    FetchContent_MakeAvailable(binaryninjaapi)
     if(MSVC)
       target_compile_options(binaryninjaapi PRIVATE
         /wd4005  # macro redefinition (NOMINMAX, _CRT_SECURE_NO_WARNINGS)
