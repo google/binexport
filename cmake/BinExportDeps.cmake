@@ -106,7 +106,7 @@ if(BINEXPORT_ENABLE_BINARYNINJA)
     set(_binexport_binaryninja_git_tag "origin/dev")
   else()
       if(BINEXPORT_BINARYNINJA_CHANNEL STREQUAL "stable")
-        set(_binexport_binaryninja_git_tag "9229ebde590febc9635d824ae9284ae170dee9da") # 2024-11-20 v4.2.6455
+        set(_binexport_binaryninja_git_tag "67ae186d19ef585d17ee5085340e66b5b35011fd") # 2025-04-23 v5.0.7290
       else()
         set(_binexport_binaryninja_git_tag BINEXPORT_BINARYNINJA_CHANNEL)
       endif()

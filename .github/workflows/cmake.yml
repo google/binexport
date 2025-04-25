@@ -35,13 +35,17 @@ jobs:
     - name: Install ninja-build tool
       uses: seanmiddleditch/gha-setup-ninja@v6
 
-    - name: Create Build Environment
-      env:
-        IDASDK_SECRET: ${{ secrets.IDASDK_SECRET }}
+    - name: Create Build Directory 
       working-directory: ${{ github.workspace }}
       shell: bash
+      run: mkdir -p "${{ runner.workspace }}/build"
+      
+    - name: Unzip IDA SDK
+      working-directory: ${{ github.workspace }}
+      env:
+        IDASDK_SECRET: ${{ secrets.IDASDK_SECRET }}
+      if: env.IDASDK_SECRET != ''
       run: |
-        mkdir -p "${{ runner.workspace }}/build"
         ./.github/scripts/decrypt_secret.sh
         unzip -q "${{ runner.workspace }}/build/idasdk_teams82.zip" \
               -d "${{ runner.workspace }}/build/"
@@ -65,16 +69,17 @@ jobs:
 
     - name: Configure CMake
       working-directory: ${{ runner.workspace }}/build
+      env:
+        BOOST_ROOT: ${{steps.install-boost.outputs.BOOST_ROOT}}
       shell: bash
       run: |
         cmake "${{ github.workspace }}" -G Ninja \
           "-DCMAKE_BUILD_TYPE=${BUILD_TYPE}" \
+          "-DBINEXPORT_ENABLE_IDAPRO=${{ vars.BINEXPORT_ENABLE_IDAPRO == 'OFF' && 'OFF' || 'ON'}}" \
           "-DIdaSdk_ROOT_DIR=${{ runner.workspace }}/build/idasdk_teams82" \
           "-DBINEXPORT_ENABLE_BINARYNINJA=ON" \
           "-DBINEXPORT_BINARYNINJA_CHANNEL=stable" \
           "-DBoost_INCLUDE_DIR=${{steps.install-boost.outputs.BOOST_ROOT}}/include"
-      env:
-          BOOST_ROOT: ${{steps.install-boost.outputs.BOOST_ROOT}}
 
     - name: Build
       working-directory: ${{ runner.workspace }}/build
@@ -87,7 +92,7 @@ jobs:
       run: ctest --build-config "${BUILD_TYPE}" --output-on-failure -R '^[A-Z]'
 
     - name: Upload Build Artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v4.6.2
       with:
         name: BinExport-${{ runner.os }}-${{ runner.arch }}
         path: |
