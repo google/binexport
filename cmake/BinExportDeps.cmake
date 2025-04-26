@@ -102,33 +102,46 @@ find_package(Protobuf 3.14 REQUIRED) # Make protobuf_generate_cpp available
 
 # Binary Ninja API
 if(BINEXPORT_ENABLE_BINARYNINJA)
-  if(BINEXPORT_BINARYNINJA_LATEST)
-    set(_binexport_binaryninja_git_tag "origin/dev")
+    
+  if(BINEXPORT_BINARYNINJA_CHANNEL STREQUAL "stable")
+    # The Windows build only requires stub generation for linking.
+    # Binaryninja-api tags their releases but doesn't create a "release" in github.
+    # Workaround for getting the latest tag for the call to FetchContent_Declare.
+    execute_process(
+      COMMAND gh api repos/Vector35/binaryninja-api/tags --jq "[.[].name][0]"
+      OUTPUT_VARIABLE STABLE_TAG
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    set(BINARYNINJA_BRANCH "${STABLE_TAG}")
+  elseif(BINEXPORT_BINARYNINJA_CHANNEL STREQUAL "dev")
+    set(BINARYNINJA_BRANCH "origin/dev")
   else()
-      if(BINEXPORT_BINARYNINJA_CHANNEL STREQUAL "stable")
-        set(_binexport_binaryninja_git_tag "67ae186d19ef585d17ee5085340e66b5b35011fd") # 2025-04-23 v5.0.7290
-      else()
-        set(_binexport_binaryninja_git_tag BINEXPORT_BINARYNINJA_CHANNEL)
-      endif()
+    set(BINARYNINJA_BRANCH "${BINEXPORT_BINARYNINJA_CHANNEL}")
   endif()
+
   FetchContent_Declare(binaryninjaapi
-    GIT_REPOSITORY https://github.com/Vector35/binaryninja-api.git
-    GIT_TAG        ${_binexport_binaryninja_git_tag}
+    GIT_REPOSITORY         https://github.com/Vector35/binaryninja-api.git
+    GIT_TAG                "${BINARYNINJA_BRANCH}"
     GIT_SUBMODULES_RECURSE ON
   )
+
   FetchContent_GetProperties(binaryninjaapi)
   if(NOT binaryninjaapi_POPULATED)
-  set(HEADLESS TRUE)
+    set(HEADLESS TRUE)
     set(ENV{BN_API_PATH} "${binaryninjaapi_SOURCE_DIR}")
     FetchContent_MakeAvailable(binaryninjaapi)
+
     if(MSVC)
       target_compile_options(binaryninjaapi PRIVATE
         /wd4005  # macro redefinition (NOMINMAX, _CRT_SECURE_NO_WARNINGS)
       )
     endif()
+
   endif()
+
   binexport_check_target(binaryninjaapi)
   add_library(BinaryNinja::API ALIAS binaryninjaapi)
+
 endif()
 
 # Boost

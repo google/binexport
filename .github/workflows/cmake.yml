@@ -1,9 +1,61 @@
 name: cmake-build
 
-on: [push, pull_request]
+on: 
+  #push:
+  #pull_request:
+  workflow_dispatch:
+    inputs:
+      binaryninja_build_channel:
+        description: >
+          "Set to stable for the latest stable build or dev for the nightly 
+          build. A commit hash can also be specified"
+        required: false
+        default: "stable"
+        type: string
+      build_type:
+        description: "Debug or Release builds"
+        required: false
+        default: "Release"
+        type: string
+      enable_binaryninja_build:
+        description: "Set to ON to enable the binaryninja build or OFF to disable."
+        required: false
+        default: "ON" 
+        type: string
+      enable_idapro_build:
+        description: "Set to ON to enable the IDA Pro build or OFF to disable."
+        required: false
+        default: "ON" 
+        type: string
 
-env:
-  BUILD_TYPE: Release
+  workflow_call:
+    inputs:
+      binaryninja_build_channel:
+        description: >
+          "Set to stable for the latest stable build or dev for the nightly 
+          build. A commit hash can also be specified"
+        required: false
+        default: "stable"
+        type: string
+      build_type:
+        description: "Debug or Release builds"
+        required: false
+        default: "Release"
+        type: string
+      enable_binaryninja_build:
+        description: "Set to ON to enable the binaryninja build or OFF to disable."
+        required: false
+        default: "ON" 
+        type: string
+      enable_idapro_build:
+        description: "Set to ON to enable the IDA Pro build or OFF to disable."
+        required: false
+        default: "ON" 
+        type: string
+    secrets:
+      IDASDK_SECRET:
+        description: "The password for unzipping the IDA SDK zip."
+        required: false
 
 jobs:
   build:
@@ -70,29 +122,31 @@ jobs:
     - name: Configure CMake
       working-directory: ${{ runner.workspace }}/build
       env:
-        BOOST_ROOT: ${{steps.install-boost.outputs.BOOST_ROOT}}
+        BOOST_ROOT: ${{ steps.install-boost.outputs.BOOST_ROOT }}
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       shell: bash
       run: |
         cmake "${{ github.workspace }}" -G Ninja \
-          "-DCMAKE_BUILD_TYPE=${BUILD_TYPE}" \
-          "-DBINEXPORT_ENABLE_IDAPRO=${{ vars.BINEXPORT_ENABLE_IDAPRO == 'OFF' && 'OFF' || 'ON'}}" \
+          "-DCMAKE_BUILD_TYPE=${{ inputs.build_type }}" \
+          "-DBINEXPORT_ENABLE_IDAPRO=${{ secrets.IDASDK_SECRET != '' && inputs.enable_idapro_build }}" \
           "-DIdaSdk_ROOT_DIR=${{ runner.workspace }}/build/idasdk_teams82" \
-          "-DBINEXPORT_ENABLE_BINARYNINJA=ON" \
-          "-DBINEXPORT_BINARYNINJA_CHANNEL=stable" \
-          "-DBoost_INCLUDE_DIR=${{steps.install-boost.outputs.BOOST_ROOT}}/include"
+          "-DBINEXPORT_ENABLE_BINARYNINJA=${{ inputs.enable_binaryninja_build }}" \
+          "-DBINEXPORT_BINARYNINJA_CHANNEL=${{ inputs.binaryninja_build_channel }}" \
+          "-DBoost_INCLUDE_DIR=${{ steps.install-boost.outputs.BOOST_ROOT }}/include"
 
     - name: Build
       working-directory: ${{ runner.workspace }}/build
       shell: bash
-      run: cmake --build . --config "${BUILD_TYPE}"
+      run: cmake --build . --config ${{ inputs.build_type }} 
 
     - name: Test
       working-directory: ${{ runner.workspace }}/build
       shell: bash
-      run: ctest --build-config "${BUILD_TYPE}" --output-on-failure -R '^[A-Z]'
+      run: ctest --build-config ${{ inputs.build_type }} --output-on-failure -R '^[A-Z]'
 
     - name: Upload Build Artifacts
-      uses: actions/upload-artifact@v4.6.2
+      id: upload-build-artifacts
+      uses: actions/upload-artifact@v4
       with:
         name: BinExport-${{ runner.os }}-${{ runner.arch }}
         path: |

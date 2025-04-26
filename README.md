@@ -285,9 +285,10 @@ rmdir third_party/idasdk/idasdk_pro82
 
 #### Binary Ninja
 
-If building the Binary Ninja plugin, set `-DBINEXPORT_BINARYNINJA_CHANNEL` to either `stable` or `dev` to build against pinned versions of those channels.
-
-`-DBINEXPORT_BINARYNINJA_LATEST=ON` can be used to instead build against the latest commit from [GitHub](https://github.com/Vector35/binaryninja-api).
+If building the Binary Ninja plugin, set `-DBINEXPORT_BINARYNINJA_CHANNEL` to
+either `stable` or `dev` to build against the latest versions of those channels.
+A commit hash from [GitHub](https://github.com/Vector35/binaryninja-api) may
+also be specified in place of `stable` or `dev` for a specific build of the api.
 
 #### Build BinExport
 
