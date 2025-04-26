@@ -75,7 +75,7 @@ jobs:
       run: |
         cmake "${{ github.workspace }}" -G Ninja \
           "-DCMAKE_BUILD_TYPE=${BUILD_TYPE}" \
-          "-DBINEXPORT_ENABLE_IDAPRO=${{ vars.BINEXPORT_ENABLE_IDAPRO == 'OFF' && 'OFF' || 'ON'}}" \
+          "-DBINEXPORT_ENABLE_IDAPRO=${{ secrets.IDASDK_SECRET != '' && 'ON' || 'OFF'}}" \
           "-DIdaSdk_ROOT_DIR=${{ runner.workspace }}/build/idasdk_teams82" \
           "-DBINEXPORT_ENABLE_BINARYNINJA=ON" \
           "-DBINEXPORT_BINARYNINJA_CHANNEL=stable" \
