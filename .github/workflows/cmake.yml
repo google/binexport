@@ -28,10 +28,10 @@ jobs:
       working-directory: ${{ github.workspace }}
       shell: bash
       run: |
-        mkdir -p "${{ runner.workspace }}/build"
+        mkdir -p "${{ github.workspace }}/build"
         ./.github/scripts/decrypt_secret.sh
-        unzip -q "${{ runner.workspace }}/build/idasdk_teams82.zip" \
-              -d "${{ runner.workspace }}/build/"
+        unzip -q "${{ github.workspace }}/build/idasdk_teams82.zip" \
+              -d "${{ github.workspace }}/build/"
 
     - name: Enable Developer Command Prompt (Windows)
       if: matrix.os == 'windows-2022'
@@ -42,20 +42,20 @@ jobs:
       uses: rui314/setup-mold@v1
 
     - name: Configure CMake
-      working-directory: ${{ runner.workspace }}/build
+      working-directory: ${{ github.workspace }}/build
       shell: bash
       run: |
         cmake "${{ github.workspace }}" -G Ninja \
           "-DCMAKE_BUILD_TYPE=${BUILD_TYPE}" \
-          "-DIdaSdk_ROOT_DIR=${{ runner.workspace }}/build/idasdk_teams82"
+          "-DIdaSdk_ROOT_DIR=${{ github.workspace }}/build/idasdk_teams82"
 
     - name: Build
-      working-directory: ${{ runner.workspace }}/build
+      working-directory: ${{ github.workspace }}/build
       shell: bash
       run: cmake --build . --config "${BUILD_TYPE}"
 
     - name: Test
-      working-directory: ${{ runner.workspace }}/build
+      working-directory: ${{ github.workspace }}/build
       shell: bash
       run: ctest --build-config "${BUILD_TYPE}" --output-on-failure -R '^[A-Z]'
 
@@ -64,6 +64,6 @@ jobs:
       with:
         name: BinExport-${{ runner.os }}
         path: |
-          ${{ runner.workspace }}/build/binaryninja/binexport*
-          ${{ runner.workspace }}/build/ida/binexport*
-          ${{ runner.workspace }}/build/tools/binexport2dump*
+          ${{ github.workspace }}/build/binaryninja/binexport*
+          ${{ github.workspace }}/build/ida/binexport*
+          ${{ github.workspace }}/build/tools/binexport2dump*
