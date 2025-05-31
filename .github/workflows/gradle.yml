@@ -30,12 +30,12 @@ jobs:
         java-version: "21"
 
     - name: Setup Ghidra
-      uses: antoniovazquezblanco/setup-ghidra@v2.0.3
+      uses: antoniovazquezblanco/setup-ghidra@v2.0.12
       with:
         version: ${{ matrix.ghidra }}
 
     - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@v3
+      uses: gradle/actions/setup-gradle@v4
       with:
         gradle-version: 8.7
 
