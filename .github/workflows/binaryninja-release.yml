@@ -66,9 +66,10 @@ jobs:
         echo "Workflow run ID: ${{ github.run_id }}"
 
   build-release:
-    uses: ./.github/workflows/cmake.yml
+    uses: ./.github/workflows/cmake-reusable.yml
     needs: create-release
     with:
+      base_artifact_filename: "Binexport-BinaryNinja"
       binaryninja_build_channel: ${{ inputs.binaryninja_build_channel }}
       build_type: "Release"
       enable_binaryninja_build: "ON" 
@@ -105,4 +106,4 @@ jobs:
           gh release upload ${{ inputs.release_tag }} \
             ${{ github.workspace }}/release/$name.zip#$name.zip \
             --repo ${{ github.repository }}
-        done < <(echo $artifacts_json | jq '.artifacts[] | "\(.name) \(.id)"')
+        done < <(echo $artifacts_json | jq -r '.artifacts[] | "\(.name) \(.id)"')

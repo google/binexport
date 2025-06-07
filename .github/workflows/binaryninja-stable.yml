@@ -1,4 +1,5 @@
 name: binaryninja-stable
+run-name: binaryninja-stable
 
 on: 
   workflow_dispatch:
@@ -75,7 +76,7 @@ jobs:
     with:
       binaryninja_build_channel: "${{ needs.check-for-release.outputs.latest_tag_hash }}"
       release_tag: "binaryninja-stable-${{ needs.check-for-release.outputs.latest_tag_name }}"
-      release_title: "Binary Ninja Latest Stable Build (${{ needs.check-for-release.outputs.latest_tag_name }})"
+      release_title: "Binexport Binary Ninja Plugin Latest Stable Build (${{ needs.check-for-release.outputs.latest_tag_name }})"
       release_notes: >
         "This is a build of Binexport plugin for Binary Ninja from the latest
         stable Binary Ninja API ${{ needs.check-for-release.outputs.latest_tag_name }}."
