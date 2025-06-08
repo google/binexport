@@ -1,0 +1,109 @@
+name: binaryninja-release
+
+on: 
+  workflow_call:
+    inputs:
+      binaryninja_build_channel:
+        description: >
+          "Set to stable for the latest stable build or dev for the nightly
+          build. A commit hash can also be specified."
+        required: true 
+        type: string
+      release_tag:
+        description: "Tag for the release"
+        required: true
+        type: string
+      release_title:
+        description: "Release title."
+        required: true
+        type: string
+      release_notes:
+        description: "Release notes as a string."
+        required: true
+        type: string
+
+jobs:
+  create-release:
+    name: create-release
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Check if ${{ inputs.release_tag }} release exists
+      id: check-if-release-exists
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        if gh release view ${{ inputs.release_tag }}; then
+          echo "release found"
+          echo "release_exists=true" >> $GITHUB_OUTPUT
+        else
+          echo "release not found"
+          echo "release_exists=false" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Delete ${{ inputs.release_tag }} release
+      if: ${{ steps.check-if-release-exists.outputs.release_exists }} == true
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        gh release delete ${{ inputs.release_tag }} --cleanup-tag --yes
+        echo "waiting for tag to be deleted"
+        while git fetch --tags --prune-tags; git tag -l | grep ${{ inputs.release_tag }}; do
+          sleep 5;
+        done
+
+    - name: Create Release
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: >-
+        gh release create ${{ inputs.release_tag }}
+        --title "${{ inputs.release_title }}"
+        --notes ${{ inputs.release_notes }}
+
+    - name: Test Release Print
+      run: |
+        echo "Workflow run ID: ${{ github.run_id }}"
+
+  build-release:
+    uses: ./.github/workflows/cmake-reusable.yml
+    needs: create-release
+    with:
+      base_artifact_filename: "Binexport-BinaryNinja"
+      binaryninja_build_channel: ${{ inputs.binaryninja_build_channel }}
+      build_type: "Release"
+      enable_binaryninja_build: "ON" 
+      enable_idapro_build: "OFF" 
+
+  package-release:
+    needs: build-release
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Create Release Directory 
+      working-directory: ${{ github.workspace }}
+      shell: bash
+      run: mkdir -p "${{ github.workspace }}/release"
+
+    - name: Download Artifact / Upload to Release
+      # Apparently there isn't a way to associate artifacts with a release.
+      working-directory: ${{ github.workspace }}/release
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: | 
+        artifacts_json=$(gh api \
+          -H "Accept: application/vnd.github+json" \
+          -H "X-GitHub-Api-Version: 2022-11-28" \
+          /repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts)
+        while read -r name id; do
+          gh api \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            /repos/${{ github.repository }}/actions/artifacts/$id/zip \
+            > $name.zip
+          gh release upload ${{ inputs.release_tag }} \
+            ${{ github.workspace }}/release/$name.zip#$name.zip \
+            --repo ${{ github.repository }}
+        done < <(echo $artifacts_json | jq -r '.artifacts[] | "\(.name) \(.id)"')

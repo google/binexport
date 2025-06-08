@@ -1,0 +1,82 @@
+name: binaryninja-stable
+run-name: binaryninja-stable
+
+on: 
+  workflow_dispatch:
+    inputs:
+      ignore_24_hour_check:
+        description: "Build against latest stable release regardless of 24 hour timeframe:"
+        required: true
+        type: choice 
+        options:
+          - true
+          - false
+        default: 'false'
+  schedule:
+    - cron: '0 1 * * *' # Daily 
+
+jobs:
+  check-for-release:
+    runs-on: ubuntu-latest
+    outputs:
+      build_within_24_hours: ${{ steps.is-build-within-24-hours.outputs.build_within_24_hours }}
+      latest_commit_date: ${{ steps.get-latest-tag-info.outputs.latest_tag_commit_date}}
+      latest_tag_hash: ${{ steps.get-latest-tag-hash.outputs.latest_tag_hash }}
+      latest_tag_name: ${{ steps.get-latest-tag-info.outputs.latest_tag_name }}
+
+    steps:
+    - name: Get Latest Tag Hash from Binary Ninja API
+      id: get-latest-tag-hash 
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        tag_hash=$(gh api \
+          -H "Accept: application/vnd.github+json" \
+          -H "X-GitHub-Api-Version: 2022-11-28" \
+          /repos/Vector35/binaryninja-api/git/refs/tags \
+          | jq -r .[-1].object.sha)
+        echo "latest_tag_hash=$tag_hash"
+        echo "latest_tag_hash=$tag_hash" >> $GITHUB_OUTPUT
+  
+    - name: Get Tag Info 
+      id: get-latest-tag-info
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        latest_tag=$(gh api \
+          -H "Accept: application/vnd.github+json" \
+          -H "X-GitHub-Api-Version: 2022-11-28" \
+          /repos/Vector35/binaryninja-api/git/tags/${{ steps.get-latest-tag-hash.outputs.latest_tag_hash }})
+        commit_date=$(echo $latest_tag | jq -r .tagger.date)
+        echo "latest_tag_commit_date=$commit_date"
+        echo "latest_tag_commit_date=$commit_date" >> $GITHUB_OUTPUT
+        tag_name=$(echo $latest_tag | jq -r .tag)
+        echo "latest_tag_name=$tag_name"
+        echo "latest_tag_name=$tag_name" >> $GITHUB_OUTPUT
+
+    - name: Is Build Within 24 Hours?
+      id: is-build-within-24-hours
+      run: |
+        date_timestamp=$(date -d ${{ steps.get-latest-tag-info.outputs.latest_tag_commit_date }} +"%s")
+        current_timestamp=$(date +"%s")
+        twenty_four_hours_ago=$((current_timestamp - 24 * 60 * 60))
+  
+        if [[ $date_timestamp -gt $twenty_four_hours_ago ]]; then
+          echo "build_within_24_hours=true"
+          echo "build_within_24_hours=true" >> $GITHUB_OUTPUT
+        else
+          echo "build_within_24_hours=false"
+          echo "build_within_24_hours=false" >> $GITHUB_OUTPUT
+        fi
+
+  binaryninja-stable-release: 
+    uses: ./.github/workflows/binaryninja-release.yml
+    needs: check-for-release
+    if: (needs.check-for-release.outputs.build_within_24_hours == true) || (github.event.inputs.ignore_24_hour_check == 'true')
+    with:
+      binaryninja_build_channel: "${{ needs.check-for-release.outputs.latest_tag_hash }}"
+      release_tag: "binaryninja-stable-${{ needs.check-for-release.outputs.latest_tag_name }}"
+      release_title: "Binexport Binary Ninja Plugin Latest Stable Build (${{ needs.check-for-release.outputs.latest_tag_name }})"
+      release_notes: >
+        "This is a build of Binexport plugin for Binary Ninja from the latest
+        stable Binary Ninja API ${{ needs.check-for-release.outputs.latest_tag_name }}."

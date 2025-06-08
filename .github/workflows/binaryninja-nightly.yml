@@ -1,0 +1,19 @@
+name: binaryninja-nightly 
+run-name: binaryninja-nightly
+
+on: 
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * *' # Daily
+
+jobs:
+  binaryninga-nightly-release:
+    uses: ./.github/workflows/binaryninja-release.yml
+    with:
+      binaryninja_build_channel: "dev"
+      release_tag: "binaryninja-nightly"
+      release_title: "Binexport Binary Ninja Plugin Dev Nightly Build"
+      release_notes: >
+        "Binary Ninja does frequent releases on their dev branch. For
+        the binexport plugin to work with the latest API, the plugin is built
+        once a day."
