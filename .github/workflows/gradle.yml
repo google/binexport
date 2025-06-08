@@ -17,7 +17,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ghidra: ${{ fromJSON(format('[{0}]', inputs.ghidra_version || '"latest","11.1.2","11.1.1","11.1","11.0.3","11.0.2","11.0.1","11.0"')) }}
+        ghidra: ${{ fromJSON(format('[{0}]', inputs.ghidra_version || '"latest","11.3.2","11.3.1","11.3","11.2.1","11.2","11.1.2","11.1.1","11.1","11.0.3","11.0.2","11.0.1","11.0"')) }}
     runs-on: ubuntu-22.04
 
     steps:
@@ -30,12 +30,12 @@ jobs:
         java-version: "21"
 
     - name: Setup Ghidra
-      uses: antoniovazquezblanco/setup-ghidra@v2.0.3
+      uses: antoniovazquezblanco/setup-ghidra@v2.0.12
       with:
         version: ${{ matrix.ghidra }}
 
     - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@v3
+      uses: gradle/actions/setup-gradle@v4
       with:
         gradle-version: 8.7
 
@@ -45,7 +45,7 @@ jobs:
         gradle buildExtension -PGHIDRA_INSTALL_DIR=${{ env.GHIDRA_INSTALL_DIR }}
 
     - name: Upload build artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v4.6.2
       with:
         name: BinExport_Ghidra_${{ matrix.ghidra }}
         path: |

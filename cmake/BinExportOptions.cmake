@@ -1,4 +1,4 @@
-# Copyright 2011-2024 Google LLC
+# Copyright 2011-2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -31,3 +31,5 @@ option(BINEXPORT_ENABLE_BINARYNINJA "Build the Binary Ninja plugin" ON)
 
 set(BINEXPORT_BINARYNINJA_CHANNEL "stable" CACHE
     STRING "Binary Ninja channel, either 'stable' or 'dev'")
+
+option(BINEXPORT_BINARYNINJA_LATEST "Use the latest Binary Ninja API from GitHub" OFF)

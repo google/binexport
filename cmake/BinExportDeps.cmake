@@ -1,4 +1,4 @@
-# Copyright 2011-2024 Google LLC
+# Copyright 2011-2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ include(FetchContent)
 if(BUILD_TESTING AND BINEXPORT_BUILD_TESTING)
   # Googletest (needs to come after Abseil due to C++ standard propagation)
   FetchContent_Declare(googletest
-    URL https://github.com/google/googletest/archive/5bcb2d78a16edd7110e72ef694d229815aa29542.zip  # 2024-07-24
+    URL https://github.com/google/googletest/archive/5bcb2d78a16edd7110e72ef694d229815aa29542.zip  # 2025-07-24
     URL_HASH SHA256=55d80e3e4b3ae63c4b377895babc2ecd17834aedfc0e6cb8aedb5c7adb97defd
   )
   FetchContent_MakeAvailable(googletest)
@@ -36,7 +36,7 @@ if(BUILD_TESTING AND BINEXPORT_BUILD_TESTING)
   if(BINEXPORT_BUILD_BENCHMARK)
     # Benchmark
     FetchContent_Declare(benchmark
-      URL https://github.com/google/benchmark/archive/ea71a14891474943fc1f34d359f9e0e82476ffe1.zip  # 2024-01-09
+      URL https://github.com/google/benchmark/archive/ea71a14891474943fc1f34d359f9e0e82476ffe1.zip  # 2025-01-09
       URL_HASH SHA256=d5b0b5471c42e8e431f08ccc52db4acff609d927286bde04e2ac93aff3699ca1
     )
     set(BENCHMARK_CXX_STANDARD ${CMAKE_CXX_STANDARD} CACHE STRING "" FORCE)
@@ -50,8 +50,8 @@ endif()
 
 # Abseil
 FetchContent_Declare(absl
-  URL https://github.com/abseil/abseil-cpp/archive/9f3d4d7c70db545ce6c69d92796f5ed811510b78.zip  # 2025-02-20
-  URL_HASH SHA256=77dd525ec246a5b5100ea0db138caca0e9857f5f1dfa8761f972ad834e24d679
+  URL https://github.com/abseil/abseil-cpp/archive/e4c43850ad008b362b53622cb3c88fd915d8f714.zip # 2025-05-23
+  URL_HASH SHA256=00d20e61e2d5dfe86dee88d70897fcdbe593696dfc8ac162873b5fce718557ae
 )
 set(ABSL_CXX_STANDARD ${CMAKE_CXX_STANDARD} CACHE STRING "" FORCE)
 set(ABSL_PROPAGATE_CXX_STD ON CACHE BOOL "" FORCE)
@@ -74,8 +74,8 @@ endif()
 
 # Protocol Buffers
 FetchContent_Declare(protobuf
-  GIT_REPOSITORY https://github.com/protocolbuffers/protobuf.git
-  GIT_TAG        5c9406bc1cf11192c5223d99e095b99b31bf076a # 2025-04-08
+  URL https://github.com/protocolbuffers/protobuf/archive/refs/tags/v31.0.tar.gz # 2025-05-14
+  URL_HASH SHA256=2b695cb1eaef8e173f884235ee6d55f57186e95d89ebb31361ee55cb5fd1b996
 )
 set(protobuf_ABSL_PROVIDER "package" CACHE STRING "" FORCE)
 set(protobuf_BUILD_TESTS OFF CACHE BOOL "" FORCE)
@@ -102,53 +102,51 @@ find_package(Protobuf 3.14 REQUIRED) # Make protobuf_generate_cpp available
 
 # Binary Ninja API
 if(BINEXPORT_ENABLE_BINARYNINJA)
+    
   if(BINEXPORT_BINARYNINJA_CHANNEL STREQUAL "stable")
-    set(_binexport_binaryninjacore_suffix "_stable")
-    set(_binexport_binaryninja_git_tag
-        "59e569906828e91e4884670c2bba448702f5a31d") # 2023-09-19 v3.5.4526
+    # The Windows build only requires stub generation for linking.
+    # Binaryninja-api tags their releases but doesn't create a "release" in github.
+    # Workaround for getting the latest tag for the call to FetchContent_Declare.
+    execute_process(
+      COMMAND gh api repos/Vector35/binaryninja-api/tags --jq "[.[].name][0]"
+      OUTPUT_VARIABLE STABLE_TAG
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    set(BINARYNINJA_BRANCH "${STABLE_TAG}")
+  elseif(BINEXPORT_BINARYNINJA_CHANNEL STREQUAL "dev")
+    set(BINARYNINJA_BRANCH "origin/dev")
   else()
-    set(_binexport_binaryninjacore_suffix "")
-    set(_binexport_binaryninja_git_tag
-        "6e2b374dece03f6fb48a1615fa2bfee809ec2157") # 2023-09-24
+    set(BINARYNINJA_BRANCH "${BINEXPORT_BINARYNINJA_CHANNEL}")
   endif()
+
   FetchContent_Declare(binaryninjaapi
-    GIT_REPOSITORY https://github.com/Vector35/binaryninja-api.git
-    GIT_TAG        ${_binexport_binaryninja_git_tag}
+    GIT_REPOSITORY         https://github.com/Vector35/binaryninja-api.git
+    GIT_TAG                "${BINARYNINJA_BRANCH}"
+    GIT_SUBMODULES_RECURSE ON
   )
+
   FetchContent_GetProperties(binaryninjaapi)
   if(NOT binaryninjaapi_POPULATED)
-    FetchContent_Populate(binaryninjaapi)  # For binaryninjaapi_SOURCE_DIR
-  endif()
-  add_library(binaryninjacore SHARED
-    binaryninja/stubs/binaryninjacore${_binexport_binaryninjacore_suffix}.cc
-  )
-  set_target_properties(binaryninjacore PROPERTIES
-    SOVERSION 1
-  )
-  target_include_directories(binaryninjacore PRIVATE
-    "${binaryninjaapi_SOURCE_DIR}"
-  )
-  set(CORE_LIBRARY binaryninjacore)
-  set(BN_CORE_LIBRARY "${CORE_LIBRARY}")
-  set(HEADLESS TRUE)
-  if(binaryninjaapi_POPULATED)
-    add_subdirectory("${binaryninjaapi_SOURCE_DIR}" "${binaryninjaapi_BINARY_DIR}")
+    set(HEADLESS TRUE)
+    set(ENV{BN_API_PATH} "${binaryninjaapi_SOURCE_DIR}")
+    FetchContent_MakeAvailable(binaryninjaapi)
+
     if(MSVC)
       target_compile_options(binaryninjaapi PRIVATE
         /wd4005  # macro redefinition (NOMINMAX, _CRT_SECURE_NO_WARNINGS)
       )
     endif()
+
   endif()
+
   binexport_check_target(binaryninjaapi)
   add_library(BinaryNinja::API ALIAS binaryninjaapi)
+
 endif()
 
 # Boost
-set(Boost_NO_SYSTEM_PATHS TRUE)
-if(NOT BOOST_ROOT)
-  set(BOOST_ROOT "${BINEXPORT_SOURCE_DIR}/boost_parts")
-endif()
-find_package(Boost 1.83 REQUIRED)
+# Set include path, as the FindBoost module is deprecated as of CMake 4.0.
+set(Boost_INCLUDE_DIR "${BINEXPORT_SOURCE_DIR}/boost_parts")
 
 find_package(Git)
 if(BINEXPORT_ENABLE_IDAPRO)

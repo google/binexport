@@ -1,6 +1,6 @@
 # BinExport
 
-Copyright 2011-2024 Google LLC.
+Copyright 2011-2025 Google LLC.
 
 [![Linux Build Status](https://github.com/google/binexport/workflows/linux-build/badge.svg)](https://github.com/google/binexport/actions?query=workflow%3Alinux-build)
 [![Coverity Scan Build Status](https://scan.coverity.com/projects/8977/badge.svg)](https://scan.coverity.com/projects/google-binexport)
@@ -86,7 +86,7 @@ plugins directory. These are the default paths for the current user:
 3.  If installed correctly, the log window contains a line similar to this one:
 
 ```
-BinExport 12 (@internal, Jan 3 2023), (c)2004-2011 zynamics GmbH, (c)2011-2024 Google LLC.
+BinExport 12 (@internal, Jan 3 2023), (c)2004-2011 zynamics GmbH, (c)2011-2025 Google LLC.
 ```
 
 ### Ghidra
@@ -282,6 +282,13 @@ unzip PATH/TO/idasdk_pro82.zip -d third_party/idasdk
 mv third_party/idasdk/idasdk_pro82/* third_party/idasdk
 rmdir third_party/idasdk/idasdk_pro82
 ```
+
+#### Binary Ninja
+
+If building the Binary Ninja plugin, set `-DBINEXPORT_BINARYNINJA_CHANNEL` to
+either `stable` or `dev` to build against the latest versions of those channels.
+A commit hash from [GitHub](https://github.com/Vector35/binaryninja-api) may
+also be specified in place of `stable` or `dev` for a specific build of the api.
 
 #### Build BinExport
 

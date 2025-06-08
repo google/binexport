@@ -1,69 +1,11 @@
-name: cmake-build
+# Apparently you cannot specify default input for push and pull_requests.
+# Created this job as a wrapper for calling the reusable cmake workflow.
+name: cmake-build 
 
-on: [push, pull_request]
-
-env:
-  BUILD_TYPE: Release
+on: 
+  push:
+  pull_request:
 
 jobs:
-  build:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-        - os: ubuntu-22.04
-        - os: macos-12
-        - os: windows-2022
-    runs-on: ${{ matrix.os }}
-
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Install ninja-build tool
-      uses: turtlesec-no/get-ninja@1.1.0
-
-    - name: Create Build Environment
-      env:
-        IDASDK_SECRET: ${{ secrets.IDASDK_SECRET }}
-      working-directory: ${{ github.workspace }}
-      shell: bash
-      run: |
-        mkdir -p "${{ runner.workspace }}/build"
-        ./.github/scripts/decrypt_secret.sh
-        unzip -q "${{ runner.workspace }}/build/idasdk_teams82.zip" \
-              -d "${{ runner.workspace }}/build/"
-
-    - name: Enable Developer Command Prompt (Windows)
-      if: matrix.os == 'windows-2022'
-      uses: ilammy/msvc-dev-cmd@v1.12.1
-
-    - name: Enable mold linker (Linux)
-      if: matrix.os == 'ubuntu-22.04'
-      uses: rui314/setup-mold@v1
-
-    - name: Configure CMake
-      working-directory: ${{ runner.workspace }}/build
-      shell: bash
-      run: |
-        cmake "${{ github.workspace }}" -G Ninja \
-          "-DCMAKE_BUILD_TYPE=${BUILD_TYPE}" \
-          "-DIdaSdk_ROOT_DIR=${{ runner.workspace }}/build/idasdk_teams82"
-
-    - name: Build
-      working-directory: ${{ runner.workspace }}/build
-      shell: bash
-      run: cmake --build . --config "${BUILD_TYPE}"
-
-    - name: Test
-      working-directory: ${{ runner.workspace }}/build
-      shell: bash
-      run: ctest --build-config "${BUILD_TYPE}" --output-on-failure -R '^[A-Z]'
-
-    - name: Upload Build Artifacts
-      uses: actions/upload-artifact@v3.1.2
-      with:
-        name: BinExport-${{ runner.os }}
-        path: |
-          ${{ runner.workspace }}/build/binaryninja/binexport*
-          ${{ runner.workspace }}/build/ida/binexport*
-          ${{ runner.workspace }}/build/tools/binexport2dump*
+  cmake-reusable:
+    uses: ./.github/workflows/cmake-reusable.yml

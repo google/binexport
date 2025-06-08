@@ -213,9 +213,9 @@ if(APPLE)
                     -output "${_ida64_universal_lib}"
       )
     endif()
-    add_library(ida SHARED IMPORTED)
-    add_dependencies(ida ida64_universal)
-    set_target_properties(ida PROPERTIES
+    add_library(ida64 SHARED IMPORTED)
+    add_dependencies(ida64 ida64_universal)
+    set_target_properties(ida64 PROPERTIES
       IMPORTED_LOCATION "${_ida64_universal_lib}"
     )
 

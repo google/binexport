@@ -1,4 +1,4 @@
-# Copyright 2011-2024 Google LLC
+# Copyright 2011-2025 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,19 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-cmake_minimum_required(VERSION 3.20..3.28)
+cmake_minimum_required(VERSION 3.20)
 
-cmake_policy(VERSION 3.20)
-
-foreach(_binexport_policy IN ITEMS
-  CMP0135  # Set download timestamp to current time
-  CMP0144  # Use upper-case <PACKAGENAME>_ROOT variables
-  CMP0167  # Drop the FindBoost module
-)
-  if(POLICY ${_binexport_policy})
-    cmake_policy(SET ${_binexport_policy} NEW)
-  endif()
-endforeach()
+cmake_policy(VERSION 3.20..4.0)
 
 project(binexport VERSION 12)  # Only major version is used
 
@@ -55,10 +45,6 @@ create_directory_symlink(
 create_directory_symlink(
   "${absl_SOURCE_DIR}/absl"
   "${BINEXPORT_BINARY_DIR}/src_include/third_party/absl"
-)
-create_directory_symlink(
-  "${absl_SOURCE_DIR}/binaryninja/stubs"
-  "${BINEXPORT_BINARY_DIR}/src_include/third_party/binaryninja_api"
 )
 create_directory_symlink(
   "${BINEXPORT_BINARY_DIR}"
