@@ -103,7 +103,7 @@ jobs:
     - name: Create Build Directory 
       working-directory: ${{ github.workspace }}
       shell: bash
-      run: mkdir -p "${{ runner.workspace }}/build"
+      run: mkdir -p "${{ github.workspace }}/build"
       
     - name: Unzip IDA SDK
       working-directory: ${{ github.workspace }}
@@ -112,12 +112,12 @@ jobs:
       if: env.IDASDK_SECRET != ''
       run: |
         ./.github/scripts/decrypt_secret.sh
-        unzip -q "${{ runner.workspace }}/build/idasdk_teams82.zip" \
-              -d "${{ runner.workspace }}/build/"
+        unzip -q "${{ github.workspace }}/build/idasdk_teams82.zip" \
+              -d "${{ github.workspace }}/build/"
 
     - name: Enable Developer Command Prompt (Windows)
       if: matrix.os == 'windows-2022'
-      uses: ilammy/msvc-dev-cmd@v1.12.1
+      uses: ilammy/msvc-dev-cmd@v1.13.0
 
     - name: Install Boost
       uses: MarkusJx/install-boost@v2
@@ -133,7 +133,7 @@ jobs:
       uses: rui314/setup-mold@v1
 
     - name: Configure CMake
-      working-directory: ${{ runner.workspace }}/build
+      working-directory: ${{ github.workspace }}/build
       env:
         BOOST_ROOT: ${{ steps.install-boost.outputs.BOOST_ROOT }}
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -142,18 +142,18 @@ jobs:
         cmake "${{ github.workspace }}" -G Ninja \
           "-DCMAKE_BUILD_TYPE=${{ inputs.build_type }}" \
           "-DBINEXPORT_ENABLE_IDAPRO=${{ secrets.IDASDK_SECRET != '' && inputs.enable_idapro_build }}" \
-          "-DIdaSdk_ROOT_DIR=${{ runner.workspace }}/build/idasdk_teams82" \
+          "-DIdaSdk_ROOT_DIR=${{ github.workspace }}/build/idasdk_teams82" \
           "-DBINEXPORT_ENABLE_BINARYNINJA=${{ inputs.enable_binaryninja_build }}" \
           "-DBINEXPORT_BINARYNINJA_CHANNEL=${{ inputs.binaryninja_build_channel }}" \
           "-DBoost_INCLUDE_DIR=${{ steps.install-boost.outputs.BOOST_ROOT }}/include"
 
     - name: Build
-      working-directory: ${{ runner.workspace }}/build
+      working-directory: ${{ github.workspace }}/build
       shell: bash
       run: cmake --build . --config ${{ inputs.build_type }} 
 
     - name: Test
-      working-directory: ${{ runner.workspace }}/build
+      working-directory: ${{ github.workspace }}/build
       shell: bash
       run: ctest --build-config ${{ inputs.build_type }} --output-on-failure -R '^[A-Z]'
 
@@ -163,6 +163,6 @@ jobs:
       with:
         name: ${{ inputs.base_artifact_filename }}-${{ runner.os }}-${{ runner.arch }}
         path: |
-          ${{ runner.workspace }}/build/binaryninja/binexport*
-          ${{ runner.workspace }}/build/ida/binexport*
-          ${{ runner.workspace }}/build/tools/binexport2dump*
+          ${{ github.workspace }}/build/binaryninja/binexport*
+          ${{ github.workspace }}/build/ida/binexport*
+          ${{ github.workspace }}/build/tools/binexport2dump*

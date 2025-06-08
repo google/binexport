@@ -1,4 +1,4 @@
-// Copyright 2019-2024 Google LLC
+// Copyright 2019-2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -41,7 +41,7 @@ public class BinExport extends GhidraScript {
 
   /** Copyright that appears in the console. */
   private static final String BINEXPORT_COPYRIGHT =
-      "BinExport " + BINEXPORT_VERSION + " (c)2019-2024 Google LLC";
+      "BinExport " + BINEXPORT_VERSION + " (c)2019-2025 Google LLC";
 
   /** Display name that appears in the console. */
   private static final String BINEXPORT_DISPLAY_NAME = "Binary BinExport (v2) for BinDiff";
