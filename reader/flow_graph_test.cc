@@ -1,4 +1,4 @@
-// Copyright 2011-2024 Google LLC
+// Copyright 2011-2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,12 +14,19 @@
 
 #include "third_party/zynamics/binexport/reader/flow_graph.h"
 
+#include <iterator>
+#include <memory>
+#include <vector>
+
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "third_party/absl/status/status_matchers.h"  // IWYU pragma: keep
 #include "third_party/zynamics/binexport/binexport.h"
 #include "third_party/zynamics/binexport/reader/graph_utility.h"
 #include "third_party/zynamics/binexport/reader/instruction.h"
 #include "third_party/zynamics/binexport/testing.h"
+#include "third_party/zynamics/binexport/util/status_macros.h"
+#include "third_party/zynamics/binexport/util/types.h"
 
 namespace security::binexport {
 namespace {
@@ -35,8 +42,12 @@ class FlowGraphTest : public testing::Test {
  protected:
   void SetUp() override {
     proto_ = GetBinExportForTesting(kBinExport2Item);
-    flow_graph_ = FlowGraph::FromBinExport2Proto(
-        proto_, proto_.flow_graph(0), GetAllInstructionAddresses(proto_));
+    // FlowGraph used is from
+    // testdata/0000500ed9f688a309ee2176462eb978efa9a2fb80fcceb5d8fd08168ea50dfd.BinExport
+    NA_ASSERT_OK_AND_ASSIGN(
+        flow_graph_,
+        FlowGraph::FromBinExport2(proto_, proto_.flow_graph(0),
+                                  GetAllInstructionAddresses(proto_)));
   }
 
   std::unique_ptr<FlowGraph> flow_graph_;
@@ -76,6 +87,10 @@ TEST_F(FlowGraphTest, ReadValidData) {
 // the instructions from the specified protocol buffer, and the instructions
 // match the instructions specified the test is successful.
 TEST_F(FlowGraphTest, GetInstructions) {
+  // Test data used from
+  // testdata/0000500ed9f688a309ee2176462eb978efa9a2fb80fcceb5d8fd08168ea50dfd.BinExport2
+  // is: basic_block[0], instruction[0], instruction[1], instruction[2],
+  // instruction[3], instruction[4],  mnemonic[0], mnemonic[9], mnemonic[49]
   FlowGraph::Vertex vertex = flow_graph_->GetVertex(0x322152);
   int counter = 0;
   for (Instructions::const_iterator it =
@@ -110,8 +125,10 @@ TEST_F(FlowGraphTest, GetInstructions) {
 // call targets. If the total number of call targets matches the expected
 // number of call targets, the test is successful.
 TEST_F(FlowGraphTest, GetCallTargets) {
-  const auto& flow_graph(FlowGraph::FromBinExport2Proto(
-      proto_, proto_.flow_graph(1), GetAllInstructionAddresses(proto_)));
+  NA_ASSERT_OK_AND_ASSIGN(
+      auto flow_graph,
+      FlowGraph::FromBinExport2(proto_, proto_.flow_graph(1),
+                                GetAllInstructionAddresses(proto_)));
   const auto& vertex = flow_graph->GetVertex(0x003221BE);
   std::vector<Address> call_targets;
   flow_graph->GetCallTargets(vertex, std::back_inserter(call_targets));
@@ -123,8 +140,10 @@ TEST_F(FlowGraphTest, GetCallTargets) {
 // with call targets. If the total number of call targets matches the expected
 // number of call targets, the test is successful.
 TEST_F(FlowGraphTest, GetCallTargetsMultiple) {
-  const auto& flow_graph(FlowGraph::FromBinExport2Proto(
-      proto_, proto_.flow_graph(2), GetAllInstructionAddresses(proto_)));
+  NA_ASSERT_OK_AND_ASSIGN(
+      auto flow_graph,
+      FlowGraph::FromBinExport2(proto_, proto_.flow_graph(2),
+                                GetAllInstructionAddresses(proto_)));
   const auto& vertex = flow_graph->GetVertex(0x00322310);
   std::vector<Address> call_targets;
   flow_graph->GetCallTargets(vertex, std::back_inserter(call_targets));

@@ -1,4 +1,4 @@
-// Copyright 2011-2024 Google LLC
+// Copyright 2011-2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,9 +22,9 @@
 
 #include "third_party/absl/container/btree_map.h"
 #include "third_party/absl/container/node_hash_set.h"
-#include "third_party/absl/log/check.h"
 #include "third_party/zynamics/binexport/basic_block.h"
 #include "third_party/zynamics/binexport/edge.h"
+#include "third_party/zynamics/binexport/instruction.h"
 #include "third_party/zynamics/binexport/util/types.h"
 
 class CallGraph;
@@ -106,12 +106,14 @@ class Function {
   void SetMdIndex(double value) { md_index_ = value; }
 
  private:
-  int GetBasicBlockIndexForAddress(Address address) const;
-  BasicBlock* GetMutableBasicBlockForAddress(Address address);
+  friend class BinDetegoAsserts;
 
   using StringCache = absl::node_hash_set<std::string>;
   static thread_local StringCache string_cache_;
   static thread_local int instance_count_;
+
+  int GetBasicBlockIndexForAddress(Address address) const;
+  BasicBlock* GetMutableBasicBlockForAddress(Address address);
 
   Address entry_point_;
   BasicBlocks basic_blocks_;

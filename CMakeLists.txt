@@ -290,6 +290,7 @@ target_link_libraries(binexport_reader PUBLIC
   absl::check
   absl::inlined_vector
   absl::log
+  absl::status_matchers
   absl::strings
   binexport_shared
 )

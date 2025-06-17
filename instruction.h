@@ -1,4 +1,4 @@
-// Copyright 2011-2024 Google LLC
+// Copyright 2011-2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -37,20 +37,20 @@ enum {
 
   // This is a flow instruction and continues to the next (as opposed to jmps or
   // calls).
-  // TODO(soerenme) As olonho@ pointed out, this flag is used somewhat
-  // inconsistently throughout the code base. We should be using the following
-  // definition: if the flag is set, execution is guaranteed to flow to the next
-  // instruction. I.e. branches and switches do not have it set. Calls may or
-  // may not, depending on whether they return.
+  // TODO(cblichmann): This flag is used somewhat inconsistently throughout the
+  // code base. We should be using the following definition: if the flag is
+  // set, execution is guaranteed to flow to the next instruction. I.e. branches
+  // and switches do not have it set. Calls may or may not, depending on whether
+  // they return.
   FLAG_FLOW = 1 << 1,
 
   // This instruction has already been exported (used in database writer).
   FLAG_EXPORTED = 1 << 2,
 
   // This instruction is a branch, conditional or unconditional. Currently only
-  // set by Bea. Intentionally the same value as FLAG_EXPORTED as they are both
-  // used in isolated and independent contexts and can be reset/forgotten after
-  // use.
+  // set by Google's internal disassembler. Intentionally the same value as
+  // FLAG_EXPORTED as they are both used in isolated and independent contexts
+  // and can be reset/forgotten after use.
   FLAG_BRANCH = 1 << 2,
 
   // The instruction was matched by the library signatures.
@@ -123,6 +123,7 @@ class Instruction {
   bool HasFlag(uint8_t flag) const;
 
  private:
+  friend class BinDetegoAsserts;
 
   static thread_local int instance_count_;
   static thread_local StringCache string_cache_;

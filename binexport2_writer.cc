@@ -1,4 +1,4 @@
-// Copyright 2011-2024 Google LLC
+// Copyright 2011-2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -42,14 +42,26 @@
 #include "third_party/absl/container/flat_hash_map.h"
 #include "third_party/absl/log/check.h"
 #include "third_party/absl/log/log.h"
+#include "third_party/absl/status/status.h"
 #include "third_party/absl/strings/str_cat.h"
+#include "third_party/absl/strings/string_view.h"  // IWYU pragma: keep
 #include "third_party/absl/time/clock.h"
 #include "third_party/absl/time/time.h"
+#include "third_party/zynamics/binexport/address_references.h"
+#include "third_party/zynamics/binexport/basic_block.h"
 #include "third_party/zynamics/binexport/binexport2.pb.h"
 #include "third_party/zynamics/binexport/call_graph.h"
+#include "third_party/zynamics/binexport/comment.h"
+#include "third_party/zynamics/binexport/edge.h"
+#include "third_party/zynamics/binexport/expression.h"
 #include "third_party/zynamics/binexport/flow_graph.h"
 #include "third_party/zynamics/binexport/function.h"
+#include "third_party/zynamics/binexport/instruction.h"
+#include "third_party/zynamics/binexport/library_manager.h"
+#include "third_party/zynamics/binexport/operand.h"
 #include "third_party/zynamics/binexport/util/status_macros.h"
+#include "third_party/zynamics/binexport/util/types.h"
+#include "third_party/zynamics/binexport/virtual_memory.h"
 
 namespace security::binexport {
 namespace {
@@ -782,6 +794,30 @@ absl::Status WriteProtoToFile(const std::string& filename, BinExport2* proto) {
   }
   return absl::OkStatus();
 }
+
+// Writes MD indices to the file. This could be made optional, but for now we
+// write it every time.
+void WriteMDIndexExtension(const CallGraph&, const FlowGraph& flow_graph,
+                           const Instructions&, const AddressReferences&,
+                           const AddressSpace&, BinExport2* proto) {
+  auto* md_indices = proto->mutable_md_index();
+  for (const auto& function : flow_graph.GetFunctions()) {
+    auto* md_index = md_indices->Add();
+    md_index->set_address(function.first);
+    md_index->set_md_index(function.second->GetMdIndex());
+  }
+
+  // Sort by MD index value for compatibility.
+  std::sort(md_indices->begin(), md_indices->end(),
+            [](const BinExport2::MDIndex& md_index1,
+               const BinExport2::MDIndex& md_index2) {
+              // Sort my MD index descending, then address ascending.
+              return md_index1.md_index() != md_index2.md_index()
+                         ? md_index1.md_index() > md_index2.md_index()
+                         : md_index1.address() < md_index2.address();
+            });
+}
+
 }  // namespace
 
 BinExport2Writer::BinExport2Writer(const std::string& result_filename,
@@ -815,13 +851,15 @@ absl::Status BinExport2Writer::WriteToProto(
     WriteBasicBlocks(instructions, instruction_indices, proto);
     WriteComments(call_graph, instruction_indices, proto);
     WriteStrings(address_references, address_space, instruction_indices, proto);
-    // TODO(cblichmann): Write expression_substitution.
+    // TODO(cblichmann): Write expression_substitutions.
     WriteDataReferences(address_references, address_space, instruction_indices,
                         proto);
   }
   WriteFlowGraphs(flow_graph, proto);
   WriteCallGraph(call_graph, flow_graph, proto);
   WriteSections(address_space, proto);
+  WriteMDIndexExtension(call_graph, flow_graph, instructions,
+                        address_references, address_space, proto);
 
   return absl::OkStatus();
 }
