@@ -50,8 +50,8 @@ endif()
 
 # Abseil
 FetchContent_Declare(absl
-  URL https://github.com/abseil/abseil-cpp/archive/9f3d4d7c70db545ce6c69d92796f5ed811510b78.zip  # 2025-02-20
-  URL_HASH SHA256=77dd525ec246a5b5100ea0db138caca0e9857f5f1dfa8761f972ad834e24d679
+  URL https://github.com/abseil/abseil-cpp/archive/e4c43850ad008b362b53622cb3c88fd915d8f714.zip # 2025-05-23
+  URL_HASH SHA256=00d20e61e2d5dfe86dee88d70897fcdbe593696dfc8ac162873b5fce718557ae
 )
 set(ABSL_CXX_STANDARD ${CMAKE_CXX_STANDARD} CACHE STRING "" FORCE)
 set(ABSL_PROPAGATE_CXX_STD ON CACHE BOOL "" FORCE)
@@ -74,8 +74,8 @@ endif()
 
 # Protocol Buffers
 FetchContent_Declare(protobuf
-  GIT_REPOSITORY https://github.com/protocolbuffers/protobuf.git
-  GIT_TAG        5c9406bc1cf11192c5223d99e095b99b31bf076a # 2025-04-08
+  URL https://github.com/protocolbuffers/protobuf/archive/refs/tags/v31.0.tar.gz # 2025-05-14
+  URL_HASH SHA256=2b695cb1eaef8e173f884235ee6d55f57186e95d89ebb31361ee55cb5fd1b996
 )
 set(protobuf_ABSL_PROVIDER "package" CACHE STRING "" FORCE)
 set(protobuf_BUILD_TESTS OFF CACHE BOOL "" FORCE)
@@ -105,20 +105,20 @@ if(BINEXPORT_ENABLE_BINARYNINJA)
   if(BINEXPORT_BINARYNINJA_CHANNEL STREQUAL "stable")
     set(_binexport_binaryninjacore_suffix "_stable")
     set(_binexport_binaryninja_git_tag
-        "59e569906828e91e4884670c2bba448702f5a31d") # 2023-09-19 v3.5.4526
+        "13a6e9ab06a3384b8c6ea6c2a0654d97482b369f") # 2025-05-21 v5.0.7486-stable
   else()
     set(_binexport_binaryninjacore_suffix "")
     set(_binexport_binaryninja_git_tag
-        "6e2b374dece03f6fb48a1615fa2bfee809ec2157") # 2023-09-24
+        "8ba8388e12ab32ad937c4514f7a907d2530f1ef8") # 2025-05-31
   endif()
   FetchContent_Declare(binaryninjaapi
     GIT_REPOSITORY https://github.com/Vector35/binaryninja-api.git
     GIT_TAG        ${_binexport_binaryninja_git_tag}
   )
-  FetchContent_GetProperties(binaryninjaapi)
-  if(NOT binaryninjaapi_POPULATED)
-    FetchContent_Populate(binaryninjaapi)  # For binaryninjaapi_SOURCE_DIR
-  endif()
+  set(CORE_LIBRARY binaryninjacore)
+  set(BN_CORE_LIBRARY "${CORE_LIBRARY}")
+  set(HEADLESS TRUE)
+  FetchContent_MakeAvailable(binaryninjaapi)
   add_library(binaryninjacore SHARED
     binaryninja/stubs/binaryninjacore${_binexport_binaryninjacore_suffix}.cc
   )
@@ -128,31 +128,20 @@ if(BINEXPORT_ENABLE_BINARYNINJA)
   target_include_directories(binaryninjacore PRIVATE
     "${binaryninjaapi_SOURCE_DIR}"
   )
-  set(CORE_LIBRARY binaryninjacore)
-  set(BN_CORE_LIBRARY "${CORE_LIBRARY}")
-  set(HEADLESS TRUE)
-  if(binaryninjaapi_POPULATED)
-    add_subdirectory("${binaryninjaapi_SOURCE_DIR}" "${binaryninjaapi_BINARY_DIR}")
-    if(MSVC)
-      target_compile_options(binaryninjaapi PRIVATE
-        /wd4005  # macro redefinition (NOMINMAX, _CRT_SECURE_NO_WARNINGS)
-      )
-    endif()
+  if(MSVC)
+    target_compile_options(binaryninjaapi PRIVATE
+      /wd4005  # macro redefinition (NOMINMAX, _CRT_SECURE_NO_WARNINGS)
+    )
   endif()
   binexport_check_target(binaryninjaapi)
   add_library(BinaryNinja::API ALIAS binaryninjaapi)
 endif()
 
 # Boost
-set(Boost_NO_SYSTEM_PATHS TRUE)
-if(NOT BOOST_ROOT)
-  set(BOOST_ROOT "${BINEXPORT_SOURCE_DIR}/boost_parts")
-endif()
-find_package(Boost 1.83 REQUIRED)
+# Set include path, as the FindBoost module is deprecated as of CMake 4.0.
+set(Boost_INCLUDE_DIR "${BINEXPORT_SOURCE_DIR}/boost_parts")
 
 find_package(Git)
 if(BINEXPORT_ENABLE_IDAPRO)
   find_package(IdaSdk REQUIRED)
 endif()
-
-#set(BUILD_TESTING ${BINEXPORT_SAVE_BUILD_TESTING})
