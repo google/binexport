@@ -23,7 +23,7 @@ endfunction()
 include(FetchContent)
 
 if(BUILD_TESTING AND BINEXPORT_BUILD_TESTING)
-  # Googletest (needs to come after Abseil due to C++ standard propagation)
+  # Googletest
   FetchContent_Declare(googletest
     URL https://github.com/google/googletest/archive/5bcb2d78a16edd7110e72ef694d229815aa29542.zip  # 2024-07-24
     URL_HASH SHA256=55d80e3e4b3ae63c4b377895babc2ecd17834aedfc0e6cb8aedb5c7adb97defd
@@ -50,27 +50,23 @@ endif()
 
 # Abseil
 FetchContent_Declare(absl
-  URL https://github.com/abseil/abseil-cpp/archive/e4c43850ad008b362b53622cb3c88fd915d8f714.zip # 2025-05-23
-  URL_HASH SHA256=00d20e61e2d5dfe86dee88d70897fcdbe593696dfc8ac162873b5fce718557ae
+  URL https://github.com/abseil/abseil-cpp/archive/23d40c5dbdef4ffb8d53860ff9e6d81c57476eab.zip  # 2025-06-17
+  URL_HASH SHA256=9eec3d540a7acb537ad91e48cb98bf25f29486becb1872e4301f4e3da3cd6c19
 )
 set(ABSL_CXX_STANDARD ${CMAKE_CXX_STANDARD} CACHE STRING "" FORCE)
 set(ABSL_PROPAGATE_CXX_STD ON CACHE BOOL "" FORCE)
 set(ABSL_USE_EXTERNAL_GOOGLETEST ON CACHE BOOL "" FORCE)
-set(ABSL_FIND_GOOGLETEST OFF CACHE BOOL "" FORCE)
 if(MSVC)
   # Link MSVCRT statically for abseil
   set(ABSL_MSVC_STATIC_RUNTIME ON CACHE BOOL "" FORCE)
 endif()
 if(BUILD_TESTING AND BINEXPORT_BUILD_TESTING)
-  # Need this for absl::status_matchers to be available
+  # Make absl::status_matchers available
   set(ABSL_BUILD_TESTING ON CACHE BOOL "" FORCE)
+  set(absl_gtest_src_dir "${googletest_SOURCE_DIR}" CACHE STRING "" FORCE)
 endif()
 FetchContent_MakeAvailable(absl)
 binexport_check_target(absl::core_headers)
-if(BUILD_TESTING AND BINEXPORT_BUILD_TESTING)
-  # Fix a bug in Abseil's CMake build files
-  target_link_libraries(absl_no_destructor_test PUBLIC gmock)
-endif()
 
 # Protocol Buffers
 FetchContent_Declare(protobuf

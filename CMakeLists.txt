@@ -290,7 +290,6 @@ target_link_libraries(binexport_reader PUBLIC
   absl::check
   absl::inlined_vector
   absl::log
-  absl::status_matchers
   absl::strings
   binexport_shared
 )
@@ -304,6 +303,7 @@ if(BUILD_TESTING AND BINEXPORT_BUILD_TESTING)
   target_link_libraries(binexport_reader_test PUBLIC
     gtest_main
     gmock
+    absl::status_matchers
     binexport_reader
     binexport_testing
   )
