@@ -15,8 +15,8 @@
 #ifndef EDGE_H_
 #define EDGE_H_
 
-#include <cstddef>
 #include <cstdint>
+#include <utility>
 
 #include "third_party/zynamics/binexport/util/types.h"
 
@@ -32,13 +32,14 @@ struct FlowGraphEdge {
   FlowGraphEdge(Address source, Address target, Type type);
   const char* GetTypeName() const;
 
+  template <typename H>
+  friend H AbslHashValue(H h, const FlowGraphEdge& fge) {
+    return H::combine(std::move(h), fge.source, fge.target, fge.type);
+  }
+
   Address source;
   Address target;
   Type type;
-};
-
-struct FlowGraphEdgeHash {
-  size_t operator()(const FlowGraphEdge& fge) const;
 };
 
 // For easy use with set containers. Sorts by source address first, target

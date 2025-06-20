@@ -447,7 +447,7 @@ void FlowGraph::FinalizeFunctions(CallGraph* call_graph) {
     //                   edge is not. This is just inefficient - why did we add
     //                   it twice in the first place? Only the ARM disassembler
     //                   produces redundant edges atm.
-    absl::flat_hash_set<FlowGraphEdge, FlowGraphEdgeHash> done_edges;
+    absl::flat_hash_set<FlowGraphEdge> done_edges;
     while (!address_stack.empty()) {
       Address address = address_stack.top();
       address_stack.pop();

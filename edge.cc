@@ -14,8 +14,6 @@
 
 #include "third_party/zynamics/binexport/edge.h"
 
-#include <functional>
-
 #include "third_party/absl/log/log.h"
 
 bool operator<(const FlowGraphEdge& one, const FlowGraphEdge& two) {
@@ -50,10 +48,4 @@ const char* FlowGraphEdge::GetTypeName() const {
 bool operator==(const FlowGraphEdge& lhs, const FlowGraphEdge& rhs) {
   return (lhs.source == rhs.source) && (lhs.target == rhs.target) &&
          (lhs.type == rhs.type);
-}
-
-std::size_t FlowGraphEdgeHash::operator()(const FlowGraphEdge& fge) const {
-  return (std::hash<Address>()(fge.source) << 8) ^
-         (std::hash<Address>()(fge.target) << 4) ^
-         std::hash<int>()(static_cast<int>(fge.type));
 }
