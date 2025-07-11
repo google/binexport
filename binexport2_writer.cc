@@ -788,9 +788,18 @@ void WriteSections(const AddressSpace& address_space, BinExport2* proto) {
 // Writes a binary protocol buffer to the specified filename.
 absl::Status WriteProtoToFile(const std::string& filename, BinExport2* proto) {
   std::ofstream stream(filename, std::ios::binary | std::ios::out);
+  if (!stream.is_open() || stream.fail()) {
+    return absl::PermissionDeniedError(
+        absl::StrCat("Cannot write to file: '", filename, "' - check permissions"));
+  }
   if (!proto->SerializeToOstream(&stream)) {
     return absl::UnknownError(
         absl::StrCat("error serializing data to: '", filename, ""));
+  }
+  // Check if write was successful
+  if (stream.fail()) {
+    return absl::DataLossError(
+        absl::StrCat("Failed to write data to: '", filename, "'"));
   }
   return absl::OkStatus();
 }
