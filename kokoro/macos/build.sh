@@ -32,22 +32,17 @@ src_dir=${KOKORO_ARTIFACTS_DIR}/git
 out_dir=${build_dir}
 deps_dir=${build_dir}
 
-# Symlink extra Binary Ninja API dependency
-mkdir -p "${KOKORO_PIPER_DIR}/google3/third_party/binaryninja_api/third_party"
-ln -s "${KOKORO_PIPER_DIR}/google3/third_party/jsoncpp" \
-  "${KOKORO_PIPER_DIR}/google3/third_party/binaryninja_api/third_party/jsoncpp"
-
 pushd "${out_dir}"
 cmake "${src_dir}/binexport" \
   -DFETCHCONTENT_FULLY_DISCONNECTED=ON \
   "-DFETCHCONTENT_SOURCE_DIR_ABSL=${KOKORO_ARTIFACTS_DIR}/git/absl" \
   "-DFETCHCONTENT_SOURCE_DIR_GOOGLETEST=${KOKORO_ARTIFACTS_DIR}/git/googletest" \
   "-DFETCHCONTENT_SOURCE_DIR_PROTOBUF=${KOKORO_ARTIFACTS_DIR}/git/protobuf" \
-  "-DFETCHCONTENT_SOURCE_DIR_BINARYNINJAAPI=${KOKORO_PIPER_DIR}/google3/third_party/binaryninja_api" \
   "-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64" \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_RULE_MESSAGES=OFF \
   -DCMAKE_INSTALL_PREFIX=${out_dir} \
+  -DBINEXPORT_ENABLE_BINARY_NINJA=OFF \
   "-DBOOST_ROOT=${KOKORO_PIPER_DIR}/google3/third_party/boost/do_not_include_from_google3_only_third_party/boost" \
   "-DIdaSdk_ROOT_DIR=${KOKORO_PIPER_DIR}/google3/third_party/idasdk"
 cmake --build . --config Release -- "-j$(sysctl -n hw.logicalcpu)"
@@ -66,5 +61,4 @@ codesign --force \
     --keychain "${HOME}/Library/Keychains/MacApplicationSigning.keychain" \
     "${out_dir}/binexport-prefix/binexport${binexport_release}_ida.dylib" \
     "${out_dir}/binexport-prefix/binexport${binexport_release}_ida64.dylib" \
-    "${out_dir}/binexport-prefix/binexport${binexport_release}_binaryninja.dylib" \
     "${out_dir}/binexport-prefix/binexport2dump"

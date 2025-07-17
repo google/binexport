@@ -14,6 +14,7 @@ cmake "${src_dir}/binexport/" \
   -G "Ninja" \
   -DFETCHCONTENT_FULLY_DISCONNECTED=ON \
   -DCMAKE_BUILD_TYPE=Release \
+  -DBINEXPORT_ENABLE_BINARYNINJA=OFF \
   "-DCMAKE_INSTALL_PREFIX=${out_dir}" \
   "-DBOOST_ROOT=${deps_dir}/boost" \
   "-DIdaSdk_ROOT_DIR=${deps_dir}/idasdk"
