@@ -29,7 +29,9 @@ import ghidra.program.model.address.AddressSetView;
 import ghidra.program.model.block.BasicBlockModel;
 import ghidra.program.model.block.CodeBlock;
 import ghidra.program.model.block.CodeBlockReference;
+import ghidra.program.model.data.DataType;
 import ghidra.program.model.data.StringDataInstance;
+import ghidra.program.model.data.StringDataType;
 import ghidra.program.model.lang.OperandType;
 import ghidra.program.model.lang.Register;
 import ghidra.program.model.listing.CodeUnit;
@@ -69,8 +71,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.TreeMap;
+import java.util.function.Predicate;
 import java.util.function.ToIntFunction;
-import util.CollectionUtils;
 
 /**
  * Java implementation of the BinExport2 writer class for Ghidra using a builder pattern.
@@ -944,7 +946,13 @@ public class BinExport2Builder {
     monitor.setIndeterminate(true);
     var strToInstr = new ArrayList<Map.Entry<Integer, Integer>>();
 
-    for (Data data : CollectionUtils.asIterable(DefinedDataIterator.definedStrings(program))) {
+    Listing listing = program.getListing();
+    AddressSetView memory = program.getMemory();
+
+    DefinedDataIterator stringData = DefinedDataIterator.byDataType(program, memory, dt -> dt instanceof StringDataType);
+
+    while (stringData.hasNext()) {
+      Data data = stringData.next();
       if (monitor.isCancelled()) {
         return;
       }
