@@ -120,7 +120,7 @@ std::string GetString(Address ea) {
 
   for (;;) {
     uint8_t b = get_byte(static_cast<ea_t>(ea++));
-    if (b == 0) {
+    if (b == 0 || b == 0xFF) {
       break;
     }
     result.append(1, b);
