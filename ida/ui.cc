@@ -182,11 +182,19 @@ absl::Status CopyToClipboard(absl::string_view data) {
     absl::StrAppend(&escaped_snippet, "\\x", absl::Hex(c, absl::kZeroPad2));
   }
   if (!python->eval_snippet(
+#if IDA_SDK_VERSION >= 920
+          absl::StrCat("from PySide6 import QtWidgets; "
+                       "cb = QtWidgets.QApplication.clipboard(); "
+                       "cb.setText('",
+                       escaped_snippet, "')")
+              .c_str(),
+#else
           absl::StrCat(
               "from PyQt5 import Qt; cb = Qt.QApplication.clipboard(); "
               "cb.setText('",
               escaped_snippet, "', mode=cb.Clipboard)")
               .c_str(),
+#endif
           &error)) {
     return absl::InternalError(error.c_str());
   }
