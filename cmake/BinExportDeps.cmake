@@ -147,5 +147,19 @@ set(Boost_INCLUDE_DIR "${BINEXPORT_SOURCE_DIR}/boost_parts")
 
 find_package(Git)
 if(BINEXPORT_ENABLE_IDAPRO)
+  if(BINEXPORT_IDASDK_OSS)
+    if(BINEXPORT_IDASDK_GIT_TAG STREQUAL "")
+      set(_binexport_idasdk_git_tag "v9.2")
+    else()
+      set(_binexport_idasdk_git_tag "${BINEXPORT_IDASDK_GIT_TAG}")
+    endif()
+
+    FetchContent_Declare(idasdk
+      GIT_REPOSITORY https://github.com/HexRaysSA/ida-sdk.git
+      GIT_TAG        ${_binexport_idasdk_git_tag}
+    )
+    FetchContent_MakeAvailable(idasdk)
+    set(IdaSdk_ROOT_DIR "${idasdk_SOURCE_DIR}/src" CACHE INTERNAL "")
+  endif()
   find_package(IdaSdk REQUIRED)
 endif()
