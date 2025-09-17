@@ -33,3 +33,9 @@ set(BINEXPORT_BINARYNINJA_CHANNEL "stable" CACHE
     STRING "Binary Ninja channel, either 'stable' or 'dev'")
 set(BINEXPORT_BINARYNINJA_GIT_TAG "" CACHE
     STRING "Set Binary Ninja API Git tag, if empty use default for channel")
+
+set(BINEXPORT_IDASDK_OSS ON CACHE
+    BOOL "Use the open-source IDA SDK fetched from GitHub (only for IDA 9.2 and later)")
+set(BINEXPORT_IDASDK_GIT_TAG "" CACHE
+    STRING "Set IDA SDK Git tag, if empty uses default.")
+
