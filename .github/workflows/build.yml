@@ -123,6 +123,7 @@ jobs:
         run: |
           mkdir -p artifacts
           cp -v install/binexport-prefix/* artifacts/
+          jq '.plugin.idaVersions = "==${{ matrix.ida.version }}"' ida/ida-plugin.json > artifacts/ida-plugin.json
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -137,16 +138,40 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    name: release for IDA ${{ matrix.ida.version }}
+    strategy:
+      fail-fast: false
+      matrix:
+        ida:
+          - version: "9.2"
+          - version: "9.1"
+          - version: "9.0"
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
           path: artifacts
+          pattern: binexport-ida${{ matrix.ida.version }}-*
+          merge-multiple: true
+
+      - name: Remove extras
+        shell: bash
+        run: |
+          rm -f artifacts/binexport2dump*
+          rm -f artifacts/bxp*
+
+      - name: Create archive
+        shell: bash
+        run: |
+          cd artifacts
+          zip -r ../binexport-ida${{ matrix.ida.version }}.zip *
+          cd ..
+          mv binexport-ida${{ matrix.ida.version }}.zip artifacts/
 
       - name: Upload release assets
         uses: softprops/action-gh-release@v2
         with:
-          files: artifacts/**/*.zip
+          files: artifacts/*.zip
           fail_on_unmatched_files: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
