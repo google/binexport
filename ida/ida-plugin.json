@@ -1,0 +1,47 @@
+{
+  "IDAMetadataDescriptorVersion": 1,
+  "plugin": {
+    "name": "binexport",
+    "entryPoint": "binexport12_ida64",
+    "version": "12.0.0",
+    "idaVersions": ["9.0", "9.1", "9.2"],
+    "platforms": [
+      "windows-x86_64",
+      "linux-x86_64",
+      "macos-x86_64",
+      "macos-aarch64"
+    ],
+    "description": "Export IDA Pro disassembly to the BinExport2 Protocol Buffer format",
+    "license": "Apache-2.0",
+    "categories": [
+      "integration-with-third-parties-interoperability",
+      "api-scripting-and-automation"
+    ],
+    "keywords": [
+      "bindiff",
+      "export",
+      "protocol-buffers",
+      "binary-diffing",
+      "disassembly-export"
+    ],
+    "urls": {
+      "repository": "https://github.com/HexRays-plugin-contributions/binexport"
+    },
+    "authors": [
+      {
+        "name": "Christian Blichmann",
+        "email": "cblichmann@google.com"
+      },
+      {
+        "name": "BinExport Authors",
+        "email": "binexport-team@google.com"
+      }
+    ],
+    "maintainers": [
+      {
+        "name": "Willi Ballenthin",
+        "email": "wballenthin@hex-rays.com"
+      }
+    ]
+  }
+}
