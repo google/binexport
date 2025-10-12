@@ -33,21 +33,7 @@ import ghidra.program.model.data.StringDataInstance;
 import ghidra.program.model.data.StringDataType;
 import ghidra.program.model.lang.OperandType;
 import ghidra.program.model.lang.Register;
-import ghidra.program.model.listing.CodeUnit;
-import ghidra.program.model.listing.CodeUnitFormat;
-import ghidra.program.model.listing.CodeUnitFormatOptions;
-import ghidra.program.model.listing.CodeUnitIterator;
-import ghidra.program.model.listing.Data;
-import ghidra.program.model.listing.Function;
-import ghidra.program.model.listing.FunctionManager;
-import ghidra.program.model.listing.Instruction;
-import ghidra.program.model.listing.LabelString;
-import ghidra.program.model.listing.Library;
-import ghidra.program.model.listing.Listing;
-import ghidra.program.model.listing.OperandRepresentationList;
-import ghidra.program.model.listing.Parameter;
-import ghidra.program.model.listing.Program;
-import ghidra.program.model.listing.VariableOffset;
+import ghidra.program.model.listing.*;
 import ghidra.program.model.mem.MemoryAccessException;
 import ghidra.program.model.mem.MemoryBlock;
 import ghidra.program.model.scalar.Scalar;
@@ -221,11 +207,11 @@ public class BinExport2Builder {
       commentType = BinExport2.Comment.Type.DEFAULT;
     } else if (markupToken instanceof LabelString) {
       var labelType = ((LabelString) markupToken).getLabelType();
-      if (labelType == LabelString.CODE_LABEL) {
+      if (labelType == LabelString.LabelType.CODE_LABEL) {
         commentType = BinExport2.Comment.Type.GLOBAL_REFERENCE;
-      } else if (labelType == LabelString.VARIABLE) {
+      } else if (labelType == LabelString.LabelType.VARIABLE) {
         commentType = BinExport2.Comment.Type.LOCAL_REFERENCE;
-      } else if (labelType == LabelString.EXTERNAL) {
+      } else if (labelType == LabelString.LabelType.EXTERNAL) {
         commentType = BinExport2.Comment.Type.DEFAULT;
       } else {
         return Optional.empty();
@@ -991,7 +977,7 @@ public class BinExport2Builder {
     monitor.setIndeterminate(true);
 
     var comments = new HashSet<String>();
-    for (int commentType : ImmutableList.of(CodeUnit.EOL_COMMENT)) {
+    for (var commentType : ImmutableList.of(CommentType.EOL)) {
       for (CodeUnitIterator codeIt = listing.getCommentCodeUnitIterator(commentType, addrSet);
           codeIt.hasNext() && !monitor.isCancelled(); ) {
         CodeUnit code = codeIt.next();
