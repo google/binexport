@@ -39,32 +39,92 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.google.protobuf:protobuf-gradle-plugin:0.9.5'
+        classpath 'com.google.protobuf:protobuf-gradle-plugin:0.9.4'
     }
 }
 
-configurations {
-    // Configuration that holds jars to include in the jar.
-    extraLibs
+// Detect protobuf version from Ghidra installation
+// Allow manual override via -PghidraProtobufVersion=x.y.z
+def detectGhidraProtobufVersion() {
+    def defaultVersion = '3.21.8'
+
+    def ghidraDir = System.env.GHIDRA_INSTALL_DIR ?:
+                    (project.hasProperty('GHIDRA_INSTALL_DIR') ? project.property('GHIDRA_INSTALL_DIR') : null)
+
+    if (!ghidraDir) {
+        logger.warn("GHIDRA_INSTALL_DIR not set, using default protobuf ${defaultVersion}")
+        return defaultVersion
+    }
+
+    def ghidraRoot = file(ghidraDir)
+    if (!ghidraRoot.exists()) {
+        logger.warn("GHIDRA_INSTALL_DIR does not exist: ${ghidraDir}")
+        return defaultVersion
+    }
+
+    // Check Ghidra source build (gradle.properties)
+    def gradleProps = new File(ghidraRoot, 'gradle.properties')
+    if (gradleProps.exists()) {
+        try {
+            def props = new Properties()
+            gradleProps.withInputStream { stream -> props.load(stream) }
+            def version = props.getProperty('ghidra.protobuf.java.version')
+            if (version) {
+                logger.lifecycle("Detected protobuf version from Ghidra source: ${version.trim()}")
+                return version.trim()
+            }
+        } catch (IOException e) {
+            logger.warn("Failed to read gradle.properties: ${e.message}")
+        }
+    }
+
+    // Check known locations in Ghidra release builds
+    def knownPaths = [
+        'Ghidra/Debug/ProposedUtils/lib',
+        'Ghidra/Framework',
+    ]
+
+    for (path in knownPaths) {
+        def searchDir = new File(ghidraRoot, path)
+        if (searchDir.exists()) {
+            def jars = fileTree(searchDir) {
+                include 'protobuf-java-*.jar'
+                exclude 'protobuf-java-util-*.jar'
+            }.files.sort()
+
+            if (!jars.isEmpty()) {
+                def matcher = jars[0].name =~ /protobuf-java-(\d+\.\d+\.\d+)\.jar/
+                if (matcher) {
+                    def version = matcher[0][1]
+                    logger.lifecycle("Detected protobuf version from Ghidra release: ${version}")
+                    return version
+                }
+            }
+        }
+    }
+
+    logger.warn("Could not detect Ghidra protobuf version, using default ${defaultVersion}")
+    return defaultVersion
 }
 
+def protobufVersion = project.findProperty('ghidraProtobufVersion') ?: detectGhidraProtobufVersion()
+
 dependencies {
-    // Should match ghidra.protobuf.java.version in Ghidra's
-    // ghidra/gradle.properties
-    extraLibs 'com.google.protobuf:protobuf-java:4.31.0'
-    configurations.implementation.extendsFrom(configurations.extraLibs)
+    // Use compileOnly to avoid bundling protobuf in the extension.
+    // Should match ghidra.protobuf.java.version in Ghidra's gradle.properties
+    compileOnly "com.google.protobuf:protobuf-java:${protobufVersion}"
 }
 
 protobuf {
     // Configure the protoc executable
     protoc {
         // Should match protobuf-java above
-        artifact = 'com.google.protobuf:protoc:4.31.0'
+        artifact = "com.google.protobuf:protoc:${protobufVersion}"
     }
     // Make generator tasks visible in Eclipse.
     generateProtoTasks {
-        all().each {
-            it.group = 'generate proto'
+        all().each { task ->
+            task.group = 'generate proto'
         }
     }
 }
@@ -84,10 +144,10 @@ eclipse {
     }
 }
 
-// Extend jar task to collect extra dependencies.
-jar {
-    from {
-        configurations.extraLibs.collect { it.isDirectory() ? it : zipTree(it) }
+configurations {
+    runtimeClasspath {
+        // Ghidra provides protobuf at runtime
+        exclude group: 'com.google.protobuf', module: 'protobuf-java'
     }
 }
 
@@ -117,4 +177,3 @@ tasks.named("extractIncludeProto").configure {
 tasks.named("extractIncludeTestProto").configure {
     dependsOn("copyDependencies")
 }
-
