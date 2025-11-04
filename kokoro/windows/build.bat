@@ -27,7 +27,6 @@ cmake "%SRC_DIR%/binexport" ^
   -DCMAKE_BUILD_TYPE=Release ^
   -DBINEXPORT_ENABLE_BINARYNINJA=OFF ^
   "-DCMAKE_INSTALL_PREFIX=%OUT_DIR%" ^
-  "-DBOOST_ROOT=%KOKORO_PIPER_DIR%\google3\third_party\boost\do_not_include_from_google3_only_third_party\boost" ^
   "-DIdaSdk_ROOT_DIR=%KOKORO_PIPER_DIR%\google3\third_party\idasdk" ^
   -DBUILD_TESTING=OFF || exit /b
 cmake --build . --config Release || exit /b

@@ -16,7 +16,6 @@ cmake "${src_dir}/binexport/" \
   -DCMAKE_BUILD_TYPE=Release \
   -DBINEXPORT_ENABLE_BINARYNINJA=OFF \
   "-DCMAKE_INSTALL_PREFIX=${out_dir}" \
-  "-DBOOST_ROOT=${deps_dir}/boost" \
   "-DIdaSdk_ROOT_DIR=${deps_dir}/idasdk"
 cmake --build . --config Release
 ctest --build-config Release --output-on-failure -R '^[A-Z]'
