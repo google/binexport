@@ -25,6 +25,7 @@ import com.google.security.zynamics.BinExport.BinExport2.Builder;
 import ghidra.app.nav.NavigationUtils;
 import ghidra.program.database.symbol.EquateDB;
 import ghidra.program.model.address.Address;
+import ghidra.program.model.address.AddressIterator;
 import ghidra.program.model.address.AddressSetView;
 import ghidra.program.model.block.BasicBlockModel;
 import ghidra.program.model.block.CodeBlock;
@@ -37,6 +38,7 @@ import ghidra.program.model.listing.CodeUnit;
 import ghidra.program.model.listing.CodeUnitFormat;
 import ghidra.program.model.listing.CodeUnitFormatOptions;
 import ghidra.program.model.listing.CodeUnitIterator;
+import ghidra.program.model.listing.CommentType;
 import ghidra.program.model.listing.Data;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.FunctionManager;
@@ -991,17 +993,17 @@ public class BinExport2Builder {
     monitor.setIndeterminate(true);
 
     var comments = new HashSet<String>();
-    for (int commentType : ImmutableList.of(CodeUnit.EOL_COMMENT)) {
-      for (CodeUnitIterator codeIt = listing.getCommentCodeUnitIterator(commentType, addrSet);
-          codeIt.hasNext() && !monitor.isCancelled(); ) {
-        CodeUnit code = codeIt.next();
-        long address = getMappedAddress(code.getMinAddress());
+    for (CommentType commentType : ImmutableList.of(CommentType.EOL)) {
+      AddressIterator addrIt = listing.getCommentAddressIterator(commentType, addrSet, true);
+      while (addrIt.hasNext() && !monitor.isCancelled()) {
+        Address addr = addrIt.next();
+        long address = getMappedAddress(addr);
         Integer instrIdx = instructionIndices.get(address);
         if (instrIdx == null) {
           continue;
         }
 
-        var str = code.getComment(commentType);
+        var str = listing.getComment(commentType, addr);
         if (str == null || !comments.add(str)) {
           continue;
         }
