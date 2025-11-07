@@ -15,6 +15,7 @@
 #ifndef BINARYNINJA_LOG_SINK_H_
 #define BINARYNINJA_LOG_SINK_H_
 
+#include "third_party/absl/log/log_entry.h"
 #include "third_party/absl/log/log_sink.h"
 #include "third_party/zynamics/binexport/util/logging.h"
 

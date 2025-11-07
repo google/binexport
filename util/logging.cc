@@ -27,6 +27,7 @@
 #include "third_party/absl/base/internal/sysinfo.h"
 #include "third_party/absl/log/initialize.h"
 #include "third_party/absl/log/log.h"
+#include "third_party/absl/log/log_entry.h"
 #include "third_party/absl/log/log_sink.h"
 #include "third_party/absl/log/log_sink_registry.h"
 #include "third_party/absl/status/status.h"

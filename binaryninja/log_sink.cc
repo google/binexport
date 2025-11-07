@@ -19,6 +19,7 @@
 // clang-format on
 
 #include "third_party/absl/base/log_severity.h"
+#include "third_party/absl/log/log_entry.h"
 #include "third_party/absl/strings/string_view.h"
 #include "third_party/zynamics/binexport/util/logging.h"
 
