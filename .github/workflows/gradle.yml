@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       ghidra_version:
-        description: 'Specify the Ghidra version(s) you want to build for (e.g. "latest", "11.0")'
+        description: 'Specify the Ghidra version(s) you want to build for (e.g. "latest", "11.4")'
         required: true
         default: '"latest"'
   schedule:
@@ -17,7 +17,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ghidra: ${{ fromJSON(format('[{0}]', inputs.ghidra_version || '"latest","11.4.1","11.4","11.3.2","11.3.1","11.3","11.2.1","11.2","11.1.2","11.1.1","11.1","11.0.3","11.0.2","11.0.1","11.0"')) }}
+        ghidra: ${{ fromJSON(format('[{0}]', inputs.ghidra_version || '"latest","11.4.2","11.4.1","11.4"')) }}
     runs-on: ubuntu-22.04
 
     steps:
