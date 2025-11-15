@@ -123,7 +123,7 @@ if(APPLE)
 
   # Not using find_library(), as static-lib search might be enforced in
   # calling project.
-  if(IDA_SDK_VERSION LESS 900)
+  if(IDA_SDK_VERSION LESS 850)
     _ida_get_libpath_suffixes(_ida64_x64_suffixes "x64_mac_clang_64")
     find_path(IdaSdk_LIBPATH64_X64 libida64.dylib
       PATHS "${IdaSdk_DIR}/lib" PATH_SUFFIXES ${_ida64_x64_suffixes}
@@ -224,7 +224,7 @@ if(APPLE)
 elseif(UNIX)
   set(IdaSdk_PLATFORM __LINUX__)
 
-  if(IDA_SDK_VERSION LESS 900)
+  if(IDA_SDK_VERSION LESS 850)
     _ida_get_libpath_suffixes(_ida64_suffixes "x64_linux_gcc_64")
     find_path(IdaSdk_LIBPATH64 libida64.so
       PATHS "${IdaSdk_DIR}/lib" PATH_SUFFIXES ${_ida64_suffixes}
@@ -267,7 +267,7 @@ elseif(WIN32)
   set_target_properties(ida64 PROPERTIES IMPORTED_LOCATION "${IdaSdk_LIB64}")
   set_target_properties(ida64 PROPERTIES IMPORTED_IMPLIB "${IdaSdk_LIB64}")
 
-  if(IDA_SDK_VERSION LESS 900)
+  if(IDA_SDK_VERSION LESS 850)
     _ida_get_libpath_suffixes(_ida32_suffixes "x64_win_vc_32")
     find_library(IdaSdk_LIB32 ida
       PATHS "${IdaSdk_DIR}/lib" PATH_SUFFIXES ${_ida32_suffixes}
@@ -356,7 +356,7 @@ function(add_ida_library name)
   cmake_parse_arguments(PARSE_ARGV 1 opt "NOEA32;NOEA64" "" "")
   _ida_check_bitness(opt_NOEA32 opt_NOEA64)
 
-  if(IDA_SDK_VERSION LESS 900)
+  if(IDA_SDK_VERSION LESS 850)
     if(NOT DEFINED(opt_NOEA32))
       _ida_library(${name} FALSE ${opt_UNPARSED_ARGUMENTS})
     endif()
@@ -370,7 +370,7 @@ function(add_ida_plugin name)
   cmake_parse_arguments(PARSE_ARGV 1 opt "NOEA32;NOEA64" "" "")
   _ida_check_bitness(opt_NOEA32 opt_NOEA64)
 
-  if(IDA_SDK_VERSION LESS 900)
+  if(IDA_SDK_VERSION LESS 850)
     if(NOT opt_NOEA32)
       _ida_plugin(${name} FALSE plugins/exports.def ${opt_UNPARSED_ARGUMENTS})
     endif()
@@ -384,7 +384,7 @@ function(add_ida_loader name)
   cmake_parse_arguments(PARSE_ARGV 1 opt "NOEA32;NOEA64" "" "")
   _ida_check_bitness(opt_NOEA32 opt_NOEA64)
 
-  if(IDA_SDK_VERSION LESS 900)
+  if(IDA_SDK_VERSION LESS 850)
     if(NOT opt_NOEA32)
       _ida_plugin(${name} FALSE ldr/exports.def ${opt_UNPARSED_ARGUMENTS})
     endif()
