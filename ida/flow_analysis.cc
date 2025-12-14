@@ -300,13 +300,39 @@ absl::Status AnalyzeFlowIda(EntryPoints* entry_points, const ModuleMap& modules,
   AddressSpace flags;
   for (int i = 0; i < get_segm_qty(); ++i) {
     const segment_t* segment = getnseg(i);
-    address_space.AddMemoryBlock(segment->start_ea,
-                                 GetSectionBytes(segment->start_ea),
-                                 GetPermissions(segment));
-    flags.AddMemoryBlock(
-        segment->start_ea,
-        AddressSpace::MemoryBlock(size_t(segment->end_ea - segment->start_ea)),
-        GetPermissions(segment));
+    if (!segment) {
+      continue;
+    }
+    
+    size_t segment_size = segment->end_ea - segment->start_ea;
+    auto section_bytes = GetSectionBytes(segment->start_ea);
+    
+    // Check for unreasonably large segments (likely virtual address space, not
+    // actual data). This prevents out-of-memory errors when segments have huge
+    // virtual address ranges but no actual loaded data.
+    const size_t kMaxReasonableSegmentSize = 1024ULL * 1024 * 1024;  // 1 GB
+    
+    // Only add to address_space if there's actual data
+    if (!section_bytes.empty()) {
+      address_space.AddMemoryBlock(segment->start_ea, section_bytes,
+                                   GetPermissions(segment));
+    }
+    
+    // For flags, use the actual loaded data size, not the virtual segment size.
+    // This prevents allocating huge amounts of memory for virtual address spaces.
+    size_t flags_size = section_bytes.empty() ? 0 : section_bytes.size();
+    if (flags_size == 0 && segment_size <= kMaxReasonableSegmentSize) {
+      // If no section bytes but segment size is reasonable, use segment size
+      // (this handles cases where the segment exists but GetSectionBytes
+      // returned empty)
+      flags_size = segment_size;
+    }
+    
+    if (flags_size > 0) {
+      flags.AddMemoryBlock(segment->start_ea,
+                          AddressSpace::MemoryBlock(flags_size),
+                          GetPermissions(segment));
+    }
   }
 
   Instruction::SetBitness(GetArchitectureBitness());
