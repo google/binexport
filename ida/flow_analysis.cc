@@ -14,6 +14,13 @@
 
 #include "third_party/zynamics/binexport/ida/flow_analysis.h"
 
+#include <algorithm>
+#include <cstddef>
+#include <functional>
+#include <limits>
+#include <string>
+#include <vector>
+
 // clang-format off
 #include "third_party/zynamics/binexport/ida/begin_idasdk.inc"  // NOLINT
 #include <idp.hpp>                                              // NOLINT
@@ -35,8 +42,17 @@
 // clang-format on
 
 #include "third_party/absl/log/log.h"
+#include "third_party/absl/status/status.h"
 #include "third_party/absl/strings/str_cat.h"
+#include "third_party/absl/time/time.h"
+#include "third_party/zynamics/binexport/address_references.h"
+#include "third_party/zynamics/binexport/call_graph.h"
+#include "third_party/zynamics/binexport/edge.h"
+#include "third_party/zynamics/binexport/entry_point.h"
+#include "third_party/zynamics/binexport/expression.h"
 #include "third_party/zynamics/binexport/flow_analysis.h"
+#include "third_party/zynamics/binexport/flow_graph.h"
+#include "third_party/zynamics/binexport/function.h"
 #include "third_party/zynamics/binexport/ida/arm.h"
 #include "third_party/zynamics/binexport/ida/dalvik.h"
 #include "third_party/zynamics/binexport/ida/generic.h"
@@ -45,9 +61,14 @@
 #include "third_party/zynamics/binexport/ida/names.h"
 #include "third_party/zynamics/binexport/ida/ppc.h"
 #include "third_party/zynamics/binexport/ida/util.h"
+#include "third_party/zynamics/binexport/instruction.h"
+#include "third_party/zynamics/binexport/operand.h"
 #include "third_party/zynamics/binexport/util/format.h"
 #include "third_party/zynamics/binexport/util/status_macros.h"
 #include "third_party/zynamics/binexport/util/timer.h"
+#include "third_party/zynamics/binexport/util/types.h"
+#include "third_party/zynamics/binexport/virtual_memory.h"
+#include "third_party/zynamics/binexport/writer.h"
 #include "third_party/zynamics/binexport/x86_nop.h"
 
 namespace security::binexport {
@@ -300,13 +321,40 @@ absl::Status AnalyzeFlowIda(EntryPoints* entry_points, const ModuleMap& modules,
   AddressSpace flags;
   for (int i = 0; i < get_segm_qty(); ++i) {
     const segment_t* segment = getnseg(i);
-    address_space.AddMemoryBlock(segment->start_ea,
-                                 GetSectionBytes(segment->start_ea),
-                                 GetPermissions(segment));
-    flags.AddMemoryBlock(
-        segment->start_ea,
-        AddressSpace::MemoryBlock(size_t(segment->end_ea - segment->start_ea)),
-        GetPermissions(segment));
+    if (!segment) {
+      continue;
+    }
+
+    size_t segment_size = segment->end_ea - segment->start_ea;
+    std::vector<Byte> section_bytes = GetSectionBytes(segment->start_ea);
+
+    // Only add to address_space if there's actual data.
+    if (!section_bytes.empty()) {
+      address_space.AddMemoryBlock(segment->start_ea, section_bytes,
+                                   GetPermissions(segment));
+    }
+
+    // Check for unreasonably large segments (likely virtual address space, not
+    // actual data). This prevents out-of-memory errors when segments have huge
+    // virtual address ranges but no actual loaded data.
+    constexpr size_t kMaxReasonableSegmentSize = 1024ULL * 1024 * 1024;  // 1 GB
+
+    // For flags, use the actual loaded data size, not the virtual segment size.
+    // This prevents allocating huge amounts of memory for virtual address
+    // spaces.
+    size_t flags_size = section_bytes.empty() ? 0 : section_bytes.size();
+    if (flags_size == 0 && segment_size <= kMaxReasonableSegmentSize) {
+      // If no section bytes but segment size is reasonable, use segment size
+      // (this handles cases where the segment exists but GetSectionBytes
+      // returned empty)
+      flags_size = segment_size;
+    }
+
+    if (flags_size > 0) {
+      flags.AddMemoryBlock(segment->start_ea,
+                           AddressSpace::MemoryBlock(flags_size),
+                           GetPermissions(segment));
+    }
   }
 
   Instruction::SetBitness(GetArchitectureBitness());
