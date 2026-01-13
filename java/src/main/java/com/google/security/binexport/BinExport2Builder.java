@@ -23,6 +23,7 @@ import com.google.protobuf.ByteString;
 import com.google.security.zynamics.BinExport.BinExport2;
 import com.google.security.zynamics.BinExport.BinExport2.Builder;
 import ghidra.app.nav.NavigationUtils;
+import ghidra.program.database.function.OverlappingFunctionException;
 import ghidra.program.database.symbol.EquateDB;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressSetView;
@@ -58,7 +59,9 @@ import ghidra.program.model.symbol.Reference;
 import ghidra.program.model.symbol.Symbol;
 import ghidra.program.model.symbol.SymbolUtilities;
 import ghidra.program.util.DefinedDataIterator;
+import ghidra.util.UndefinedFunction;
 import ghidra.util.exception.CancelledException;
+import ghidra.util.exception.InvalidInputException;
 import ghidra.util.task.TaskMonitor;
 import java.io.File;
 import java.util.ArrayList;
@@ -744,6 +747,41 @@ public class BinExport2Builder {
     }
   }
 
+  private void promoteUndefinedFunctions() throws CancelledException {
+    FunctionManager funcManager = program.getFunctionManager();
+
+    for (var bbIter = bbModel.getCodeBlocks(monitor); bbIter.hasNext(); ) {
+      CodeBlock bb = bbIter.next();
+      Address bbEntryPoint = bb.getFirstStartAddress();
+      // If a function is already defined or external, no need to promote it.
+      Function func = funcManager.getFunctionContaining(bbEntryPoint);
+      if (func != null && func.isExternal()) {
+        continue;
+      }
+      UndefinedFunction undefinedFunction =
+          UndefinedFunction.findFunction(program, bbEntryPoint, monitor);
+      if (undefinedFunction != null) {
+        try {
+          Function newFunc =
+              funcManager.createFunction(
+                  undefinedFunction.getName(),
+                  undefinedFunction.getEntryPoint(),
+                  undefinedFunction.getBody(),
+                  undefinedFunction.getSignatureSource());
+          if (newFunc != null) {
+            monitor.setMessage(
+                String.format("Created undefined function at %x", getMappedAddress(bbEntryPoint)));
+            System.out.printf("newUndefinedFunction: %x%n", getMappedAddress(bbEntryPoint));
+          }
+        } catch (InvalidInputException | OverlappingFunctionException e) {
+          monitor.setMessage(
+              String.format(
+                  "Failed to create undefined function at %x", getMappedAddress(bbEntryPoint)));
+        }
+      }
+    }
+  }
+
   private void buildFlowGraphs(Map<Long, Integer> basicBlockIndices) throws CancelledException {
     FunctionManager funcManager = program.getFunctionManager();
     monitor.setIndeterminate(false);
@@ -1146,6 +1184,7 @@ public class BinExport2Builder {
     buildStrings(instructionIndices);
     buildDataReferences(instructionIndices);
 
+    promoteUndefinedFunctions();
     monitor.setMessage("Exporting flow graphs");
     buildFlowGraphs(basicBlockIndices);
     monitor.setMessage("Exporting call graph");
