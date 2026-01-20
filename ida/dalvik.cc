@@ -20,6 +20,7 @@
 
 // clang-format off
 #include "third_party/zynamics/binexport/ida/begin_idasdk.inc"  // NOLINT
+#include <bytes.hpp>                                            // NOLINT
 #include <frame.hpp>                                            // NOLINT
 #include <funcs.hpp>                                            // NOLINT
 #include <ida.hpp>                                              // NOLINT
@@ -119,8 +120,8 @@ std::string GetString(Address ea) {
   result.reserve(16);
 
   for (;;) {
-    uint8_t b = get_byte(static_cast<ea_t>(ea++));
-    if (b == 0) {
+    uint8_t b = get_byte(static_cast<ea_t>(ea));
+    if (b == 0 || !is_mapped(ea++)) {
       break;
     }
     result.append(1, b);
