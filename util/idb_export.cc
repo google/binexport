@@ -44,6 +44,43 @@ constexpr const char* OptionBool(bool value) {
   return value ? "TRUE" : "FALSE";
 }
 
+absl::flat_hash_map<std::string, std::string> ida_exe_path_cache;
+absl::Mutex ida_exe_path_cache_mutex;
+std::string GetIdaExePath(const std::string& ida_dir, bool is_64bit) {
+  absl::MutexLock lock(&ida_exe_path_cache_mutex);
+
+  const std::string key =
+      absl::StrCat(ida_dir, is_64bit ? ":64" : ":32");
+  auto it = ida_exe_path_cache.find(key);
+  if (it != ida_exe_path_cache.end()) {
+    return it->second;
+  }
+
+#ifdef _WIN32
+  const auto ida64_exe_path = JoinPath(ida_dir, "ida64.exe");
+  const auto ida_exe_path = JoinPath(ida_dir, "ida.exe");
+#else
+  const auto ida64_exe_path = JoinPath(ida_dir, "ida64");
+  const auto ida_exe_path = JoinPath(ida_dir, "ida");
+#endif
+
+  const std::string main_ida_exe_path =
+      is_64bit ? ida64_exe_path : ida_exe_path;
+  if (FileExists(ida_exe_path)) {
+    ida_exe_path_cache[key] = main_ida_exe_path;
+    return main_ida_exe_path;
+  }
+
+  if (FileExists(ida_exe_path)) {
+    ida_exe_path_cache[key] = ida_exe_path;
+    return ida_exe_path;
+  }
+
+  // Cache the negative result as well.
+  ida_exe_path_cache[key] = "";
+  return "";
+}
+
 }  // namespace
 
 void IdbExporter::AddDatabase(std::string path) {
@@ -58,22 +95,17 @@ absl::Status ExportDatabase(const std::string& idb_path,
     return absl::NotFoundError(absl::StrCat("File not found: " + idb_path));
   }
 
-#if IDA_SDK_VERSION < 900
-  const bool is_64bit = absl::EndsWithIgnoreCase(idb_path, kIdbExtension64);
-  #ifdef _WIN32
-    const std::string ida_exe = is_64bit ? "ida64.exe" : "ida.exe";
-  #else
-    const std::string ida_exe = is_64bit ? "ida64" : "ida";
-  #endif
-#else
-  #ifdef _WIN32
-    const std::string ida_exe = "ida.exe";
-  #else
-    const std::string ida_exe = "ida";
-  #endif
-#endif
+  const auto ida_exe_path =
+      GetIdaExePath(options.ida_dir, absl::EqualsIgnoreCase(
+                                         GetFileExtension(idb_path),
+                                         kIdbExtension64));
+  if (ida_exe_path.empty()) {
+    return absl::NotFoundError(absl::StrCat(
+        "Cannot find IDA executable in: ", options.ida_dir));
+  }
+
   std::vector<std::string> args;
-  args.push_back(JoinPath(options.ida_dir, ida_exe));
+  args.push_back(ida_exe_path);
   args.push_back("-A");
   args.push_back("-OBinExportAutoAction:BinExportBinary");
   args.push_back(absl::StrCat(
