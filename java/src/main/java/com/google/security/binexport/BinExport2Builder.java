@@ -23,8 +23,8 @@ import com.google.protobuf.ByteString;
 import com.google.security.zynamics.BinExport.BinExport2;
 import com.google.security.zynamics.BinExport.BinExport2.Builder;
 import ghidra.app.nav.NavigationUtils;
-import ghidra.program.database.function.OverlappingFunctionException;
 import ghidra.program.database.symbol.EquateDB;
+import ghidra.program.flatapi.FlatProgramAPI;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressSetView;
 import ghidra.program.model.block.BasicBlockModel;
@@ -61,7 +61,6 @@ import ghidra.program.model.symbol.SymbolUtilities;
 import ghidra.program.util.DefinedDataIterator;
 import ghidra.util.UndefinedFunction;
 import ghidra.util.exception.CancelledException;
-import ghidra.util.exception.InvalidInputException;
 import ghidra.util.task.TaskMonitor;
 import java.io.File;
 import java.util.ArrayList;
@@ -749,6 +748,7 @@ public class BinExport2Builder {
 
   private void promoteUndefinedFunctions() throws CancelledException {
     FunctionManager funcManager = program.getFunctionManager();
+    FlatProgramAPI flatProgramApi = new FlatProgramAPI(program);
 
     for (var bbIter = bbModel.getCodeBlocks(monitor); bbIter.hasNext(); ) {
       CodeBlock bb = bbIter.next();
@@ -761,22 +761,12 @@ public class BinExport2Builder {
       UndefinedFunction undefinedFunction =
           UndefinedFunction.findFunction(program, bbEntryPoint, monitor);
       if (undefinedFunction != null) {
-        try {
-          Function newFunc =
-              funcManager.createFunction(
-                  undefinedFunction.getName(),
-                  undefinedFunction.getEntryPoint(),
-                  undefinedFunction.getBody(),
-                  undefinedFunction.getSignatureSource());
-          if (newFunc != null) {
-            monitor.setMessage(
-                String.format("Created undefined function at %x", getMappedAddress(bbEntryPoint)));
-            System.out.printf("newUndefinedFunction: %x%n", getMappedAddress(bbEntryPoint));
-          }
-        } catch (InvalidInputException | OverlappingFunctionException e) {
+        Function newFunc =
+            flatProgramApi.createFunction(
+                undefinedFunction.getEntryPoint(), undefinedFunction.getName());
+        if (newFunc != null) {
           monitor.setMessage(
-              String.format(
-                  "Failed to create undefined function at %x", getMappedAddress(bbEntryPoint)));
+              String.format("Created undefined function at %x", getMappedAddress(bbEntryPoint)));
         }
       }
     }
