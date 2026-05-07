@@ -20,11 +20,11 @@ mkdir -p "${build_dir}"
 # Verify/extract dependencies
 pushd "${KOKORO_GFILE_DIR}"
 cat << 'EOF' | shasum -c
-3be85f5b999e327b1ac7d804cbc9acd767059e9f603c42ec2765f6ab68fbd367  cmake-4.1.2-macos-universal.tar.gz
+808ab43a0db04c8eec9ed7db12b90d7be1c8e2e75f4a060724d604a2043ccaf7  cmake-4.3.2-macos-universal.tar.gz
 EOF
 popd
 tar --strip-components=3 -C "${build_dir}" -xzf \
-  "${KOKORO_GFILE_DIR}/cmake-4.1.2-macos-universal.tar.gz"
+  "${KOKORO_GFILE_DIR}/cmake-4.3.2-macos-universal.tar.gz"
 export PATH=${build_dir}/bin:${PATH}
 
 # Build BinExport
