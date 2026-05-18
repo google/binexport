@@ -58,19 +58,24 @@ absl::Status ExportDatabase(const std::string& idb_path,
     return absl::NotFoundError(absl::StrCat("File not found: " + idb_path));
   }
 
-#if IDA_SDK_VERSION < 900
+  // Pick the right IDA executable at runtime. IDA 9.0+ removed the separate
+  // ida64 binary and unified everything into ida(.exe); older releases ship
+  // both. Detect which is present in `options.ida_dir` so the same binary
+  // works against either layout. The compile-time IDA_SDK_VERSION switch
+  // previously used here was unreliable: binexport_shared is built without
+  // -DIDA_SDK_VERSION=…, so the macro defaulted to 0 and `ida64` was always
+  // selected — breaking IDA 9.x exports from the bindiff CLI.
   const bool is_64bit = absl::EndsWithIgnoreCase(idb_path, kIdbExtension64);
-  #ifdef _WIN32
-    const std::string ida_exe = is_64bit ? "ida64.exe" : "ida.exe";
-  #else
-    const std::string ida_exe = is_64bit ? "ida64" : "ida";
-  #endif
+#ifdef _WIN32
+  std::string ida_exe = "ida.exe";
+  if (is_64bit && FileExists(JoinPath(options.ida_dir, "ida64.exe"))) {
+    ida_exe = "ida64.exe";
+  }
 #else
-  #ifdef _WIN32
-    const std::string ida_exe = "ida.exe";
-  #else
-    const std::string ida_exe = "ida";
-  #endif
+  std::string ida_exe = "ida";
+  if (is_64bit && FileExists(JoinPath(options.ida_dir, "ida64"))) {
+    ida_exe = "ida64";
+  }
 #endif
   std::vector<std::string> args;
   args.push_back(JoinPath(options.ida_dir, ida_exe));
