@@ -14,6 +14,8 @@
 
 #include "third_party/zynamics/binexport/expression.h"
 
+#include <cstdint>
+#include <cstring>
 #include <ios>
 #include <ostream>
 #include <string>
@@ -22,6 +24,7 @@
 #include "third_party/absl/log/check.h"
 #include "third_party/zynamics/binexport/instruction.h"
 #include "third_party/zynamics/binexport/util/hash.h"
+#include "third_party/zynamics/binexport/util/types.h"
 
 thread_local Expression::StringCache Expression::string_cache_;
 thread_local Expression::ExpressionCache Expression::expression_cache_;
@@ -103,10 +106,12 @@ const Expression* Expression::GetParent() const { return parent_; }
 std::string Expression::CreateSignature() {
   std::string signature(19 /* length of the signature */, '0');
   signature[0] = static_cast<char>(type_);
-  *reinterpret_cast<uint16_t*>(&signature[1]) = position_;
-  *reinterpret_cast<Address*>(&signature[3]) = immediate_;
-  *reinterpret_cast<uint32_t*>(&signature[11]) = GetSdbmHash(*symbol_);
-  *reinterpret_cast<uint32_t*>(&signature[15]) = parent_ ? parent_->GetId() : 0;
+  std::memcpy(&signature[1], &position_, sizeof(position_));
+  std::memcpy(&signature[3], &immediate_, sizeof(immediate_));
+  uint32_t symbol_hash = GetSdbmHash(*symbol_);
+  std::memcpy(&signature[11], &symbol_hash, sizeof(symbol_hash));
+  uint32_t parent_id = parent_ ? parent_->GetId() : 0;
+  std::memcpy(&signature[15], &parent_id, sizeof(parent_id));
   return signature;
 }
 
