@@ -296,7 +296,7 @@ cmake .. \
     "-DCMAKE_INSTALL_PREFIX=${PWD}" \
     -DBINEXPORT_ENABLE_IDAPRO=ON \
     "-DIdaSdk_ROOT_DIR=${PWD}/../third_party/idasdk" \
-    -DBINEXPORT_ENABLE_BINARYNINJA=ON \
+    -DBINEXPORT_ENABLE_BINARYNINJA=ON
 cmake --build . --config Release
 ctest --build-config Release --output-on-failure
 cmake --install . --config Release --strip
