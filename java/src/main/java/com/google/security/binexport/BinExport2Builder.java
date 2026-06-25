@@ -32,6 +32,7 @@ import ghidra.program.model.block.CodeBlock;
 import ghidra.program.model.block.CodeBlockReference;
 import ghidra.program.model.data.StringDataInstance;
 import ghidra.program.model.data.StringDataType;
+import ghidra.program.model.data.TerminatedUnicodeDataType;
 import ghidra.program.model.lang.OperandType;
 import ghidra.program.model.lang.Register;
 import ghidra.program.model.listing.CodeUnit;
@@ -98,6 +99,8 @@ public class BinExport2Builder {
   private final HashMap<BinExport2.Expression, Integer> expressionIndices = new HashMap<>();
   private final HashMap<BinExport2.Operand, Integer> operandIndices = new HashMap<>();
   private final HashMap<String, Integer> stringIndices = new HashMap<>();
+
+  private static final int MAX_STRING_REFERENCES = 1000;
 
   public BinExport2Builder(Program ghidraProgram, AddressSetView ghidraAddrSet) {
     program = ghidraProgram;
@@ -977,7 +980,10 @@ public class BinExport2Builder {
     AddressSetView memory = program.getMemory();
 
     DefinedDataIterator stringData =
-        DefinedDataIterator.byDataType(program, memory, dt -> dt instanceof StringDataType);
+        DefinedDataIterator.byDataType(
+            program,
+            memory,
+            dt -> dt instanceof StringDataType || dt instanceof TerminatedUnicodeDataType);
 
     while (stringData.hasNext()) {
       Data data = stringData.next();
@@ -985,26 +991,54 @@ public class BinExport2Builder {
         return;
       }
 
-      var str = StringDataInstance.getStringDataInstance(data).getStringValue();
+      String str = null;
+      if (data.getDataType() instanceof StringDataType) {
+        str = StringDataInstance.getStringDataInstance(data).getStringValue();
+      } else if (data.getDataType() instanceof TerminatedUnicodeDataType) {
+        Object value = data.getValue();
+        if (value instanceof String) {
+          str = (String) value;
+        }
+      }
+
       if (str == null || str.isEmpty()) {
         continue;
       }
 
       int strIdx = getOrAddStringTable(str);
-
+      int strRefCount = 0;
+      outer:
       for (Reference refTo : data.getReferenceIteratorTo()) {
         Instruction insn = listing.getInstructionAt(refTo.getFromAddress());
         if (insn == null) {
+          // Check if the reference is from a pointer in the data area.
+          Data fromData = listing.getDataAt(refTo.getFromAddress());
+          if (fromData == null || !fromData.isPointer()) {
+            continue;
+          }
+          // We found a pointer to the string. Now find instructions referencing this pointer.
+          for (Reference refToPointer : fromData.getReferenceIteratorTo()) {
+            if (++strRefCount > MAX_STRING_REFERENCES) {
+              break outer;
+            }
+            Instruction pointerUser = listing.getInstructionAt(refToPointer.getFromAddress());
+            if (pointerUser == null) {
+              continue;
+            }
+            long address = getMappedAddress(pointerUser.getMinAddress());
+            Integer instrIdx = instructionIndices.get(address);
+            if (instrIdx != null) {
+              strToInstr.add(Map.entry(strIdx, instrIdx));
+            }
+          }
           continue;
         }
 
         long address = getMappedAddress(insn.getMinAddress());
         Integer instrIdx = instructionIndices.get(address);
-        if (instrIdx == null) {
-          continue;
+        if (instrIdx != null) {
+          strToInstr.add(Map.entry(strIdx, instrIdx));
         }
-
-        strToInstr.add(Map.entry(strIdx, instrIdx));
       }
     }
     for (var entry : strToInstr) {
