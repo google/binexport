@@ -116,12 +116,12 @@ jobs:
       matrix:
         os:
           - ubuntu-latest
-          - windows-latest
+          - windows-2022
           - macos-latest
         include:
           - os: ubuntu-latest
             os_name: "linux"
-          - os: windows-latest
+          - os: windows-2022
             os_name: "windows"
           - os: macos-latest
             os_name: "macos"
@@ -159,9 +159,16 @@ jobs:
           echo "Downloading SDK: $SDK_SLUG"
 
           uvx --from ida-hcli hcli --disable-updates download "$SDK_SLUG"
-          unzip idasdk*.zip -d ./ida-temp/
+          unzip -q idasdk*.zip -d ./ida-temp/
 
-          SDK_ROOT=$(dirname "$(find ./ida-temp/ -maxdepth 3 -name allmake.mak | head -1)")
+          PRO_H=$(find ./ida-temp -path '*/include/pro.h' | head -1)
+          if [ -z "$PRO_H" ]; then
+            echo "ERROR: could not locate include/pro.h in the downloaded SDK"
+            find ./ida-temp -maxdepth 3 -type d
+            exit 1
+          fi
+          SDK_ROOT=$(dirname "$(dirname "$PRO_H")")
+          echo "SDK root: $SDK_ROOT"
           mv "$SDK_ROOT" ./ida-sdk
 
       # There's a bug in BinExport's IDA 9+ support on macOS
