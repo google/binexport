@@ -51,6 +51,7 @@ jobs:
       run: |
         cmake "${GITHUB_WORKSPACE}" -G Ninja \
           "-DCMAKE_BUILD_TYPE=${BUILD_TYPE}" \
+          "-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64" \
           "-DFETCHCONTENT_SOURCE_DIR_IDASDK=${GITHUB_WORKSPACE}/build/idasdk"
 
     - name: Build

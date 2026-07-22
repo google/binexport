@@ -43,7 +43,7 @@ cmake "${src_dir}/binexport" \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_RULE_MESSAGES=OFF \
   -DCMAKE_INSTALL_PREFIX=${out_dir} \
-  -DBINEXPORT_ENABLE_BINARYNINJA=OFF \
+  -DBINEXPORT_ENABLE_BINARYNINJA=OFF
 cmake --build . --config Release -- "-j$(sysctl -n hw.logicalcpu)"
 ctest --build-config Release --output-on-failure -R '^[A-Z]'
 cmake --install . --config Release --strip

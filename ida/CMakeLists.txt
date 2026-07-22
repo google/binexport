@@ -84,8 +84,7 @@ if(WIN32)
 endif()
 set_target_properties(${binexport_ida_plugin_name} PROPERTIES
   POSITION_INDEPENDENT_CODE ON
+  LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/ida"
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/ida"
 )
-install(TARGETS ${binexport_ida_plugin_name}
-        ARCHIVE DESTINATION binexport-prefix
-        RUNTIME DESTINATION binexport-prefix
-        LIBRARY DESTINATION binexport-prefix)
+
