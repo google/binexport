@@ -25,9 +25,10 @@ include(FetchContent)
 if(BUILD_TESTING AND BINEXPORT_BUILD_TESTING)
   # Googletest
   FetchContent_Declare(googletest
-    URL https://github.com/google/googletest/archive/5bcb2d78a16edd7110e72ef694d229815aa29542.zip  # 2024-07-24
-    URL_HASH SHA256=55d80e3e4b3ae63c4b377895babc2ecd17834aedfc0e6cb8aedb5c7adb97defd
+    URL https://github.com/google/googletest/archive/30a3151b0cfafd5a4564561352e4049299730430.zip  # 2026-07-22
+    URL_HASH SHA256=ff0f9fd26063cb7bec9b79821f116f0561653782d4326aa1fb090491c537e49b
   )
+  set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
   FetchContent_MakeAvailable(googletest)
   binexport_check_target(gtest)
   binexport_check_target(gtest_main)
@@ -36,8 +37,8 @@ if(BUILD_TESTING AND BINEXPORT_BUILD_TESTING)
   if(BINEXPORT_BUILD_BENCHMARK)
     # Benchmark
     FetchContent_Declare(benchmark
-      URL https://github.com/google/benchmark/archive/ea71a14891474943fc1f34d359f9e0e82476ffe1.zip  # 2024-01-09
-      URL_HASH SHA256=d5b0b5471c42e8e431f08ccc52db4acff609d927286bde04e2ac93aff3699ca1
+      URL https://github.com/google/benchmark/archive/c4114ca2b76eefdb48222abff96c12160614b737.zip  # 2026-07-22
+      URL_HASH SHA256=b32a86924e3725c9beb399759e52028e2545b7d937516762c700f64f264ac82b
     )
     set(BENCHMARK_CXX_STANDARD ${CMAKE_CXX_STANDARD} CACHE STRING "" FORCE)
     set(BENCHMARK_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
@@ -56,10 +57,7 @@ FetchContent_Declare(absl
 set(ABSL_CXX_STANDARD ${CMAKE_CXX_STANDARD} CACHE STRING "" FORCE)
 set(ABSL_PROPAGATE_CXX_STD ON CACHE BOOL "" FORCE)
 set(ABSL_USE_EXTERNAL_GOOGLETEST ON CACHE BOOL "" FORCE)
-if(MSVC)
-  # Link MSVCRT statically for abseil
-  set(ABSL_MSVC_STATIC_RUNTIME ON CACHE BOOL "" FORCE)
-endif()
+set(ABSL_MSVC_STATIC_RUNTIME OFF CACHE BOOL "" FORCE)
 if(BUILD_TESTING AND BINEXPORT_BUILD_TESTING)
   # Make absl::status_matchers available
   set(ABSL_BUILD_TESTING ON CACHE BOOL "" FORCE)
@@ -78,10 +76,7 @@ set(protobuf_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(protobuf_BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 set(protobuf_INSTALL OFF CACHE BOOL "" FORCE)
 set(protobuf_WITH_ZLIB OFF CACHE BOOL "" FORCE)
-if(MSVC)
-  # Link MSVCRT statically for protoc
-  set(protobuf_MSVC_STATIC_RUNTIME ON CACHE BOOL "" FORCE)
-endif()
+set(protobuf_MSVC_STATIC_RUNTIME OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(protobuf)
 binexport_check_target(protobuf::libprotobuf)
 binexport_check_target(protobuf::protoc)

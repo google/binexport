@@ -27,7 +27,16 @@ option(BINEXPORT_BUILD_BENCHMARK
        "If this and BINEXPORT_BUILD_TESTING is ON, build benchmark tests" OFF)
 
 option(BINEXPORT_ENABLE_IDAPRO "Build the IDA Pro plugins" ON)
-option(BINEXPORT_ENABLE_BINARYNINJA "Build the Binary Ninja plugin" ON)
+
+# Binary Ninja currently only supports x64 on Windows.
+if(WIN32 AND CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64|ARM64)$")
+  set(_BINEXPORT_ENABLE_BINARYNINJA_DEFAULT OFF)
+else()
+  set(_BINEXPORT_ENABLE_BINARYNINJA_DEFAULT ON)
+endif()
+
+option(BINEXPORT_ENABLE_BINARYNINJA "Build the Binary Ninja plugin"
+       ${_BINEXPORT_ENABLE_BINARYNINJA_DEFAULT})
 
 set(BINEXPORT_BINARYNINJA_CHANNEL "stable" CACHE
     STRING "Binary Ninja channel, either 'stable' or 'dev'")

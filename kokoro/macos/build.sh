@@ -12,7 +12,7 @@ fi
 binexport_release=12
 
 # Set Xcode version to well-known value
-export DEVELOPER_DIR=/Applications/Xcode_16.0.app/Contents/Developer
+export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
 
 build_dir=${PWD}/build
 mkdir -p "${build_dir}"
@@ -20,11 +20,11 @@ mkdir -p "${build_dir}"
 # Verify/extract dependencies
 pushd "${KOKORO_GFILE_DIR}"
 cat << 'EOF' | shasum -a 256 -c
-808ab43a0db04c8eec9ed7db12b90d7be1c8e2e75f4a060724d604a2043ccaf7  cmake-4.3.2-macos-universal.tar.gz
+09d6382059aa1b986b25fd1809459f5eb3da6a1ab342d44d6084265f38541397  cmake-4.4.0-macos-universal.tar.gz
 EOF
 popd
 tar --strip-components=3 -C "${build_dir}" -xzf \
-  "${KOKORO_GFILE_DIR}/cmake-4.3.2-macos-universal.tar.gz"
+  "${KOKORO_GFILE_DIR}/cmake-4.4.0-macos-universal.tar.gz"
 export PATH=${build_dir}/bin:${PATH}
 
 # Build BinExport
@@ -42,7 +42,7 @@ cmake "${src_dir}/binexport" \
   "-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64" \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_RULE_MESSAGES=OFF \
-  -DCMAKE_INSTALL_PREFIX=${out_dir} \
+  "-DCMAKE_INSTALL_PREFIX=${out_dir}" \
   -DBINEXPORT_ENABLE_BINARYNINJA=OFF
 cmake --build . --config Release -- "-j$(sysctl -n hw.logicalcpu)"
 ctest --build-config Release --output-on-failure -R '^[A-Z]'

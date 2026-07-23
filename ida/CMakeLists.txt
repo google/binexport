@@ -34,7 +34,8 @@ target_link_libraries(binexport_plugin_shared
          idasdk::plugin
 )
 target_compile_definitions(binexport_plugin_shared
-  PUBLIC USE_STANDARD_FILE_FUNCTIONS
+  PUBLIC USE_DANGEROUS_FUNCTIONS
+         USE_STANDARD_FILE_FUNCTIONS
 )
 
 ida_add_plugin(${binexport_ida_plugin_name}
