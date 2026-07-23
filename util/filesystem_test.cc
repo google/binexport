@@ -20,8 +20,8 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "third_party/absl/status/status_matchers.h"
+#include "third_party/absl/status/statusor.h"
 #include "third_party/absl/strings/str_cat.h"
-#include "third_party/zynamics/binexport/util/status_macros.h"
 
 namespace security::binexport {
 namespace {
@@ -98,8 +98,8 @@ TEST(FileSystemTest, FullPaths) {
 }
 
 TEST(FileSystemTest, CreateAndRemoveDirectories) {
-  NA_ASSERT_OK_AND_ASSIGN(std::string temp_dir,
-                          GetOrCreateTempDirectory("test"));
+  ABSL_ASSERT_OK_AND_ASSIGN(std::string temp_dir,
+                            GetOrCreateTempDirectory("test"));
 
   const std::string test_path = JoinPath(temp_dir, "sub", "dir", "s2");
   EXPECT_THAT(CreateDirectories(test_path), IsOk());
@@ -109,8 +109,8 @@ TEST(FileSystemTest, CreateAndRemoveDirectories) {
 }
 
 TEST(FileSystemTest, LinkingFiles) {
-  NA_ASSERT_OK_AND_ASSIGN(std::string temp_dir,
-                          GetOrCreateTempDirectory("test"));
+  ABSL_ASSERT_OK_AND_ASSIGN(std::string temp_dir,
+                            GetOrCreateTempDirectory("test"));
   const std::string target = JoinPath(temp_dir, "target");
   const std::string link_path = JoinPath(temp_dir, "link");
   {

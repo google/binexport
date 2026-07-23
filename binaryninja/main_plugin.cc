@@ -19,6 +19,7 @@
 
 #include "third_party/absl/log/log.h"
 #include "third_party/absl/status/status.h"
+#include "third_party/absl/status/status_macros.h"
 #include "third_party/absl/status/statusor.h"
 #include "third_party/absl/strings/escaping.h"
 #include "third_party/absl/strings/match.h"
@@ -34,7 +35,6 @@
 #include "third_party/zynamics/binexport/util/filesystem.h"
 #include "third_party/zynamics/binexport/util/format.h"
 #include "third_party/zynamics/binexport/util/logging.h"
-#include "third_party/zynamics/binexport/util/status_macros.h"
 #include "third_party/zynamics/binexport/util/timer.h"
 #include "third_party/zynamics/binexport/version.h"
 
@@ -529,11 +529,11 @@ absl::Status ExportBinaryView(BinaryNinja::BinaryView* view, Writer* writer) {
 
 absl::Status ExportBinary(const std::string& filename,
                           BinaryNinja::BinaryView* view) {
-  NA_ASSIGN_OR_RETURN(std::string sha256_hash, GetInputFileSha256(view));
+  ABSL_ASSIGN_OR_RETURN(std::string sha256_hash, GetInputFileSha256(view));
 
   BinExport2Writer writer(filename, view->GetFile()->GetOriginalFilename(),
                           sha256_hash, GetArchitectureName(view));
-  NA_RETURN_IF_ERROR(ExportBinaryView(view, &writer));
+  ABSL_RETURN_IF_ERROR(ExportBinaryView(view, &writer));
   return absl::OkStatus();
 }
 

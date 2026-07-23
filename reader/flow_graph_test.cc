@@ -21,11 +21,11 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "third_party/absl/status/status_matchers.h"  // IWYU pragma: keep
+#include "third_party/absl/status/statusor.h"
 #include "third_party/zynamics/binexport/binexport.h"
 #include "third_party/zynamics/binexport/reader/graph_utility.h"
 #include "third_party/zynamics/binexport/reader/instruction.h"
 #include "third_party/zynamics/binexport/testing.h"
-#include "third_party/zynamics/binexport/util/status_macros.h"
 #include "third_party/zynamics/binexport/util/types.h"
 
 namespace security::binexport {
@@ -44,7 +44,7 @@ class FlowGraphTest : public testing::Test {
     proto_ = GetBinExportForTesting(kBinExport2Item);
     // FlowGraph used is from
     // testdata/0000500ed9f688a309ee2176462eb978efa9a2fb80fcceb5d8fd08168ea50dfd.BinExport
-    NA_ASSERT_OK_AND_ASSIGN(
+    ABSL_ASSERT_OK_AND_ASSIGN(
         flow_graph_,
         FlowGraph::FromBinExport2(proto_, proto_.flow_graph(0),
                                   GetAllInstructionAddresses(proto_)));
@@ -125,7 +125,7 @@ TEST_F(FlowGraphTest, GetInstructions) {
 // call targets. If the total number of call targets matches the expected
 // number of call targets, the test is successful.
 TEST_F(FlowGraphTest, GetCallTargets) {
-  NA_ASSERT_OK_AND_ASSIGN(
+  ABSL_ASSERT_OK_AND_ASSIGN(
       auto flow_graph,
       FlowGraph::FromBinExport2(proto_, proto_.flow_graph(1),
                                 GetAllInstructionAddresses(proto_)));
@@ -140,7 +140,7 @@ TEST_F(FlowGraphTest, GetCallTargets) {
 // with call targets. If the total number of call targets matches the expected
 // number of call targets, the test is successful.
 TEST_F(FlowGraphTest, GetCallTargetsMultiple) {
-  NA_ASSERT_OK_AND_ASSIGN(
+  ABSL_ASSERT_OK_AND_ASSIGN(
       auto flow_graph,
       FlowGraph::FromBinExport2(proto_, proto_.flow_graph(2),
                                 GetAllInstructionAddresses(proto_)));

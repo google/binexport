@@ -128,7 +128,6 @@ add_library(binexport_shared STATIC
   util/process.cc
   util/process.h
   util/range.h
-  util/status_macros.h
   util/timer.h
   util/types.h
 )
@@ -140,6 +139,7 @@ target_link_libraries(binexport_shared PUBLIC
   absl::log_initialize
   absl::optional
   absl::status
+  absl::status_macros
   absl::statusor
   absl::str_format
   absl::strings
@@ -157,7 +157,6 @@ if(BUILD_TESTING AND BINEXPORT_BUILD_TESTING)
     util/filesystem_test.cc
     util/format_test.cc
     util/process_test.cc
-    util/status_macros_test.cc
     util/timer_test.cc
   )
   target_link_libraries(binexport_shared_test PUBLIC

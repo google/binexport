@@ -36,6 +36,7 @@
 
 #include "third_party/absl/flags/parse.h"
 #include "third_party/absl/status/status.h"
+#include "third_party/absl/status/status_macros.h"
 #include "third_party/absl/status/statusor.h"
 #include "third_party/absl/strings/match.h"
 #include "third_party/absl/strings/str_cat.h"
@@ -43,7 +44,6 @@
 #include "third_party/zynamics/binexport/tools/command_util.h"
 #include "third_party/zynamics/binexport/util/filesystem.h"
 #include "third_party/zynamics/binexport/util/process.h"
-#include "third_party/zynamics/binexport/util/status_macros.h"
 
 namespace security::binexport {
 namespace {
@@ -90,8 +90,8 @@ absl::Status BxpMain(int argc, char* argv[]) {
     return absl::InvalidArgumentError("No command given. Try '--help'.");
   }
 
-  NA_ASSIGN_OR_RETURN(const std::string command_exe,
-                      ValidateCommand(argv[command_index]));
+  ABSL_ASSIGN_OR_RETURN(std::string command_exe,
+                        ValidateCommand(argv[command_index]));
 
   std::vector<std::string> command_args({command_exe});
   command_args.reserve(argc - command_index - 1);
@@ -107,7 +107,7 @@ absl::Status BxpMain(int argc, char* argv[]) {
   SetEnvironmentVariable("_BXP_LAUNCH_CMD",
                          absl::StrCat(Basename(argv[0]), " ", launch_command));
 
-  NA_RETURN_IF_ERROR(SpawnProcessAndWait(command_args).status());
+  ABSL_RETURN_IF_ERROR(SpawnProcessAndWait(command_args).status());
 
   return absl::OkStatus();
 }

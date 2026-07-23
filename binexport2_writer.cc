@@ -43,6 +43,7 @@
 #include "third_party/absl/log/check.h"
 #include "third_party/absl/log/log.h"
 #include "third_party/absl/status/status.h"
+#include "third_party/absl/status/status_macros.h"
 #include "third_party/absl/strings/str_cat.h"
 #include "third_party/absl/strings/string_view.h"  // IWYU pragma: keep
 #include "third_party/absl/time/clock.h"
@@ -59,7 +60,6 @@
 #include "third_party/zynamics/binexport/instruction.h"
 #include "third_party/zynamics/binexport/library_manager.h"
 #include "third_party/zynamics/binexport/operand.h"
-#include "third_party/zynamics/binexport/util/status_macros.h"
 #include "third_party/zynamics/binexport/util/types.h"
 #include "third_party/zynamics/binexport/virtual_memory.h"
 
@@ -872,8 +872,8 @@ absl::Status BinExport2Writer::Write(
   LOG(INFO) << "Writing to: \"" << filename_ << "\".";
 
   BinExport2 proto;
-  NA_RETURN_IF_ERROR(WriteToProto(call_graph, flow_graph, instructions,
-                                  address_references, address_space, &proto));
+  ABSL_RETURN_IF_ERROR(WriteToProto(call_graph, flow_graph, instructions,
+                                    address_references, address_space, &proto));
   return WriteProtoToFile(filename_, &proto);
 }
 

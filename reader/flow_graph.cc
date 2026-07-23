@@ -27,13 +27,13 @@
 #include "third_party/absl/log/log.h"
 #include "third_party/absl/memory/memory.h"
 #include "third_party/absl/status/status.h"
+#include "third_party/absl/status/status_macros.h"
+#include "third_party/absl/strings/ascii.h"
 #include "third_party/absl/strings/str_cat.h"
 #include "third_party/absl/types/optional.h"
 #include "third_party/zynamics/binexport/architectures.h"
-#include "third_party/absl/strings/ascii.h"
 #include "third_party/zynamics/binexport/reader/graph_utility.h"
 #include "third_party/zynamics/binexport/reader/instruction.h"
-#include "third_party/zynamics/binexport/util/status_macros.h"
 #include "third_party/zynamics/binexport/util/types.h"
 
 namespace security::binexport {
@@ -246,9 +246,9 @@ absl::StatusOr<std::unique_ptr<FlowGraph>> FlowGraph::FromBinExport2(
   edges.reserve(flow_graph_proto.edge_size());
   std::vector<EdgeProperty> edge_properties;
   edge_properties.reserve(flow_graph_proto.edge_size());
-  NA_RETURN_IF_ERROR(EdgesFromEdgeProto(proto, flow_graph_proto, addresses,
-                                     instruction_addresses, &edges,
-                                     &edge_properties));
+  ABSL_RETURN_IF_ERROR(EdgesFromEdgeProto(proto, flow_graph_proto, addresses,
+                                          instruction_addresses, &edges,
+                                          &edge_properties));
   flow_graph->graph_ = Graph(boost::edges_are_unsorted_multi_pass,
                              edges.begin(), edges.end(), addresses.size());
   flow_graph->architecture_ = GetSupportedArchitecture(proto);

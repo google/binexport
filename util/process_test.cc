@@ -20,8 +20,8 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "third_party/absl/status/status_matchers.h"
+#include "third_party/absl/status/statusor.h"
 #include "third_party/absl/strings/str_cat.h"
-#include "third_party/zynamics/binexport/util/status_macros.h"
 
 namespace security::binexport {
 namespace {
@@ -62,8 +62,8 @@ std::vector<std::string> GetSpawnProcessArgs() {
 }
 
 TEST(UtilityTest, SpawnProcessWait) {
-  NA_ASSERT_OK_AND_ASSIGN(int exit_code,
-                          SpawnProcessAndWait(GetSpawnProcessArgs()));
+  ABSL_ASSERT_OK_AND_ASSIGN(int exit_code,
+                            SpawnProcessAndWait(GetSpawnProcessArgs()));
   EXPECT_THAT(exit_code, Eq(kExitCode));
 }
 

@@ -52,6 +52,7 @@
 #include <vector>
 
 #include "third_party/absl/status/status.h"
+#include "third_party/absl/status/status_macros.h"
 #include "third_party/absl/strings/ascii.h"
 #include "third_party/absl/strings/match.h"
 #include "third_party/absl/strings/str_cat.h"
@@ -59,7 +60,6 @@
 #include "third_party/absl/strings/string_view.h"
 #include "third_party/absl/strings/strip.h"  // IWYU pragma: keep
 #include "third_party/zynamics/binexport/util/process.h"
-#include "third_party/zynamics/binexport/util/status_macros.h"
 
 using security::binexport::GetLastOsError;
 
@@ -127,7 +127,7 @@ absl::Status CreateDirectories(absl::string_view path) {
   auto slash = path.rfind('/');
   if (slash != absl::string_view::npos) {
     // Create parent directory recursively.
-    NA_RETURN_IF_ERROR(CreateDirectories(path.substr(0, slash)));
+    ABSL_RETURN_IF_ERROR(CreateDirectories(path.substr(0, slash)));
   }
   std::string path_copy(path);
   if (mkdir(path_copy.c_str(), 0775) == -1) {
@@ -157,7 +157,7 @@ absl::StatusOr<std::string> DoGetOrCreateTempDirectory(
   path = JoinPath("/tmp", absl::AsciiStrToLower(product_name));
 #endif
   if (create) {
-    NA_RETURN_IF_ERROR(CreateDirectories(path));
+    ABSL_RETURN_IF_ERROR(CreateDirectories(path));
   }
   return path;
 }
@@ -341,7 +341,7 @@ absl::Status RemoveAll(absl::string_view path) {
     }
     const std::string full_path(JoinPath(path, name));
     if (IsDirectory(full_path)) {
-      NA_RETURN_IF_ERROR(RemoveAll(full_path));
+      ABSL_RETURN_IF_ERROR(RemoveAll(full_path));
     } else {
       std::remove(full_path.c_str());
     }

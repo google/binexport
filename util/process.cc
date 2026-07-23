@@ -45,11 +45,11 @@
 
 #include "third_party/absl/base/attributes.h"  // IWYU pragma: keep
 #include "third_party/absl/status/status.h"
+#include "third_party/absl/status/status_macros.h"
 #include "third_party/absl/strings/ascii.h"
 #include "third_party/absl/strings/str_cat.h"
 #include "third_party/absl/strings/str_replace.h"  // IWYU pragma: keep
 #include "third_party/zynamics/binexport/util/filesystem.h"
-#include "third_party/zynamics/binexport/util/status_macros.h"
 
 namespace security::binexport {
 
@@ -259,7 +259,7 @@ absl::StatusOr<std::string> GetOrCreateAppDataDirectory(
   }
   path = JoinPath(buffer, product_name);
 #endif  // _WIN32
-  NA_RETURN_IF_ERROR(CreateDirectories(path));
+  ABSL_RETURN_IF_ERROR(CreateDirectories(path));
   return path;
 }
 

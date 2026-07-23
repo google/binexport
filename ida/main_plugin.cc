@@ -35,6 +35,8 @@
 #include "third_party/absl/base/attributes.h"
 #include "third_party/absl/log/log.h"
 #include "third_party/absl/memory/memory.h"
+#include "third_party/absl/status/status.h"
+#include "third_party/absl/status/status_macros.h"
 #include "third_party/absl/strings/ascii.h"
 #include "third_party/absl/strings/escaping.h"
 #include "third_party/absl/strings/match.h"
@@ -57,7 +59,6 @@
 #include "third_party/zynamics/binexport/util/filesystem.h"
 #include "third_party/zynamics/binexport/util/format.h"
 #include "third_party/zynamics/binexport/util/logging.h"
-#include "third_party/zynamics/binexport/util/status_macros.h"
 #include "third_party/zynamics/binexport/util/timer.h"
 #include "third_party/zynamics/binexport/version.h"
 #include "third_party/zynamics/binexport/virtual_memory.h"
@@ -118,7 +119,7 @@ absl::Status ExportIdb(Writer* writer) {
   Instructions instructions;
   FlowGraph flow_graph;
   CallGraph call_graph;
-  NA_RETURN_IF_ERROR(AnalyzeFlowIda(
+  ABSL_RETURN_IF_ERROR(AnalyzeFlowIda(
       &entry_points, modules, writer, &instructions, &flow_graph, &call_graph,
       Plugin::instance()->x86_noreturn_heuristic()
           ? FlowGraph::NoReturnHeuristic::kNopsAfterCall

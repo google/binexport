@@ -28,7 +28,8 @@ add_library(binexport_plugin_shared STATIC
   util.h
 )
 target_link_libraries(binexport_plugin_shared
-  PUBLIC absl::time
+  PUBLIC absl::status_macros
+         absl::time
          binexport_base
          binexport_core
          idasdk::plugin
@@ -64,6 +65,7 @@ target_link_libraries(${binexport_ida_plugin_name}
          absl::node_hash_map
          absl::node_hash_set
          absl::optional
+         absl::status_macros
          absl::strings
          absl::time
          binexport_core

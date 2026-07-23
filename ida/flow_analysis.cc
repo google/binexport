@@ -43,6 +43,7 @@
 
 #include "third_party/absl/log/log.h"
 #include "third_party/absl/status/status.h"
+#include "third_party/absl/status/status_macros.h"
 #include "third_party/absl/strings/str_cat.h"
 #include "third_party/absl/time/time.h"
 #include "third_party/zynamics/binexport/address_references.h"
@@ -64,7 +65,6 @@
 #include "third_party/zynamics/binexport/instruction.h"
 #include "third_party/zynamics/binexport/operand.h"
 #include "third_party/zynamics/binexport/util/format.h"
-#include "third_party/zynamics/binexport/util/status_macros.h"
 #include "third_party/zynamics/binexport/util/timer.h"
 #include "third_party/zynamics/binexport/util/types.h"
 #include "third_party/zynamics/binexport/virtual_memory.h"
@@ -484,8 +484,8 @@ absl::Status AnalyzeFlowIda(EntryPoints* entry_points, const ModuleMap& modules,
   timer.restart();
 
   LOG(INFO) << "writing...";
-  NA_RETURN_IF_ERROR(writer->Write(*call_graph, *flow_graph, *instructions,
-                                   address_references, address_space));
+  ABSL_RETURN_IF_ERROR(writer->Write(*call_graph, *flow_graph, *instructions,
+                                     address_references, address_space));
 
   Operand::EmptyCache();
   Expression::EmptyCache();

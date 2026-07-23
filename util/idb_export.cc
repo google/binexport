@@ -23,6 +23,7 @@
 #include "third_party/absl/container/flat_hash_set.h"
 #include "third_party/absl/memory/memory.h"
 #include "third_party/absl/status/status.h"
+#include "third_party/absl/status/status_macros.h"
 #include "third_party/absl/status/statusor.h"
 #include "third_party/absl/strings/ascii.h"
 #include "third_party/absl/strings/match.h"
@@ -34,7 +35,6 @@
 #include "third_party/absl/time/time.h"
 #include "third_party/zynamics/binexport/util/filesystem.h"
 #include "third_party/zynamics/binexport/util/process.h"
-#include "third_party/zynamics/binexport/util/status_macros.h"
 #include "third_party/zynamics/binexport/util/timer.h"
 
 namespace security::binexport {
@@ -132,7 +132,7 @@ absl::Status IdbExporter::Export(
 
   // Return first error
   for (const auto& status : statuses) {
-    NA_RETURN_IF_ERROR(status);
+    ABSL_RETURN_IF_ERROR(status);
   }
   return absl::OkStatus();
 }
@@ -140,7 +140,7 @@ absl::Status IdbExporter::Export(
 absl::StatusOr<std::vector<std::string>> CollectIdbsToExport(
     absl::string_view path, std::vector<std::string>* existing_binexports) {
   std::vector<std::string> entries;
-  NA_RETURN_IF_ERROR(GetDirectoryEntries(path, &entries));
+  ABSL_RETURN_IF_ERROR(GetDirectoryEntries(path, &entries));
 
   absl::flat_hash_map<std::string, std::string> split_entries;
   absl::flat_hash_map<std::string, std::string> split_binexports;

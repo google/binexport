@@ -16,13 +16,14 @@
 
 #include <cstdlib>
 #include <fstream>
+#include <ios>
 #include <string>
+#include <vector>
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "third_party/absl/status/status_matchers.h"
 #include "third_party/zynamics/binexport/util/filesystem.h"
-#include "third_party/zynamics/binexport/util/status_macros.h"
 
 namespace security::binexport {
 namespace {
@@ -58,8 +59,8 @@ TEST(IdbExportTest, CollectIdbsTest) {
   }
 
   std::vector<std::string> binexports;
-  NA_ASSERT_OK_AND_ASSIGN(std::vector<std::string> idbs,
-                          CollectIdbsToExport(tmp_dir, &binexports));
+  ABSL_ASSERT_OK_AND_ASSIGN(std::vector<std::string> idbs,
+                            CollectIdbsToExport(tmp_dir, &binexports));
   EXPECT_THAT(idbs, UnorderedElementsAre("first.i64", "second.IDB"));
   // Order of directory listings is unspecified, so both are valid below:
   EXPECT_THAT(binexports, UnorderedElementsAre(

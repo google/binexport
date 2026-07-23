@@ -33,6 +33,7 @@ add_executable(bxp bxp_main.cc)
 target_link_libraries(bxp PRIVATE
   absl::flags_parse
   absl::status
+  absl::status_macros
   absl::str_format
   binexport_base
   binexport_shared
