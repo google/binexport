@@ -62,4 +62,4 @@
 #include <type_traits>  // IWYU pragma: keep
 
 // Now include the problematic header, end_idasdk.inc will clean up again.
-#include <pro.h>
+#include <pro.h>  // IWYU pragma: export

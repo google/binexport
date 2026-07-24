@@ -1,4 +1,4 @@
-// Copyright 2011-2024 Google LLC
+// Copyright 2011-2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,8 +15,10 @@
 #ifndef NAMES_H_
 #define NAMES_H_
 
+#include <cstddef>
 #include <cstdint>
 #include <string>
+#include <vector>
 
 // clang-format off
 #include "third_party/zynamics/binexport/ida/begin_idasdk.inc"  // NOLINT
@@ -86,10 +88,10 @@ std::string GetSizePrefix(size_t size_in_bytes);
 size_t GetOperandByteSize(const insn_t& instruction, const op_t& operand);
 
 // Returns the size of the segment to which the address belongs in bytes.
-size_t GetSegmentSize(const Address address);
+size_t GetSegmentSize(Address address);
 
-int GetOriginalIdaLine(const Address address, std::string* line);
-std::string GetMnemonic(const Address address);
+int GetOriginalIdaLine(Address address, std::string* line);
+std::string GetMnemonic(Address address);
 Address GetImageBase();
 
 bool IsCode(Address address);

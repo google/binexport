@@ -1,4 +1,4 @@
-// Copyright 2011-2024 Google LLC
+// Copyright 2011-2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,16 +15,16 @@
 #include "third_party/zynamics/binexport/ida/names.h"
 
 #include <algorithm>
-#include <cinttypes>
 #include <cstddef>
+#include <cstdint>
 #include <cstring>
-#include <iomanip>
 #include <string>
-#include <tuple>
 #include <vector>
 
 // clang-format off
 #include "third_party/zynamics/binexport/ida/begin_idasdk.inc"  // NOLINT
+#include <bytes.hpp>                                            // NOLINT
+#include <funcs.hpp>                                            // NOLINT
 #include <idp.hpp>                                              // NOLINT
 #include <allins.hpp>                                           // NOLINT
 #include <frame.hpp>                                            // NOLINT
@@ -36,12 +36,7 @@
 #include <segment.hpp>                                          // NOLINT
 #include <typeinf.hpp>                                          // NOLINT
 #include <ua.hpp>                                               // NOLINT
-#if IDP_INTERFACE_VERSION >= 900
-#define ph PH
-#else
-#include <enum.hpp>                                             // NOLINT
-#include <struct.hpp>                                           // NOLINT
-#endif
+#include <xref.hpp>                                             // NOLINT
 #include "third_party/zynamics/binexport/ida/end_idasdk.inc"    // NOLINT
 // clang-format on
 
@@ -49,14 +44,15 @@
 #include "third_party/absl/log/log.h"
 #include "third_party/absl/strings/ascii.h"
 #include "third_party/absl/strings/str_cat.h"
-#include "third_party/absl/time/time.h"
-#include "third_party/zynamics/binexport/address_references.h"
-#include "third_party/zynamics/binexport/base_types.h"
+#include "third_party/absl/types/optional.h"
 #include "third_party/zynamics/binexport/call_graph.h"
+#include "third_party/zynamics/binexport/comment.h"
+#include "third_party/zynamics/binexport/expression.h"
 #include "third_party/zynamics/binexport/flow_graph.h"
 #include "third_party/zynamics/binexport/ida/util.h"
+#include "third_party/zynamics/binexport/instruction.h"
 #include "third_party/zynamics/binexport/util/filesystem.h"
-#include "third_party/zynamics/binexport/util/format.h"
+#include "third_party/zynamics/binexport/util/types.h"
 #include "third_party/zynamics/binexport/virtual_memory.h"
 
 namespace security::binexport {
@@ -141,18 +137,13 @@ absl::optional<std::string> GetArchitectureName() {
 std::string GetModuleName() {
   std::string path(QMAXPATH, '\0');
   if (get_input_file_path(&path[0], QMAXPATH) == 0) {
-#if IDP_INTERFACE_VERSION >= 900
     netnode_valstr(0, &path[0], QMAXPATH);
-#else
-    // b/186782665: IDA 7.5 and lower use the root_node instead.
-    root_node.valstr(&path[0], QMAXPATH);
-#endif
   }
   path.resize(std::strlen(path.data()));
   return Basename(path);
 }
 
-int GetOriginalIdaLine(const Address address, std::string* line) {
+int GetOriginalIdaLine(Address address, std::string* line) {
   qstring ida_line;
   generate_disasm_line(&ida_line, address, 0);
   int result = tag_remove(&ida_line);
@@ -160,7 +151,7 @@ int GetOriginalIdaLine(const Address address, std::string* line) {
   return result;
 }
 
-std::string GetMnemonic(const Address address) {
+std::string GetMnemonic(Address address) {
   qstring ida_mnemonic;
   print_insn_mnem(&ida_mnemonic, address);
   return ToString(ida_mnemonic);
@@ -207,9 +198,9 @@ size_t GetOperandByteSize(const insn_t& instruction, const op_t& operand) {
     case dt_byte64:
       return 64;   // 512 bit
     case dt_ldbl:  // Variable size double
-      return ph.sizeof_ldbl();
+      return get_ph()->sizeof_ldbl();
     case dt_tbyte:  // Variable size
-      return ph.tbyte_size;
+      return get_ph()->tbyte_size;
     case dt_void:     // Operand invalid/undefined
     case dt_bitfild:  // Unsupported
     case dt_string:   // Unsupported
@@ -219,13 +210,13 @@ size_t GetOperandByteSize(const insn_t& instruction, const op_t& operand) {
   }
 }
 
-size_t GetSegmentSize(const Address address) {
+size_t GetSegmentSize(Address address) {
   const segment_t* segment = getseg(address);
   // IDA constants: 0 = 16, 1 = 32, 2 = 64
   return (16 << segment->bitness) >> 3;
 }
 
-bool IsCodeSegment(const Address address) {
+bool IsCodeSegment(Address address) {
   if (const segment_t* segment = getseg(address)) {
     return segment->type != SEG_XTRN && segment->type != SEG_DATA;
   }
@@ -283,7 +274,6 @@ std::string GetVariableName(const insn_t& instruction, uint8_t operand_num) {
     return "";
   }
 
-#if IDP_INTERFACE_VERSION >= 900
   func_t* function = get_func(instruction.ea);
   if (!function) {
     return "";
@@ -338,72 +328,6 @@ std::string GetVariableName(const insn_t& instruction, uint8_t operand_num) {
   // If we couldn't find a matching member, return a generic name with the
   // offset
   return absl::StrCat("var_", IdaHexify(offset));
-#else
-  const member_t* stack_variable =
-      get_stkvar(0, instruction, instruction.ops[operand_num],
-                 instruction.ops[operand_num].addr);
-  if (!stack_variable) {
-    return "";
-  }
-
-  std::string name = ToString(get_struc_name(stack_variable->id));
-
-  // The parsing is in here because IDA puts in some strange segment prefix or
-  // something like that.
-  name = name.substr(name.find('.', 4) + 1);
-  if (name[0] != ' ') {
-    func_t* function = get_func(instruction.ea);
-    if (!function) {
-      return name;
-    }
-
-    const ea_t offset =
-        calc_stkvar_struc_offset(function, instruction, operand_num);
-    if (offset == BADADDR) {
-      return name;
-    }
-
-    std::string result;
-
-    // The following comment is from the Python exporter:
-    // 4 is the value of the stack pointer register SP/ESP in x86. This should
-    // not break other archs but needs to be here or otherwise would need to
-    // override the whole method in metapc...
-    tid_t id = 0;
-    adiff_t disp = 0;
-    adiff_t delta = 0;
-    if (get_struct_operand(&disp, &delta, &id, instruction.ea, operand_num) &&
-        instruction.ops[operand_num].reg == 4) {
-      int delta = get_spd(function, instruction.ea);
-      delta = -delta - function->frregs;
-      if (delta) {
-        absl::StrAppend(&result, IdaHexify(delta), "+");
-      }
-
-      // TODO(soerenme): This must be recursive for nested structs.
-      if (const struc_t* structure = get_struc(id)) {
-        if (const member_t* member = get_member(structure, disp)) {
-          std::string member_name = ToString(get_member_name(member->id));
-          absl::StrAppend(&result, name, ".", member_name, disp);
-          if (delta) {
-            absl::StrAppend(&result, delta > 0 ? "+" : "", delta);
-          }
-          return result;
-        }
-      }
-    } else {
-      return name;
-    }
-
-    absl::StrAppend(&result, name);
-    const int var_delta = offset - stack_variable->soff;
-    if (var_delta) {
-      absl::StrAppend(&result, "+0x", absl::Hex(var_delta));
-    }
-    return result;
-  }
-  return "";
-#endif
 }
 
 std::string GetGlobalStructureName(Address address, Address instance_address,
@@ -416,7 +340,6 @@ std::string GetGlobalStructureName(Address address, Address instance_address,
   adiff_t delta = 0;
 
   int num_structs = get_struct_operand(&disp, &delta, id, address, operand_num);
-#if IDP_INTERFACE_VERSION >= 900
   if (num_structs > 0) {
     tinfo_t tif;
     if (get_tinfo(&tif, id[0])) {
@@ -446,31 +369,6 @@ std::string GetGlobalStructureName(Address address, Address instance_address,
       }
     }
   }
-#else
-  if (num_structs > 0) {
-    // Special case for the first index - this may be an instance name instead
-    // of a type name.
-    const struc_t* structure = get_struc(id[0]);
-    if (structure) {
-      // First try to get a global variable instance name.
-      // Second, fall back to just the structure type name.
-      if (qstring ida_name; get_name(&ida_name, instance_address - disp) ||
-                            get_struc_name(&ida_name, id[0])) {
-        instance_name = ToString(ida_name);
-      }
-    }
-
-    // TODO(cblichmann): Array members won't be resolved properly. disp will
-    //                   point into the array, making get_member calls fail.
-    for (const member_t* member = get_member(structure, disp);
-         member != nullptr;
-         member = get_member(structure, disp -= member->soff)) {
-      absl::StrAppend(&instance_name, ".",
-                      ToString(get_member_name(member->id)));
-      structure = get_sptr(member);
-    }
-  }
-#endif
   return instance_name;
 }
 
@@ -569,7 +467,6 @@ void GetRegularComments(Address address, Comments* comments) {
 void GetEnumComments(Address address,
                      Comments* comments) {  // @bug: there is an get_enum_cmt
                                             // function in IDA as well!
-#if IDP_INTERFACE_VERSION >= 900
   if (is_enum0(get_flags(address)) || is_enum1(get_flags(address))) {
     tinfo_t tif;
     if (get_tinfo(&tif, address) && tif.is_enum()) {
@@ -581,25 +478,6 @@ void GetEnumComments(Address address,
       }
     }
   }
-#else
-  uint8_t serial;
-  if (is_enum0(get_flags(address))) {
-    int id = get_enum_id(&serial, address, 0);
-    if (id != BADNODE) {
-      comments->emplace_back(
-          address, 0, CallGraph::CacheString(ToString(get_enum_name(id))),
-          Comment::ENUM, /*repeatable=*/false);
-    }
-  }
-  if (is_enum1(get_flags(address))) {
-    int id = get_enum_id(&serial, address, 1);
-    if (id != BADNODE) {
-      comments->emplace_back(
-          address, 1, CallGraph::CacheString(ToString(get_enum_name(id))),
-          Comment::ENUM, /*repeatable=*/false);
-    }
-  }
-#endif
 }
 
 bool GetLineComment(Address address, int n, std::string* output) {
@@ -690,7 +568,6 @@ struct FunctionCache {
     if (!function) {
       return;
     }
-#if IDP_INTERFACE_VERSION >= 900
     tinfo_t frame_tif;
     if (!get_func_frame(&frame_tif, function)) {
       return;
@@ -720,38 +597,6 @@ struct FunctionCache {
         last_success = member.offset + member.size;
       }
     }
-#else
-    struc_t* frame = get_frame(function);
-    if (!frame) {
-      return;
-    }
-
-    // IDA sometimes returns excessively large offsets (billions) we must
-    // prevent looping forever in those cases
-    size_t last_success = 0;
-    const size_t max_offset = std::min(
-        static_cast<size_t>(get_max_offset(frame)),
-        static_cast<size_t>(64 * 1024 /* Max stack size for analysis */));
-    for (size_t i = 0; i < max_offset && last_success - i < 1024;) {
-      const member_t* member = get_member(frame, i);
-      if (!member || is_special_member(member->id)) {
-        ++i;
-        continue;
-      }
-
-      const ea_t offset = member->soff;
-      qstring ida_name(get_member_name(member->id));
-      if (!ida_name.empty()) {
-        i += std::max(static_cast<asize_t>(1), get_member_size(member));
-        last_success = i;
-        continue;
-      }
-
-      local_vars[offset] = ToString(ida_name);
-      i += std::max(static_cast<asize_t>(1), get_member_size(member));
-      last_success = i;
-    }
-#endif
   }
 
   func_t* function;

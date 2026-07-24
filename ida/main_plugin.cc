@@ -1,4 +1,4 @@
-// Copyright 2011-2024 Google LLC
+// Copyright 2011-2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,7 +14,9 @@
 
 #include "third_party/zynamics/binexport/ida/main_plugin.h"
 
+#include <cstdarg>
 #include <cstddef>
+#include <cstring>
 #include <fstream>
 #include <string>
 
@@ -22,32 +24,26 @@
 #include "third_party/zynamics/binexport/ida/begin_idasdk.inc"  // NOLINT
 #include <auto.hpp>                                             // NOLINT
 #include <expr.hpp>                                             // NOLINT
+#include <funcs.hpp>                                            // NOLINT
 #include <ida.hpp>                                              // NOLINT
 #include <idp.hpp>                                              // NOLINT
 #include <kernwin.hpp>                                          // NOLINT
 #include <loader.hpp>                                           // NOLINT
-#if IDP_INTERFACE_VERSION >= 900
-#define ph PH
-#endif
 #include "third_party/zynamics/binexport/ida/end_idasdk.inc"    // NOLINT
 // clang-format on
 
-#include "third_party/absl/base/attributes.h"
 #include "third_party/absl/log/log.h"
 #include "third_party/absl/memory/memory.h"
 #include "third_party/absl/status/status.h"
 #include "third_party/absl/status/status_macros.h"
 #include "third_party/absl/strings/ascii.h"
-#include "third_party/absl/strings/escaping.h"
 #include "third_party/absl/strings/match.h"
-#include "third_party/absl/strings/numbers.h"
 #include "third_party/absl/strings/str_cat.h"
-#include "third_party/absl/time/time.h"
+#include "third_party/absl/strings/string_view.h"
 #include "third_party/zynamics/binexport/binexport2_writer.h"
 #include "third_party/zynamics/binexport/call_graph.h"
 #include "third_party/zynamics/binexport/dump_writer.h"
 #include "third_party/zynamics/binexport/entry_point.h"
-#include "third_party/zynamics/binexport/flow_analysis.h"
 #include "third_party/zynamics/binexport/flow_graph.h"
 #include "third_party/zynamics/binexport/ida/digest.h"
 #include "third_party/zynamics/binexport/ida/flow_analysis.h"
@@ -61,7 +57,7 @@
 #include "third_party/zynamics/binexport/util/logging.h"
 #include "third_party/zynamics/binexport/util/timer.h"
 #include "third_party/zynamics/binexport/version.h"
-#include "third_party/zynamics/binexport/virtual_memory.h"
+#include "third_party/zynamics/binexport/writer.h"
 
 namespace security::binexport {
 
@@ -365,7 +361,7 @@ bool Plugin::Run(size_t argument) {
   }
 
   LOG_IF(INFO, !GetArchitectureName())
-      << "Warning: Exporting for unknown CPU architecture (Id: " << ph.id
+      << "Warning: Exporting for unknown CPU architecture (Id: " << get_ph()->id
       << ", " << GetArchitectureBitness() << "-bit)";
   if (argument) {
     DoExport(static_cast<ExportMode>(argument), GetArgument("Module"));
@@ -381,13 +377,13 @@ bool Plugin::Run(size_t argument) {
 using security::binexport::Plugin;
 
 plugin_t PLUGIN = {
-    IDP_INTERFACE_VERSION,
-    PLUGIN_MULTI | PLUGIN_FIX,  // Plugin flags
-    Plugin::Register,
-    nullptr,           // Obsolete terminate callback
-    nullptr,           // Obsolete run callback
-    Plugin::kComment,  // Statusline text
-    nullptr,           // Multiline help about the plugin, unused
-    security::binexport::kBinExportName,  // Preferred short name of the plugin
-    Plugin::kHotKey                       // Preferred hotkey to run the plugin
+    .version = IDP_INTERFACE_VERSION,
+    .flags = PLUGIN_MULTI | PLUGIN_FIX,
+    .init = Plugin::Register,
+    .term = nullptr,
+    .run = nullptr,
+    .comment = Plugin::kComment,  // Statusline text
+    .help = nullptr,              // Multiline help about the plugin, unused
+    .wanted_name = security::binexport::kBinExportName,  // Preferred short name
+    .wanted_hotkey = Plugin::kHotKey,                    // Preferred hotkey
 };

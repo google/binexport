@@ -1,4 +1,4 @@
-// Copyright 2011-2024 Google LLC
+// Copyright 2011-2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,6 +13,8 @@
 // limitations under the License.
 
 #include "third_party/zynamics/binexport/ida/digest.h"
+
+#include <string>
 
 // clang-format off
 #include "third_party/zynamics/binexport/ida/begin_idasdk.inc"  // NOLINT
@@ -33,12 +35,7 @@ absl::StatusOr<std::string> GetInputFileSha256() {
   std::string hash(kNumSha256Bytes, '\0');
   auto* hash_uchar = reinterpret_cast<uchar*>(&hash[0]);
   if (!retrieve_input_file_sha256(hash_uchar) &&
-#if IDP_INTERFACE_VERSION >= 900
       (netnode_supval(0, RIDX_SHA256, hash_uchar, kNumSha256Bytes, 'S') !=
-#else
-      // b/186782665: IDA 7.5 and lower use the root_node instead.
-      (root_node.supval(RIDX_SHA256, hash_uchar, kNumSha256Bytes) !=
-#endif
        kNumSha256Bytes)) {
     return absl::InternalError("Failed to load SHA256 hash of input file");
   }
@@ -50,13 +47,8 @@ absl::StatusOr<std::string> GetInputFileMd5() {
   std::string hash(kNumMd5Bytes, '\0');
   auto* hash_uchar = reinterpret_cast<uchar*>(&hash[0]);
   if (!retrieve_input_file_md5(hash_uchar) &&
-#if IDP_INTERFACE_VERSION >= 900
       (netnode_supval(0, RIDX_MD5, hash_uchar, kNumMd5Bytes, 'S') !=
        kNumMd5Bytes)) {
-#else
-      // b/186782665: IDA 7.5 and lower use the root_node instead.
-      (root_node.supval(RIDX_MD5, hash_uchar, kNumMd5Bytes) != kNumMd5Bytes)) {
-#endif
     return absl::InternalError("Failed to load MD5 hash of input file");
   }
   return absl::AsciiStrToLower(absl::BytesToHexString(hash));

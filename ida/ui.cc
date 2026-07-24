@@ -1,4 +1,4 @@
-// Copyright 2011-2024 Google LLC
+// Copyright 2011-2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -37,8 +37,8 @@
 #include "third_party/absl/strings/string_view.h"
 #include "third_party/absl/types/span.h"
 #include "third_party/zynamics/binexport/util/filesystem.h"
-#include "third_party/zynamics/binexport/util/process.h"
-#include "third_party/zynamics/binexport/util/types.h"
+#include "third_party/zynamics/binexport/util/process.h"  // IWYU pragma: keep
+#include "third_party/zynamics/binexport/util/types.h"    // IWYU pragma: keep
 
 namespace {
 
@@ -63,11 +63,7 @@ void WaitBox::ReplaceText(absl::string_view message) const {
     ReplaceWaitBoxRequest(const WaitBox& wait_box, absl::string_view message)
         : wait_box(wait_box), message(message) {}
 
-#if IDP_INTERFACE_VERSION >= 900
     ssize_t idaapi execute() override {
-#else
-    int idaapi execute() override {
-#endif
       replace_wait_box("%s",
                        FormatMessage(message, wait_box.cancellable_).c_str());
       return 0;
