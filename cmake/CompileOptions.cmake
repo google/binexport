@@ -16,7 +16,7 @@ include(CheckLinkerFlag)
 
 # These affect ABI and linking, so set them globally, even for dependencies
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_EXTENSIONS FALSE)
 
 set(CMAKE_SKIP_BUILD_RPATH TRUE)
