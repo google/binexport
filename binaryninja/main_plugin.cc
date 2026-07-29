@@ -1,4 +1,4 @@
-// Copyright 2019-2021 Google LLC
+// Copyright 2019-2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,29 +14,45 @@
 
 #include "third_party/zynamics/binexport/binaryninja/main_plugin.h"
 
+#include <algorithm>
+#include <cstddef>
 #include <cstdint>
+#include <limits>
+#include <memory>
 #include <string>
+#include <vector>
 
 #include "third_party/absl/log/log.h"
 #include "third_party/absl/status/status.h"
 #include "third_party/absl/status/status_macros.h"
 #include "third_party/absl/status/statusor.h"
+#include "third_party/absl/strings/ascii.h"
 #include "third_party/absl/strings/escaping.h"
 #include "third_party/absl/strings/match.h"
 #include "third_party/absl/strings/str_cat.h"
 #include "third_party/absl/strings/str_format.h"
+#include "third_party/absl/strings/string_view.h"
+#include "third_party/absl/time/time.h"
+#include "third_party/binaryninja_api/binaryninjaapi.h"
+#include "third_party/binaryninja_api/binaryninjacore.h"
+#include "third_party/zynamics/binexport/address_references.h"
 #include "third_party/zynamics/binexport/binaryninja/log_sink.h"
 #include "third_party/zynamics/binexport/binexport2_writer.h"
 #include "third_party/zynamics/binexport/call_graph.h"
+#include "third_party/zynamics/binexport/edge.h"
 #include "third_party/zynamics/binexport/entry_point.h"
+#include "third_party/zynamics/binexport/expression.h"
 #include "third_party/zynamics/binexport/flow_analysis.h"
 #include "third_party/zynamics/binexport/flow_graph.h"
 #include "third_party/zynamics/binexport/instruction.h"
+#include "third_party/zynamics/binexport/operand.h"
 #include "third_party/zynamics/binexport/util/filesystem.h"
 #include "third_party/zynamics/binexport/util/format.h"
 #include "third_party/zynamics/binexport/util/logging.h"
 #include "third_party/zynamics/binexport/util/timer.h"
+#include "third_party/zynamics/binexport/util/types.h"
 #include "third_party/zynamics/binexport/version.h"
+#include "third_party/zynamics/binexport/writer.h"
 
 namespace security::binexport {
 
@@ -234,7 +250,7 @@ void AnalyzeFlow(
           entry_point_manager->Add(branch_target,
                                    EntryPoint::Source::CALL_TARGET);
         }
-        ABSL_FALLTHROUGH_INTENDED;  // Do not add entry points for syscalls
+        [[fallthrough]];  // Do not add entry points for syscalls
       case BNBranchType::SystemCall:
         instruction->SetFlag(FLAG_CALL, true);
         address_references->emplace_back(

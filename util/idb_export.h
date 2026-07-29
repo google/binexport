@@ -15,14 +15,16 @@
 #ifndef UTIL_IDB_EXPORT_H_
 #define UTIL_IDB_EXPORT_H_
 
-#include <memory>
+#include <functional>
+#include <string>
+#include <utility>
 #include <vector>
 
+#include "third_party/absl/base/thread_annotations.h"
 #include "third_party/absl/status/status.h"
 #include "third_party/absl/status/statusor.h"
 #include "third_party/absl/strings/string_view.h"
 #include "third_party/absl/synchronization/mutex.h"
-#include "third_party/zynamics/binexport/util/types.h"
 
 namespace security::binexport {
 

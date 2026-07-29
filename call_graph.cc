@@ -1,4 +1,4 @@
-// Copyright 2011-2024 Google LLC
+// Copyright 2011-2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,15 +15,18 @@
 #include "third_party/zynamics/binexport/call_graph.h"
 
 #include <algorithm>
+#include <cstddef>
 #include <iomanip>
 #include <iterator>
 #include <ostream>
 #include <string>
 #include <utility>
 
+#include "third_party/zynamics/binexport/comment.h"
 #include "third_party/zynamics/binexport/flow_graph.h"
 #include "third_party/zynamics/binexport/util/format.h"
 #include "third_party/zynamics/binexport/util/hash.h"
+#include "third_party/zynamics/binexport/util/types.h"
 
 using security::binexport::FormatAddress;
 

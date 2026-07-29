@@ -1,4 +1,4 @@
-// Copyright 2011-2024 Google LLC
+// Copyright 2011-2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,8 +15,10 @@
 #include "third_party/zynamics/binexport/flow_graph.h"
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <iterator>
+#include <memory>
 #include <ostream>
 #include <stack>
 #include <string>
@@ -29,9 +31,13 @@
 #include "third_party/absl/log/check.h"
 #include "third_party/absl/log/log.h"
 #include "third_party/absl/strings/str_cat.h"
+#include "third_party/zynamics/binexport/basic_block.h"
 #include "third_party/zynamics/binexport/call_graph.h"
+#include "third_party/zynamics/binexport/edge.h"
 #include "third_party/zynamics/binexport/function.h"
+#include "third_party/zynamics/binexport/instruction.h"
 #include "third_party/zynamics/binexport/util/format.h"
+#include "third_party/zynamics/binexport/util/types.h"
 
 using ::security::binexport::FormatAddress;
 

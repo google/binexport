@@ -1,4 +1,4 @@
-// Copyright 2011-2019 Google LLC. All Rights Reserved.
+// Copyright 2011-2026 Google LLC. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,29 +14,15 @@
 
 #include "third_party/zynamics/binexport/util/logging.h"
 
-#include <cerrno>
 #include <cstdio>
-#include <cstring>
-#include <ctime>
-#include <functional>
-#include <iomanip>
 #include <memory>
-#include <sstream>
-#include <thread>  // NOLINT
 
-#include "third_party/absl/base/internal/sysinfo.h"
 #include "third_party/absl/log/initialize.h"
-#include "third_party/absl/log/log.h"
 #include "third_party/absl/log/log_entry.h"
 #include "third_party/absl/log/log_sink.h"
 #include "third_party/absl/log/log_sink_registry.h"
 #include "third_party/absl/status/status.h"
 #include "third_party/absl/strings/str_cat.h"
-#include "third_party/absl/strings/str_format.h"
-#include "third_party/absl/strings/string_view.h"
-#include "third_party/absl/synchronization/mutex.h"
-#include "third_party/absl/time/clock.h"
-#include "third_party/absl/time/time.h"
 #include "third_party/zynamics/binexport/util/process.h"
 
 namespace security::binexport {

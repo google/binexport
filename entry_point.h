@@ -1,4 +1,4 @@
-// Copyright 2011-2024 Google LLC
+// Copyright 2011-2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,8 +16,9 @@
 #define ENTRY_POINT_H_
 
 #include <algorithm>
-#include <memory>
+#include <cstddef>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "third_party/zynamics/binexport/instruction.h"
@@ -105,7 +106,7 @@ class EntryPointManager {
   ~EntryPointManager();
 
   void Add(Address address, EntryPoint::Source source,
-           const int flags = EntryPoint::kFlagsNone);
+           int flags = EntryPoint::kFlagsNone);
 
   EntryPoints* entry_points() { return entry_points_; }
 

@@ -1,4 +1,4 @@
-// Copyright 2011-2024 Google LLC
+// Copyright 2011-2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,26 +14,34 @@
 
 #include "third_party/zynamics/binexport/ida/metapc.h"
 
+#include <algorithm>
 #include <array>
-#include <cinttypes>
-#include <limits>
+#include <cstddef>
+#include <cstdint>
 #include <string>
 
 // clang-format off
 #include "third_party/zynamics/binexport/ida/begin_idasdk.inc"  // NOLINT
+#include <bytes.hpp>                                            // NOLINT
 #include <ida.hpp>                                              // NOLINT
-#include <idp.hpp>                                              // NOLINT
 #include <intel.hpp>                                            // NOLINT
+#include <idp.hpp>                                              // NOLINT
+#include <segment.hpp>                                          // NOLINT
+#include <ua.hpp>                                               // NOLINT
 #include "third_party/zynamics/binexport/ida/end_idasdk.inc"    // NOLINT
 // clang-format on
 
 #include "third_party/absl/log/log.h"
 #include "third_party/absl/strings/str_cat.h"
-#include "third_party/zynamics/binexport/base_types.h"
+#include "third_party/absl/strings/string_view.h"
 #include "third_party/zynamics/binexport/call_graph.h"
+#include "third_party/zynamics/binexport/expression.h"
 #include "third_party/zynamics/binexport/flow_graph.h"
 #include "third_party/zynamics/binexport/ida/names.h"
+#include "third_party/zynamics/binexport/instruction.h"
+#include "third_party/zynamics/binexport/operand.h"
 #include "third_party/zynamics/binexport/util/format.h"
+#include "third_party/zynamics/binexport/util/types.h"
 
 namespace security::binexport {
 namespace {
@@ -494,7 +502,7 @@ Instruction ParseInstructionIdaMetaPc(const insn_t& instruction,
   const Address next_instruction = instruction.ea + instruction.size;
   const flags_t next_flags = get_flags(static_cast<ea_t>(next_instruction));
 
-  // add suffix from hidden operand
+  // Add suffix from hidden operand
   if (IsStringInstruction(mnemonic)) {
     for (size_t operand_position = 0;
          operand_position < UA_MAXOP &&
@@ -506,22 +514,22 @@ Instruction ParseInstructionIdaMetaPc(const insn_t& instruction,
       const op_t& operand = instruction.ops[operand_position];
       if (!(operand.flags & OF_SHOW)) {  // hidden operand, get suffix from it
         if (operand.dtype == dt_byte) {
-          mnemonic += "b";
+          mnemonic += 'b';
         } else if (operand.dtype == dt_word) {
-          mnemonic += "w";
+          mnemonic += 'w';
         } else if (operand.dtype == dt_dword) {
-          mnemonic += "d";
+          mnemonic += 'd';
         } else {
           // Default add machine word size suffix. IDA sometimes omits the
           // suffix otherwise.
-          mnemonic += inf_is_64bit() ? "d" : "w";
+          mnemonic += inf_is_64bit() ? 'd' : 'w';
         }
         break;
       }
     }
   }
 
-  // add prefix (if any) to string instructions
+  // Add prefix (if any) to string instructions
   if (instruction.auxpref & aux_lock) {
     mnemonic = "lock " + mnemonic;
   }

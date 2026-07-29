@@ -1,4 +1,4 @@
-// Copyright 2011-2024 Google LLC
+// Copyright 2011-2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,13 +15,12 @@
 #ifndef UTIL_HASH_H_
 #define UTIL_HASH_H_
 
-#include <string>
+#include <cstdint>
 
-#include "third_party/zynamics/binexport/util/types.h"
+#include "third_party/absl/strings/string_view.h"
 
 // Calculates a general-purpose, non-cryptographic hash over the contents of a
 // string.
-// TODO(cblichmann): accept an absl::string_view instead.
-uint32_t GetSdbmHash(const std::string& data);
+uint32_t GetSdbmHash(absl::string_view data);
 
 #endif  // UTIL_HASH_H_

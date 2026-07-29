@@ -1,4 +1,4 @@
-// Copyright 2011-2024 Google LLC
+// Copyright 2011-2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,10 +15,12 @@
 #include "third_party/zynamics/binexport/instruction.h"
 
 #include <algorithm>
+#include <cassert>
 #include <cstdint>
 #include <iomanip>
 #include <ios>
 #include <iterator>
+#include <limits>
 #include <list>
 #include <memory>
 #include <ostream>
@@ -28,8 +30,10 @@
 
 #include "third_party/absl/log/check.h"
 #include "third_party/absl/log/log.h"
+#include "third_party/zynamics/binexport/expression.h"
 #include "third_party/zynamics/binexport/flow_graph.h"
 #include "third_party/zynamics/binexport/operand.h"
+#include "third_party/zynamics/binexport/util/types.h"
 #include "third_party/zynamics/binexport/virtual_memory.h"
 
 namespace {

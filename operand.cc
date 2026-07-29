@@ -1,4 +1,4 @@
-// Copyright 2011-2024 Google LLC
+// Copyright 2011-2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,11 +17,9 @@
 #include <cstdint>
 #include <string>
 
+#include "third_party/absl/container/flat_hash_set.h"
 #include "third_party/absl/log/check.h"
-
-thread_local Expressions Operand::expressions_;
-thread_local Operand::OperandCache Operand::operand_cache_;
-thread_local uint32_t Operand::global_id_ = 0;
+#include "third_party/zynamics/binexport/expression.h"
 
 // Delete unreferenced operands from cache and relabel surviving ones so we'll
 // have continuous ids again.

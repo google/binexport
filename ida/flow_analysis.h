@@ -1,4 +1,4 @@
-// Copyright 2021 Google LLC
+// Copyright 2021-2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,13 +15,15 @@
 #ifndef IDA_FLOW_ANALYSIS_H_
 #define IDA_FLOW_ANALYSIS_H_
 
+#include <string>
+
 #include "third_party/absl/container/btree_map.h"
+#include "third_party/absl/status/status.h"
 #include "third_party/zynamics/binexport/call_graph.h"
 #include "third_party/zynamics/binexport/entry_point.h"
-#include "third_party/zynamics/binexport/expression.h"
 #include "third_party/zynamics/binexport/flow_graph.h"
-#include "third_party/zynamics/binexport/ida/names.h"
 #include "third_party/zynamics/binexport/instruction.h"
+#include "third_party/zynamics/binexport/util/types.h"
 #include "third_party/zynamics/binexport/writer.h"
 
 namespace security::binexport {

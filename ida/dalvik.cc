@@ -14,7 +14,7 @@
 
 #include "third_party/zynamics/binexport/ida/dalvik.h"
 
-#include <cinttypes>
+#include <cstdint>
 #include <cstring>
 #include <string>
 
@@ -28,13 +28,21 @@
 #include <lines.hpp>                                            // NOLINT
 #include <nalt.hpp>                                             // NOLINT
 #include <segment.hpp>                                          // NOLINT
+#include <ua.hpp>                                               // NOLINT
+#include <xref.hpp>                                             // NOLINT
 #include "third_party/zynamics/binexport/ida/end_idasdk.inc"    // NOLINT
 // clang-format on
 
 #include "third_party/absl/log/log.h"
 #include "third_party/absl/strings/str_cat.h"
+#include "third_party/zynamics/binexport/call_graph.h"
+#include "third_party/zynamics/binexport/expression.h"
+#include "third_party/zynamics/binexport/flow_graph.h"
 #include "third_party/zynamics/binexport/ida/names.h"
+#include "third_party/zynamics/binexport/instruction.h"
+#include "third_party/zynamics/binexport/operand.h"
 #include "third_party/zynamics/binexport/util/format.h"
+#include "third_party/zynamics/binexport/util/types.h"
 
 namespace security::binexport {
 namespace {

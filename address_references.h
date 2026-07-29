@@ -15,12 +15,11 @@
 #ifndef ADDRESS_REFERENCES_H_
 #define ADDRESS_REFERENCES_H_
 
-#include <algorithm>
+#include <cstdint>
+#include <utility>
 #include <vector>
 
-#include "third_party/zynamics/binexport/entry_point.h"
 #include "third_party/zynamics/binexport/util/types.h"
-#include "third_party/zynamics/binexport/virtual_memory.h"
 
 enum AddressReferenceType {
   TYPE_TRUE = 0,
@@ -58,11 +57,11 @@ struct AddressReference {
       : AddressReference(source, operand_expression, target, kind,
                          0 /* default size */) {}
 
-  inline bool IsCall() const {
+  bool IsCall() const {
     return kind_ == TYPE_CALL_DIRECT || kind_ == TYPE_CALL_INDIRECT;
   }
 
-  inline bool IsBranch() const {
+  bool IsBranch() const {
     return kind_ == TYPE_UNCONDITIONAL || kind_ == TYPE_TRUE ||
            kind_ == TYPE_FALSE || kind_ == TYPE_SWITCH;
   }

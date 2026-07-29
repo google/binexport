@@ -1,4 +1,4 @@
-// Copyright 2011-2024 Google LLC
+// Copyright 2011-2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,8 +14,13 @@
 
 #include "third_party/zynamics/binexport/util/hash.h"
 
+#include <cstddef>
+#include <cstdint>
+
+#include "third_party/absl/strings/string_view.h"
+
 // Adapted from the optimized version at http://www.cse.yorku.ca/~oz/hash.html
-uint32_t GetSdbmHash(const std::string& data) {
+uint32_t GetSdbmHash(absl::string_view data) {
   uint32_t hash = 0;
   for (size_t i = 0; i < data.size(); ++i) {
     hash = data[i] + (hash << 6) + (hash << 16) - hash;

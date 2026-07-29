@@ -1,4 +1,4 @@
-// Copyright 2021 Google LLC
+// Copyright 2021-2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,7 +23,6 @@
 
 // clang-format off
 #include "third_party/zynamics/binexport/ida/begin_idasdk.inc"  // NOLINT
-#include <pro.h>                                                // NOLINT
 #include <allins.hpp>                                           // NOLINT
 #include <bytes.hpp>                                            // NOLINT
 #include <frame.hpp>                                            // NOLINT

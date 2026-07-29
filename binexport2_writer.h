@@ -15,6 +15,11 @@
 #ifndef BINEXPORT2_WRITER_H_
 #define BINEXPORT2_WRITER_H_
 
+#include <string>
+
+#include "third_party/absl/status/status.h"
+#include "third_party/zynamics/binexport/address_references.h"
+#include "third_party/zynamics/binexport/instruction.h"
 #include "third_party/zynamics/binexport/writer.h"
 
 class BinExport2;

@@ -1,4 +1,4 @@
-// Copyright 2011-2024 Google LLC
+// Copyright 2011-2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,7 +14,14 @@
 
 #include "third_party/zynamics/binexport/ida/util.h"
 
+#include <string>
+
 #include "third_party/absl/strings/string_view.h"
+
+// clang-format off
+#include "third_party/zynamics/binexport/ida/begin_idasdk.inc"  // NOLINT
+#include "third_party/zynamics/binexport/ida/end_idasdk.inc"    // NOLINT
+// clang-format on
 
 namespace security::binexport {
 

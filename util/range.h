@@ -1,4 +1,4 @@
-// Copyright 2011-2024 Google LLC
+// Copyright 2011-2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,6 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#ifndef UTIL_RANGE_H_
+#define UTIL_RANGE_H_
+
+#include <utility>
+
 // Range is a slice of a container denoted with a pair of iterators begin and
 // end. Behaves like a normal container with elements between begin and end. Can
 // be used in range based loops.
@@ -20,11 +25,6 @@
 // std::vector<int> v;
 // Range<std::vector<int>> range(v.begin() + n, v.begin() + m);
 // for (int i : r) { /* Do something with i */ }
-
-#ifndef UTIL_RANGE_H_
-#define UTIL_RANGE_H_
-
-#include <utility>
 
 template <typename Container, typename Iterator = typename Container::iterator>
 class Range {

@@ -1,4 +1,4 @@
-// Copyright 2011-2024 Google LLC
+// Copyright 2011-2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 #include <string>
 
 #include "third_party/absl/log/log.h"
+#include "third_party/zynamics/binexport/util/types.h"
 
 EntryPoint::EntryPoint(Address address, EntryPoint::Source source,
                        const int flags)
@@ -81,7 +82,7 @@ EntryPointManager::~EntryPointManager() {
 }
 
 void EntryPointManager::Add(Address address, EntryPoint::Source source,
-                            const int flags) {
+                            int flags) {
   entry_points_->emplace_back(address, source, flags);
   ++count_;
   if (parent_) {

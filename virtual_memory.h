@@ -1,4 +1,4 @@
-// Copyright 2011-2024 Google LLC
+// Copyright 2011-2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,8 +15,7 @@
 #ifndef VIRTUAL_MEMORY_H_
 #define VIRTUAL_MEMORY_H_
 
-#include <atomic>
-#include <map>
+#include <cstddef>
 #include <vector>
 
 #include "third_party/absl/container/btree_map.h"

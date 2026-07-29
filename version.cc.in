@@ -1,4 +1,4 @@
-// Copyright 2011-2025 Google LLC
+// Copyright 2011-2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,15 +14,13 @@
 
 #include "third_party/zynamics/binexport/version.h"
 
-#include "third_party/absl/base/attributes.h"
-
 namespace security::binexport {
 
-ABSL_CONST_INIT const char* kBinExportName = "BinExport";
+constinit const char* kBinExportName = "BinExport";
 
-ABSL_CONST_INIT const char* kBinExportRelease = "@binexport_VERSION_MAJOR@";
+constinit const char* kBinExportRelease = "@binexport_VERSION_MAJOR@";
 
-ABSL_CONST_INIT const char* kBinExportDetailedVersion =
+constinit const char* kBinExportDetailedVersion =
     "@binexport_VERSION_MAJOR@ (@"
     "@REVISION@, " __DATE__
 #ifndef NDEBUG
@@ -30,7 +28,7 @@ ABSL_CONST_INIT const char* kBinExportDetailedVersion =
 #endif
     ")";
 
-ABSL_CONST_INIT const char* kBinExportCopyright =
+constinit const char* kBinExportCopyright =
     "(c)2004-2011 zynamics GmbH, (c)2011-2025 Google LLC.";
 
 }  // namespace security::binexport

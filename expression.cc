@@ -1,4 +1,4 @@
-// Copyright 2011-2024 Google LLC
+// Copyright 2011-2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,10 +25,6 @@
 #include "third_party/zynamics/binexport/instruction.h"
 #include "third_party/zynamics/binexport/util/hash.h"
 #include "third_party/zynamics/binexport/util/types.h"
-
-thread_local Expression::StringCache Expression::string_cache_;
-thread_local Expression::ExpressionCache Expression::expression_cache_;
-thread_local int Expression::global_id_ = 0;
 
 Expression::Expression(const Expression* parent, const std::string& symbol,
                        int64_t immediate, Type type, uint16_t position,

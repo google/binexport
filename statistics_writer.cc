@@ -1,4 +1,4 @@
-// Copyright 2011-2024 Google LLC
+// Copyright 2011-2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,14 +14,22 @@
 
 #include "third_party/zynamics/binexport/statistics_writer.h"
 
+#include <cassert>
+#include <cstddef>
 #include <iomanip>
 #include <ios>
 #include <ostream>
 #include <string>
 
 #include "third_party/absl/container/flat_hash_map.h"
+#include "third_party/absl/status/status.h"
+#include "third_party/zynamics/binexport/address_references.h"
+#include "third_party/zynamics/binexport/basic_block.h"
 #include "third_party/zynamics/binexport/call_graph.h"
+#include "third_party/zynamics/binexport/edge.h"
 #include "third_party/zynamics/binexport/flow_graph.h"
+#include "third_party/zynamics/binexport/function.h"
+#include "third_party/zynamics/binexport/instruction.h"
 
 namespace security::binexport {
 

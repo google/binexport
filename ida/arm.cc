@@ -14,7 +14,8 @@
 
 #include "third_party/zynamics/binexport/ida/arm.h"
 
-#include <cinttypes>
+#include <cstddef>
+#include <cstdint>
 #include <string>
 
 // clang-format off
@@ -23,13 +24,20 @@
 #include <bytes.hpp>                                            // NOLINT
 #include <ida.hpp>                                              // NOLINT
 #include <ua.hpp>                                               // NOLINT
+#include <xref.hpp>                                             // NOLINT
 #include "third_party/zynamics/binexport/ida/end_idasdk.inc"    // NOLINT
 // clang-format on
 
 #include "third_party/absl/log/log.h"
 #include "third_party/absl/strings/str_cat.h"
+#include "third_party/zynamics/binexport/call_graph.h"
+#include "third_party/zynamics/binexport/expression.h"
+#include "third_party/zynamics/binexport/flow_graph.h"
 #include "third_party/zynamics/binexport/ida/names.h"
+#include "third_party/zynamics/binexport/instruction.h"
+#include "third_party/zynamics/binexport/operand.h"
 #include "third_party/zynamics/binexport/util/format.h"
+#include "third_party/zynamics/binexport/util/types.h"
 
 namespace security::binexport {
 
@@ -52,7 +60,7 @@ enum {
   aux_sb = 0x0400,        // signed byte (SB postfix)
   aux_sh = 0x0800,        // signed halfword (SH postfix)
   aux_h = 0x1000,         // halfword (H postfix)
-  aux_p = 0x2000,         // priviledged (P postfix)
+  aux_p = 0x2000,         // privileged (P postfix)
   aux_coproc = 0x4000,    // coprocessor instruction
   aux_wide = 0x8000,      // thumb32 instruction (.W suffix)
   aux_pac = 0x10000,      // Pointer Authentication Code (PAC_ flags)

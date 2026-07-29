@@ -1,4 +1,4 @@
-// Copyright 2011-2024 Google LLC
+// Copyright 2011-2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@
 #include <boost/graph/filtered_graph.hpp>               // NOLINT
 #include <boost/graph/iteration_macros.hpp>             // NOLINT
 #include <iostream>
+#include <iterator>
 #include <string>
 #include <utility>
 #include <vector>
@@ -27,14 +28,14 @@
 #include "third_party/absl/log/check.h"
 #include "third_party/absl/log/log.h"
 #include "third_party/absl/strings/str_cat.h"
+#include "third_party/zynamics/binexport/basic_block.h"
 #include "third_party/zynamics/binexport/call_graph.h"
+#include "third_party/zynamics/binexport/edge.h"
 #include "third_party/zynamics/binexport/util/format.h"
+#include "third_party/zynamics/binexport/util/types.h"
 
 using security::binexport::FormatAddress;
 using security::binexport::FormatFunctionName;
-
-thread_local int Function::instance_count_ = 0;
-thread_local Function::StringCache Function::string_cache_;
 
 Function::Function(Address entry_point) : entry_point_(entry_point) {
   ++instance_count_;

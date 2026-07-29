@@ -1,4 +1,4 @@
-// Copyright 2011-2024 Google LLC
+// Copyright 2011-2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 #define IDA_PLUGIN_H_
 
 #include <cstddef>
-#include <cstdint>
 
 // clang-format off
 #include "third_party/zynamics/binexport/ida/begin_idasdk.inc"  // NOLINT
@@ -49,7 +48,7 @@ class IdaPlugin {
     return instance()->Init() ? new PluginContext() : nullptr;
   }
 
-  // Performs plugin initalization. Returns true on success, false otherwise.
+  // Performs plugin initialization. Returns true on success, false otherwise.
   // Care must be taken with functions/libraries that should only be
   // called/initialized once per process. Since IDA 8.0, all new-style plugins
   // have PLUGIN_MULTI semantics, which means Init() will be called once per

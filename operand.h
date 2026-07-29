@@ -1,4 +1,4 @@
-// Copyright 2011-2024 Google LLC
+// Copyright 2011-2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 
 #include <cstdint>
 #include <string>
+#include <vector>
 
 #include "third_party/absl/container/flat_hash_set.h"
 #include "third_party/absl/container/node_hash_map.h"
@@ -43,9 +44,9 @@ class Operand {
   const Expression& GetLastExpression() const;
 
  private:
-  static thread_local Expressions expressions_;
-  static thread_local OperandCache operand_cache_;
-  static thread_local uint32_t global_id_;
+  inline static thread_local Expressions expressions_;
+  inline static thread_local OperandCache operand_cache_;
+  inline static thread_local uint32_t global_id_ = 0;
 
   explicit Operand(const Expressions& expressions);
 

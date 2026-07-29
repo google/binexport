@@ -1,4 +1,4 @@
-// Copyright 2011-2024 Google LLC
+// Copyright 2011-2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 #include <cstdint>
 #include <iosfwd>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "third_party/absl/container/node_hash_map.h"
@@ -161,9 +162,9 @@ class Expression {
   Type type_;
   bool relocatable_;
 
-  static thread_local StringCache string_cache_;
-  static thread_local ExpressionCache expression_cache_;
-  static thread_local int global_id_;
+  inline static thread_local StringCache string_cache_;
+  inline static thread_local ExpressionCache expression_cache_;
+  inline static thread_local int global_id_ = 0;
 };
 #pragma pack(pop)
 

@@ -1,4 +1,4 @@
-// Copyright 2011-2024 Google LLC
+// Copyright 2011-2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,9 +15,15 @@
 #ifndef STATISTICS_WRITER_H_
 #define STATISTICS_WRITER_H_
 
+#include <cstddef>
 #include <fstream>
+#include <ostream>
+#include <string>
 
 #include "third_party/absl/container/flat_hash_map.h"
+#include "third_party/absl/status/status.h"
+#include "third_party/zynamics/binexport/address_references.h"
+#include "third_party/zynamics/binexport/instruction.h"
 #include "third_party/zynamics/binexport/writer.h"
 
 namespace security::binexport {

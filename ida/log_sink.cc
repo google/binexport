@@ -1,4 +1,4 @@
-// Copyright 2011-2024 Google LLC. All Rights Reserved.
+// Copyright 2011-2026 Google LLC. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
 #include "third_party/zynamics/binexport/ida/log_sink.h"
 
 #include <algorithm>
+#include <cstddef>
 
 // clang-format off
 #include "third_party/zynamics/binexport/ida/begin_idasdk.inc"  // NOLINT
@@ -24,7 +25,6 @@
 
 #include "third_party/absl/log/log_entry.h"
 #include "third_party/absl/strings/string_view.h"
-#include "third_party/zynamics/binexport/util/logging.h"
 
 namespace security::binexport {
 

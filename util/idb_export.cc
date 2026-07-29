@@ -1,4 +1,4 @@
-// Copyright 2011-2024 Google LLC
+// Copyright 2011-2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,25 +14,20 @@
 
 #include "third_party/zynamics/binexport/util/idb_export.h"
 
-#include <fstream>
-#include <memory>
+#include <functional>
+#include <string>
 #include <thread>  // NOLINT
+#include <utility>
+#include <vector>
 
-#include "third_party/absl/base/attributes.h"
 #include "third_party/absl/container/flat_hash_map.h"
-#include "third_party/absl/container/flat_hash_set.h"
-#include "third_party/absl/memory/memory.h"
 #include "third_party/absl/status/status.h"
 #include "third_party/absl/status/status_macros.h"
 #include "third_party/absl/status/statusor.h"
-#include "third_party/absl/strings/ascii.h"
 #include "third_party/absl/strings/match.h"
 #include "third_party/absl/strings/str_cat.h"
-#include "third_party/absl/strings/str_format.h"
-#include "third_party/absl/strings/str_join.h"
 #include "third_party/absl/strings/string_view.h"
 #include "third_party/absl/synchronization/mutex.h"
-#include "third_party/absl/time/time.h"
 #include "third_party/zynamics/binexport/util/filesystem.h"
 #include "third_party/zynamics/binexport/util/process.h"
 #include "third_party/zynamics/binexport/util/timer.h"

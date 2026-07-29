@@ -1,4 +1,4 @@
-// Copyright 2011-2024 Google LLC
+// Copyright 2011-2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,12 +24,12 @@
 #include <cstdint>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <tuple>
 #include <utility>
 #include <vector>
 
-#include "third_party/absl/base/attributes.h"
-#include "third_party/absl/types/optional.h"
+#include "third_party/absl/status/statusor.h"
 #include "third_party/zynamics/binexport/architectures.h"
 #include "third_party/zynamics/binexport/binexport2.pb.h"
 #include "third_party/zynamics/binexport/reader/instruction.h"
@@ -92,7 +92,7 @@ class FlowGraph {
       const BinExport2& proto, const BinExport2::FlowGraph& flow_graph_proto,
       const std::vector<uint64_t>& instruction_addresses);
 
-  ABSL_DEPRECATED("Use FromBinExport2Proto that returns a StatusOr instead.")
+  [[deprecated("Use FromBinExport2Proto that returns a StatusOr instead.")]]
   static std::unique_ptr<FlowGraph> FromBinExport2Proto(
       const BinExport2& proto, const BinExport2::FlowGraph& flow_graph_proto,
       const std::vector<uint64_t>& instruction_addresses);
@@ -149,7 +149,7 @@ class FlowGraph {
   Instructions instructions_;
 
   // Architecture of instructions in this flow graph.
-  absl::optional<Architecture> architecture_;
+  std::optional<Architecture> architecture_;
 };
 
 template <typename OutputIterator>

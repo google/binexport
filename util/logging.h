@@ -1,4 +1,4 @@
-// Copyright 2011-2024 Google LLC
+// Copyright 2011-2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,12 +15,9 @@
 #ifndef UTIL_LOG_H_
 #define UTIL_LOG_H_
 
-#include <functional>
 #include <memory>
 #include <string>
-#include <thread>  // NOLINT
 
-#include "third_party/absl/base/log_severity.h"
 #include "third_party/absl/log/log_sink.h"
 #include "third_party/absl/status/status.h"
 

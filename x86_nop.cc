@@ -1,4 +1,4 @@
-// Copyright 2011-2024 Google LLC
+// Copyright 2011-2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,7 +14,10 @@
 
 #include "third_party/zynamics/binexport/x86_nop.h"
 
+#include <cstddef>
 #include <cstdint>
+
+#include "third_party/absl/strings/string_view.h"
 
 bool IsNopX86(absl::string_view bytes) {
   auto* m = reinterpret_cast<const uint8_t*>(bytes.data());

@@ -1,4 +1,4 @@
-// Copyright 2011-2024 Google LLC
+// Copyright 2011-2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,19 +14,25 @@
 
 #include "third_party/zynamics/binexport/ida/generic.h"
 
-#include <sstream>
+#include <string>
 
 // clang-format off
 #include "third_party/zynamics/binexport/ida/begin_idasdk.inc"  // NOLINT
 #include <bytes.hpp>                                            // NOLINT
 #include <ida.hpp>                                              // NOLINT
 #include <ua.hpp>                                               // NOLINT
+#include <xref.hpp>                                             // NOLINT
 #include "third_party/zynamics/binexport/ida/end_idasdk.inc"    // NOLINT
 // clang-format on
 
 #include "third_party/absl/strings/ascii.h"
-#include "third_party/absl/strings/string_view.h"
+#include "third_party/zynamics/binexport/call_graph.h"
+#include "third_party/zynamics/binexport/expression.h"
+#include "third_party/zynamics/binexport/flow_graph.h"
 #include "third_party/zynamics/binexport/ida/names.h"
+#include "third_party/zynamics/binexport/instruction.h"
+#include "third_party/zynamics/binexport/operand.h"
+#include "third_party/zynamics/binexport/util/types.h"
 
 namespace security::binexport {
 

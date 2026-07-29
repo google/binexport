@@ -14,6 +14,8 @@
 
 #include "third_party/zynamics/binexport/util/timer.h"
 
+#include <chrono>  // NOLINT
+
 #include "gtest/gtest.h"
 
 namespace security::binexport {

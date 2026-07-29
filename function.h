@@ -1,4 +1,4 @@
-// Copyright 2011-2025 Google LLC
+// Copyright 2011-2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -109,8 +109,8 @@ class Function {
   friend class BinDetegoAsserts;
 
   using StringCache = absl::node_hash_set<std::string>;
-  static thread_local StringCache string_cache_;
-  static thread_local int instance_count_;
+  inline static thread_local StringCache string_cache_;
+  inline static thread_local int instance_count_ = 0;
 
   int GetBasicBlockIndexForAddress(Address address) const;
   BasicBlock* GetMutableBasicBlockForAddress(Address address);

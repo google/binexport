@@ -1,4 +1,4 @@
-// Copyright 2011-2024 Google LLC
+// Copyright 2011-2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -11,6 +11,11 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
+#ifndef UTIL_NESTED_ITERATOR_H_
+#define UTIL_NESTED_ITERATOR_H_
+
+#include <cassert>
 
 // NestedIterator is a "flattening" iterator that can operate on a container of
 // containers, iterating on elements of the inner containers. NestedIterator
@@ -28,11 +33,6 @@
 //   ...
 //   ++it;
 // }
-
-#ifndef UTIL_NESTED_ITERATOR_H_
-#define UTIL_NESTED_ITERATOR_H_
-
-#include <cassert>
 
 template <typename OuterIterator>
 class NestedIterator {
