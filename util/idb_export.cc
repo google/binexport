@@ -53,19 +53,10 @@ absl::Status ExportDatabase(const std::string& idb_path,
     return absl::NotFoundError(absl::StrCat("File not found: " + idb_path));
   }
 
-#if IDA_SDK_VERSION < 900
-  const bool is_64bit = absl::EndsWithIgnoreCase(idb_path, kIdbExtension64);
-  #ifdef _WIN32
-    const std::string ida_exe = is_64bit ? "ida64.exe" : "ida.exe";
-  #else
-    const std::string ida_exe = is_64bit ? "ida64" : "ida";
-  #endif
+#ifdef _WIN32
+  constexpr absl::string_view ida_exe = "ida.exe";
 #else
-  #ifdef _WIN32
-    const std::string ida_exe = "ida.exe";
-  #else
-    const std::string ida_exe = "ida";
-  #endif
+  constexpr absl::string_view ida_exe = "ida";
 #endif
   std::vector<std::string> args;
   args.push_back(JoinPath(options.ida_dir, ida_exe));
