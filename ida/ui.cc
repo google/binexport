@@ -42,6 +42,12 @@
 
 namespace {
 
+#ifdef __APPLE__
+constexpr bool kIsApple = true;
+#else
+constexpr bool kIsApple = false;
+#endif
+
 std::string FormatMessage(absl::string_view message, bool cancellable) {
   return absl::StrCat(cancellable ? "" : "HIDECANCEL\n", message);
 }
@@ -97,14 +103,15 @@ static absl::StatusOr<std::string> DoGetFilename(
   if (!filename) {
     return absl::CancelledError();
   }
-#ifndef __APPLE__
-  // On macOS, the built-in file chooser asks for confirmation already.
-  if (for_saving && FileExists(filename) &&
-      ask_yn(ASKBTN_NO, "'%s' already exists - overwrite?", filename) !=
-          ASKBTN_YES) {
-    return absl::AlreadyExistsError("");
+  if constexpr (kIsApple) {
+    // On macOS, the built-in file chooser asks for confirmation already.
+    if (for_saving && FileExists(filename) &&
+        ask_yn(ASKBTN_NO, "'%s' already exists - overwrite?", filename) !=
+            ASKBTN_YES) {
+      return absl::AlreadyExistsError("");
+    }
   }
-#endif
+
   return filename;
 }
 
