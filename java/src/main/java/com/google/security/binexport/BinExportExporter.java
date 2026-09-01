@@ -44,17 +44,14 @@ public class BinExportExporter extends Exporter {
       "BinExport " + BINEXPORT_VERSION + " (c)2019-2026 Google LLC";
 
   /** Display name that appears in the export dialog. */
-  private static final String BINEXPORT_FORMAT_DISPLAY_NAME =
-      "Binary BinExport (v2) for BinDiff";
+  private static final String BINEXPORT_FORMAT_DISPLAY_NAME = "Binary BinExport (v2) for BinDiff";
 
   private static final String BINEXPORT_FILE_EXTENSION = "BinExport";
 
   // Option names
   private static final String IDAPRO_COMPAT_OPTGROUP = "IDA Pro Compatibility";
-  private static final String IDAPRO_COMPAT_OPT_SUBTRACT_IMAGEBASE =
-      "Subtract Imagebase";
-  private static final String IDAPRO_COMPAT_OPT_REMAP_MNEMONICS =
-      "Remap mnemonics";
+  private static final String IDAPRO_COMPAT_OPT_SUBTRACT_IMAGEBASE = "Subtract Imagebase";
+  private static final String IDAPRO_COMPAT_OPT_REMAP_MNEMONICS = "Remap mnemonics";
   private static final String IDAPRO_COMPAT_OPT_PREPEND_NAMESPACE =
       "Prepend Namespace to Function Names";
 
@@ -72,16 +69,35 @@ public class BinExportExporter extends Exporter {
     log.appendMsg(BINEXPORT_COPYRIGHT);
   }
 
+  /**
+   * See {@link ProgramExporter#getProgram()}. For compatibility with earlier versions of Ghidra
+   * (11.x).
+   */
+  protected Program getProgram(DomainObject domainObj) throws ClassCastException {
+    return (Program) domainObj;
+  }
+
+  /**
+   * See {@link Exporter#canExportDomainObject(Class)}. For compatibility with earlier versions of
+   * Ghidra (11.x).
+   */
   @Override
-  public boolean export(File file, DomainObject domainObj,
-      AddressSetView addrSet, TaskMonitor monitor)
+  public boolean canExportDomainObject(Class<? extends DomainObject> domainObjectClass) {
+    return Program.class.isAssignableFrom(domainObjectClass);
+  }
+
+  @Override
+  public boolean export(
+      File file, DomainObject domainObj, AddressSetView addrSet, TaskMonitor monitor)
       throws ExporterException, IOException {
 
-    if (!(domainObj instanceof Program)) {
+    Program program;
+    try {
+      program = getProgram(domainObj);
+    } catch (ClassCastException e) {
       log.appendMsg("Unsupported type: " + domainObj.getClass().getName());
       return false;
     }
-    var program = (Program) domainObj;
 
     if (addrSet == null) {
       addrSet = program.getMemory();
@@ -91,8 +107,7 @@ public class BinExportExporter extends Exporter {
     try {
       var builder = new BinExport2Builder(program, addrSet);
       if (remapMnemonics) {
-        builder
-            .setMnemonicMapper(new IdaProMnemonicMapper(program.getLanguage()));
+        builder.setMnemonicMapper(new IdaProMnemonicMapper(program.getLanguage()));
       }
       if (subtractImagebase) {
         builder.setAddressOffset(program.getImageBase().getOffset());
@@ -134,6 +149,7 @@ public class BinExportExporter extends Exporter {
         case IDAPRO_COMPAT_OPT_PREPEND_NAMESPACE:
           prependNamespace = (boolean) option.getValue();
           break;
+        default: // fall out
       }
     }
   }
