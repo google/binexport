@@ -96,11 +96,11 @@ if(BINEXPORT_ENABLE_BINARYNINJA)
   if(BINEXPORT_BINARYNINJA_CHANNEL STREQUAL "stable")
     set(_binexport_binaryninjacore_suffix "_stable")
     set(_binexport_binaryninja_git_tag_default
-        "13a6e9ab06a3384b8c6ea6c2a0654d97482b369f") # 2025-05-21 v5.0.7486-stable
+        "stable/6.0.10601")
   else()
     set(_binexport_binaryninjacore_suffix "")
     set(_binexport_binaryninja_git_tag_default
-        "8ba8388e12ab32ad937c4514f7a907d2530f1ef8") # 2025-05-31
+        "0a1f260b1b078888ca511c2a020c066da59409c3") # 2026-09-09
   endif()
   if(BINEXPORT_BINARYNINJA_GIT_TAG STREQUAL "")
     set(_binexport_binaryninja_git_tag

@@ -464,8 +464,17 @@ void AnalyzeFlowBinaryNinja(BinaryNinja::BinaryView* view,
       continue;
     }
 
+    // Temporary section while we're upgrading to the latest API.
+    // TODO(b/559505252): Import Vector35's BinExport changes.
+#if BN_CURRENT_CORE_ABI_VERSION < 40
     function->SetName(bn_symbol->GetRawName(),
                       BNRustSimplifyStrToStr(bn_symbol->GetFullName().c_str()));
+#else
+    function->SetName(bn_symbol->GetRawName(),
+                      BinaryNinja::SimplifyDemangledTemplateName(
+                          BinaryNinja::QualifiedName(bn_symbol->GetFullName()))
+                          .GetString());
+#endif
 
     if (bn_symbol->GetType() == BNSymbolType::ImportedFunctionSymbol) {
       function->SetType(Function::TYPE_IMPORTED);
