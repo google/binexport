@@ -792,6 +792,9 @@ public class BinExport2Builder {
         continue; // Skip empty flow graphs, they only exist as call graph nodes
       }
       var flowGraph = builder.addFlowGraphBuilder();
+      // Collect the edges for the whole function, they get post-processed once
+      // all basic blocks are known.
+      var edges = new ArrayList<BinExport2.FlowGraph.Edge.Builder>();
       while (bbIter.hasNext()) {
         CodeBlock bb = bbIter.next();
         long bbAddress = getMappedAddress(bb.getFirstStartAddress());
@@ -803,7 +806,6 @@ public class BinExport2Builder {
 
         long bbLastInstrAddress =
             getMappedAddress(listing.getInstructionBefore(bb.getMaxAddress()));
-        var edges = new ArrayList<BinExport2.FlowGraph.Edge>();
         var lastFlow = RefType.INVALID;
         for (var bbDestIter = bb.getDestinations(monitor); bbDestIter.hasNext(); ) {
           CodeBlockReference bbRef = bbDestIter.next();
@@ -825,24 +827,26 @@ public class BinExport2Builder {
             if (targetId != null) {
               edge.setTargetBasicBlockIndex(targetId);
             }
-            edges.add(edge.build());
+            edges.add(edge);
           } else if (flow.isUnConditional() && !flow.isComputed()) {
             edge.setSourceBasicBlockIndex(id);
             if (targetId != null) {
               edge.setTargetBasicBlockIndex(targetId);
             }
-            edges.add(edge.build());
+            edges.add(edge);
           } else if (flow.isJump() && flow.isComputed()) {
             edge.setSourceBasicBlockIndex(id);
             if (targetId != null) {
               edge.setTargetBasicBlockIndex(targetId);
               edge.setType(BinExport2.FlowGraph.Edge.Type.SWITCH);
             }
-            edges.add(edge.build());
+            edges.add(edge);
           }
           lastFlow = flow;
         }
-        flowGraph.addAllEdge(edges);
+      }
+      for (var edge : edges) {
+        flowGraph.addEdge(edge);
       }
       assert flowGraph.getEntryBasicBlockIndex() > 0;
     }
