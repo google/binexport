@@ -64,7 +64,9 @@ import ghidra.util.UndefinedFunction;
 import ghidra.util.exception.CancelledException;
 import ghidra.util.task.TaskMonitor;
 import java.io.File;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -795,12 +797,18 @@ public class BinExport2Builder {
       // Collect the edges for the whole function, they get post-processed once
       // all basic blocks are known.
       var edges = new ArrayList<BinExport2.FlowGraph.Edge.Builder>();
+      // Maps a global basic block index to its position within this flow graph.
+      // The dominator computation below works on these positions.
+      var blockPositions = new HashMap<Integer, Integer>();
+      int entryPosition = -1;
       while (bbIter.hasNext()) {
         CodeBlock bb = bbIter.next();
         long bbAddress = getMappedAddress(bb.getFirstStartAddress());
         int id = basicBlockIndices.get(bbAddress);
+        blockPositions.put(id, flowGraph.getBasicBlockIndexCount());
         if (bbAddress == getMappedAddress(func.getEntryPoint())) {
           flowGraph.setEntryBasicBlockIndex(id);
+          entryPosition = flowGraph.getBasicBlockIndexCount();
         }
         flowGraph.addBasicBlockIndex(id);
 
@@ -845,11 +853,138 @@ public class BinExport2Builder {
           lastFlow = flow;
         }
       }
+      markBackEdges(edges, blockPositions, flowGraph.getBasicBlockIndexCount(), entryPosition);
       for (var edge : edges) {
         flowGraph.addEdge(edge);
       }
       assert flowGraph.getEntryBasicBlockIndex() > 0;
     }
+  }
+
+  // Marks the edges that jump back into a block that has to have been executed
+  // before, i.e. the edges that close a loop. The IDA exporter derives the same
+  // information from a Lengauer-Tarjan dominator tree, this walks the dominator
+  // tree instead. blockPositions maps global basic block indices to their
+  // position in the current flow graph.
+  private static void markBackEdges(
+      List<BinExport2.FlowGraph.Edge.Builder> edges,
+      Map<Integer, Integer> blockPositions,
+      int blockCount,
+      int entryPosition) {
+    if (entryPosition < 0 || blockCount == 0) {
+      return;
+    }
+
+    var successors = new ArrayList<List<Integer>>(blockCount);
+    var predecessors = new ArrayList<List<Integer>>(blockCount);
+    for (int i = 0; i < blockCount; i++) {
+      successors.add(new ArrayList<>());
+      predecessors.add(new ArrayList<>());
+    }
+    // Edges leaving the function have no basic block to attach to, drop them.
+    var localEdges = new ArrayList<BinExport2.FlowGraph.Edge.Builder>();
+    for (var edge : edges) {
+      if (!edge.hasSourceBasicBlockIndex() || !edge.hasTargetBasicBlockIndex()) {
+        continue;
+      }
+      var source = blockPositions.get(edge.getSourceBasicBlockIndex());
+      var target = blockPositions.get(edge.getTargetBasicBlockIndex());
+      if (source == null || target == null) {
+        continue;
+      }
+      successors.get(source).add(target);
+      predecessors.get(target).add(source);
+      localEdges.add(edge);
+    }
+
+    // Number the blocks in postorder. The dominator computation requires the
+    // blocks to be processed in reverse postorder.
+    var postOrder = new int[blockCount];
+    Arrays.fill(postOrder, -1);
+    var visited = new boolean[blockCount];
+    var nextChild = new int[blockCount];
+    var stack = new ArrayDeque<Integer>();
+    int nextPostOrder = 0;
+    visited[entryPosition] = true;
+    stack.push(entryPosition);
+    while (!stack.isEmpty()) {
+      int block = stack.peek();
+      var children = successors.get(block);
+      if (nextChild[block] < children.size()) {
+        int child = children.get(nextChild[block]++);
+        if (!visited[child]) {
+          visited[child] = true;
+          stack.push(child);
+        }
+      } else {
+        stack.pop();
+        postOrder[block] = nextPostOrder++;
+      }
+    }
+
+    // Iteratively intersect the dominators of all predecessors of a block until
+    // nothing changes (Cooper, Harvey, Kennedy).
+    var dominators = new int[blockCount];
+    Arrays.fill(dominators, -1);
+    dominators[entryPosition] = entryPosition;
+    boolean changed = true;
+    while (changed) {
+      changed = false;
+      for (int block = 0; block < blockCount; block++) {
+        if (block == entryPosition || !visited[block]) {
+          continue;
+        }
+        int newDominator = -1;
+        for (int predecessor : predecessors.get(block)) {
+          if (dominators[predecessor] == -1) {
+            continue; // Not seen yet, try again on the next round.
+          }
+          newDominator =
+              newDominator == -1
+                  ? predecessor
+                  : intersectDominators(newDominator, predecessor, dominators, postOrder);
+        }
+        if (newDominator != -1 && dominators[block] != newDominator) {
+          dominators[block] = newDominator;
+          changed = true;
+        }
+      }
+    }
+
+    for (var edge : localEdges) {
+      int source = blockPositions.get(edge.getSourceBasicBlockIndex());
+      int target = blockPositions.get(edge.getTargetBasicBlockIndex());
+      if (dominators[source] == -1 || dominators[target] == -1) {
+        continue; // Block is not reachable from the entry point, no loop here.
+      }
+      // A self edge is always a loop. Otherwise walk up the dominator tree from
+      // the source to see whether the target dominates it.
+      boolean isLoop = source == target;
+      for (int block = dominators[source]; !isLoop; block = dominators[block]) {
+        isLoop = block == target;
+        if (block == entryPosition) {
+          break; // The entry point is the root of the dominator tree.
+        }
+      }
+      if (isLoop) {
+        edge.setIsBackEdge(true);
+      }
+    }
+  }
+
+  // Returns the block that dominates both of the given blocks, walking the one
+  // further down the dominator tree upwards until they meet.
+  private static int intersectDominators(
+      int first, int second, int[] dominators, int[] postOrder) {
+    while (first != second) {
+      while (postOrder[first] < postOrder[second]) {
+        first = dominators[first];
+      }
+      while (postOrder[second] < postOrder[first]) {
+        second = dominators[second];
+      }
+    }
+    return first;
   }
 
   private void buildCallGraphAndModuleList() throws CancelledException {
