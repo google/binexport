@@ -100,7 +100,7 @@ if(BINEXPORT_ENABLE_BINARYNINJA)
   else()
     set(_binexport_binaryninjacore_suffix "")
     set(_binexport_binaryninja_git_tag_default
-        "0a1f260b1b078888ca511c2a020c066da59409c3") # 2026-09-09
+        "0a1f260b1b078888ca511c2a020c066da59409c3") # dev 2026-09-09
   endif()
   if(BINEXPORT_BINARYNINJA_GIT_TAG STREQUAL "")
     set(_binexport_binaryninja_git_tag
@@ -114,24 +114,9 @@ if(BINEXPORT_ENABLE_BINARYNINJA)
     GIT_REPOSITORY https://github.com/Vector35/binaryninja-api.git
     GIT_TAG        ${_binexport_binaryninja_git_tag}
   )
-  set(CORE_LIBRARY binaryninjacore)
-  set(BN_CORE_LIBRARY "${CORE_LIBRARY}")
   set(HEADLESS TRUE)
+  set(BN_ALLOW_STUBS TRUE) # Since 5.2.8329
   FetchContent_MakeAvailable(binaryninjaapi)
-  add_library(binaryninjacore SHARED
-    binaryninja/stubs/binaryninjacore${_binexport_binaryninjacore_suffix}.cc
-  )
-  set_target_properties(binaryninjacore PROPERTIES
-    SOVERSION 1
-  )
-  target_include_directories(binaryninjacore PRIVATE
-    "${binaryninjaapi_SOURCE_DIR}"
-  )
-  if(MSVC)
-    target_compile_options(binaryninjaapi PRIVATE
-      /wd4005  # macro redefinition (NOMINMAX, _CRT_SECURE_NO_WARNINGS)
-    )
-  endif()
   binexport_check_target(binaryninjaapi)
   add_library(BinaryNinja::API ALIAS binaryninjaapi)
 endif()
