@@ -117,6 +117,18 @@ endif()
 # BinExport format version 2 proto library
 protobuf_generate_cpp(binexport2_proto binexport2_proto_h binexport2.proto)
 
+if(BUILD_TESTING AND BINEXPORT_BUILD_TESTING)
+  # Test helper library
+  add_library(binexport_testing
+    testing.cc
+    testing.h
+  )
+  target_link_libraries(binexport_testing PUBLIC
+    binexport_test_base
+    binexport_shared
+  )
+endif()
+
 # Utility library code shared with BinDiff
 add_library(binexport_shared STATIC
   "${binexport2_proto_h}"
@@ -172,21 +184,10 @@ if(BUILD_TESTING AND BINEXPORT_BUILD_TESTING)
   target_link_libraries(binexport_shared_test PUBLIC
     binexport_test_base
     binexport_shared
+    binexport_testing
     absl::status_matchers
   )
   gtest_discover_tests(binexport_shared_test)
-endif()
-
-if(BUILD_TESTING AND BINEXPORT_BUILD_TESTING)
-  # Test helper library
-  add_library(binexport_testing
-    testing.cc
-    testing.h
-  )
-  target_link_libraries(binexport_testing PUBLIC
-    binexport_test_base
-    binexport_shared
-  )
 endif()
 
 # IDB export test
@@ -194,6 +195,7 @@ if(BUILD_TESTING AND BINEXPORT_BUILD_TESTING)
   add_executable(idb_export_test util/idb_export_test.cc)
   target_link_libraries(idb_export_test
     binexport_test_base
+    binexport_testing
     binexport_shared
   )
   gtest_discover_tests(idb_export_test PROPERTIES

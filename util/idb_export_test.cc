@@ -23,6 +23,7 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "third_party/absl/status/status_matchers.h"
+#include "third_party/zynamics/binexport/testing.h"  // IWYU pragma: keep
 #include "third_party/zynamics/binexport/util/filesystem.h"
 
 namespace security::binexport {

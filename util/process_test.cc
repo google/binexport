@@ -22,6 +22,7 @@
 #include "third_party/absl/status/status_matchers.h"
 #include "third_party/absl/status/statusor.h"
 #include "third_party/absl/strings/str_cat.h"
+#include "third_party/zynamics/binexport/testing.h"  // IWYU pragma: keep
 
 namespace security::binexport {
 namespace {

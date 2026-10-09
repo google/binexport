@@ -57,11 +57,11 @@ FetchContent_Declare(absl
 set(ABSL_CXX_STANDARD ${CMAKE_CXX_STANDARD} CACHE STRING "" FORCE)
 set(ABSL_PROPAGATE_CXX_STD ON CACHE BOOL "" FORCE)
 set(ABSL_USE_EXTERNAL_GOOGLETEST ON CACHE BOOL "" FORCE)
+set(ABSL_FIND_GOOGLETEST OFF CACHE BOOL "" FORCE)
 set(ABSL_MSVC_STATIC_RUNTIME OFF CACHE BOOL "" FORCE)
 if(BUILD_TESTING AND BINEXPORT_BUILD_TESTING)
   # Make absl::status_matchers available
-  set(ABSL_BUILD_TESTING ON CACHE BOOL "" FORCE)
-  set(absl_gtest_src_dir "${googletest_SOURCE_DIR}" CACHE STRING "" FORCE)
+  set(ABSL_BUILD_TEST_HELPERS ON CACHE BOOL "" FORCE)
 endif()
 FetchContent_MakeAvailable(absl)
 binexport_check_target(absl::core_headers)

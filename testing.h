@@ -17,8 +17,22 @@
 
 #include <string>
 
+#include "gmock/gmock.h"                // IWYU pragma: keep
+#include "third_party/absl/status/status_matchers.h"  // IWYU pragma: keep
 #include "third_party/absl/strings/string_view.h"
 #include "third_party/zynamics/binexport/binexport2.pb.h"
+
+#ifndef ABSL_ASSERT_OK_AND_ASSIGN
+#define BINEXPORT_CONCAT_IMPL(x, y) x##y
+#define BINEXPORT_CONCAT(x, y) BINEXPORT_CONCAT_IMPL(x, y)
+#define ABSL_ASSERT_OK_AND_ASSIGN(lhs, rexpr)                                 \
+  BINEXPORT_ASSERT_OK_AND_ASSIGN_IMPL(BINEXPORT_CONCAT(_statusor_, __LINE__), \
+                                      lhs, rexpr)
+#define BINEXPORT_ASSERT_OK_AND_ASSIGN_IMPL(statusor, lhs, rexpr) \
+  auto&& statusor = (rexpr);                                      \
+  ASSERT_THAT(statusor.status(), ::absl_testing::IsOk());         \
+  lhs = std::move(*statusor)
+#endif
 
 namespace security::binexport {
 
