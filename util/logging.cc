@@ -58,6 +58,10 @@ static absl::LogSink* g_main_log_sink = nullptr;
 static absl::LogSink* g_stderr_log_sink = nullptr;
 static absl::LogSink* g_file_log_sink = nullptr;
 
+static bool g_absl_log_initialized = false;
+
+void DisableLogInitForTesting() { g_absl_log_initialized = true; }
+
 absl::Status InitLogging(const LoggingOptions& options,
                          std::unique_ptr<absl::LogSink> log_sink) {
   if (!options.log_filename.empty()) {
@@ -73,10 +77,9 @@ absl::Status InitLogging(const LoggingOptions& options,
   // Initialize Abseil logging. Need to guard against being initialized multiple
   // times. This happens, when an IDA Pro plugins does not use PLUGIN_FIX in its
   // flags.
-  static bool library_initialized = false;
-  if (!library_initialized) {
+  if (!g_absl_log_initialized) {
     absl::InitializeLog();
-    library_initialized = true;
+    g_absl_log_initialized = true;
   }
 
   g_main_log_sink = log_sink.release();

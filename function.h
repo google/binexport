@@ -123,7 +123,7 @@ class Function {
   const std::string* module_name_ = nullptr;
   FunctionType type_ = TYPE_NONE;
   int library_index_ = -1;
-  double md_index_;
+  double md_index_ = 0.0;
 };
 
 #endif  // FUNCTION_H_

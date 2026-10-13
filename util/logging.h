@@ -43,6 +43,10 @@ struct LoggingOptions {
 absl::Status InitLogging(const LoggingOptions& options,
                          std::unique_ptr<absl::LogSink> log_sink);
 
+// Marks Abseil logging as already initialized so that subsequent calls to
+// InitLogging() do not call absl::InitializeLog() in unit tests.
+void DisableLogInitForTesting();
+
 // Shuts down logging, closing any log files.
 void ShutdownLogging();
 
