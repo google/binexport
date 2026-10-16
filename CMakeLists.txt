@@ -56,10 +56,12 @@ create_directory_symlink(
   "${absl_SOURCE_DIR}/absl"
   "${BINEXPORT_BINARY_DIR}/src_include/third_party/absl"
 )
-create_directory_symlink(
-  "${binaryninjaapi_SOURCE_DIR}"
-  "${BINEXPORT_BINARY_DIR}/src_include/third_party/binaryninja_api"
-)
+if(BINEXPORT_ENABLE_BINARYNINJA)
+  create_directory_symlink(
+    "${binaryninjaapi_SOURCE_DIR}"
+    "${BINEXPORT_BINARY_DIR}/src_include/third_party/binaryninja_api"
+  )
+endif()
 create_directory_symlink(
   "${BINEXPORT_BINARY_DIR}"
   "${BINEXPORT_BINARY_DIR}/gen_include/third_party/zynamics/binexport"

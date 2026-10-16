@@ -15,12 +15,10 @@
 #ifndef BINARYNINJA_MAIN_PLUGIN_H_
 #define BINARYNINJA_MAIN_PLUGIN_H_
 
-// clang-format off
-#include "binaryninjaapi.h"  // NOLINT
-// clang-format on
+#include "third_party/binaryninja_api/binaryninjaapi.h"
 
 #ifdef _WIN32
-// binaryninja.h includes Windows.h, so undefine
+// binaryninjaapi.h includes Windows.h, so undefine
 #undef ERROR
 #endif
 
