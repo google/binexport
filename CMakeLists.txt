@@ -154,6 +154,8 @@ add_library(binexport_shared STATIC
   util/range.h
   util/timer.h
   util/types.h
+  util/unicode.cc
+  util/unicode.h
 )
 target_link_libraries(binexport_shared PUBLIC
   absl::check
@@ -182,6 +184,7 @@ if(BUILD_TESTING AND BINEXPORT_BUILD_TESTING)
     util/format_test.cc
     util/process_test.cc
     util/timer_test.cc
+    util/unicode_test.cc
   )
   target_link_libraries(binexport_shared_test PUBLIC
     binexport_test_base
